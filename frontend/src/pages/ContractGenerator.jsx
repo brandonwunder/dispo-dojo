@@ -12,7 +12,7 @@ import {
   Type,
   RotateCcw,
 } from 'lucide-react'
-import ShojiCard from '../components/ShojiCard'
+import WoodPanel from '../components/WoodPanel'
 import Button from '../components/Button'
 
 /* ------------------------------------------------------------------ */
@@ -22,9 +22,9 @@ import Button from '../components/Button'
 const STEPS = ['Deal Info', 'Review', 'Sign', 'Export']
 
 const INPUT_CLASS =
-  'bg-bg-elevated border border-gold-dim/[0.15] rounded-lg px-4 py-3 text-text-primary placeholder:text-text-muted input-calligraphy focus:outline-none transition-colors w-full font-body text-sm'
+  'bg-bg-card border border-gold-dim/20 rounded-sm px-4 py-3 text-parchment placeholder:text-text-muted focus:outline-none focus:border-gold-dim/40 transition-colors w-full font-body text-sm'
 
-const LABEL_CLASS = 'block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5'
+const LABEL_CLASS = 'block font-heading text-gold-dim tracking-wide uppercase text-xs mb-1.5'
 
 const MOCK_HISTORY = [
   {
@@ -94,22 +94,37 @@ function formatDisplayDate(dateStr) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Step Indicator — Mountain path pattern                            */
+/*  Step Indicator — Seal stamps in a row                             */
 /* ------------------------------------------------------------------ */
 
 function StepIndicator({ currentStep }) {
   return (
-    <div className="flex items-center justify-center gap-2 mb-8">
+    <div className="flex items-center justify-center mb-8">
       {STEPS.map((stepLabel, i) => (
         <React.Fragment key={i}>
-          {i > 0 && <div className="w-8 katana-line" />}
-          <div className="flex flex-col items-center gap-1">
-            <div className={`w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center text-[9px] font-bold ${
-              currentStep > i ? 'bg-gold text-bg shadow-[0_0_8px_rgba(212,168,83,0.4)]'
-              : currentStep === i ? 'bg-gold/20 border border-gold text-gold'
-              : 'bg-border text-text-muted'
-            }`}>
-              {i + 1}
+          {i > 0 && (
+            <div
+              className="w-10 h-[2px] mx-1"
+              style={{
+                background: currentStep > i
+                  ? 'linear-gradient(90deg, var(--color-gold), var(--color-gold-dim))'
+                  : 'linear-gradient(90deg, rgba(166,124,46,0.2), rgba(166,124,46,0.1))',
+              }}
+            />
+          )}
+          <div className="flex flex-col items-center gap-1.5">
+            <div
+              className={`
+                w-9 h-9 rounded-full flex items-center justify-center text-xs font-heading font-bold transition-all duration-300
+                ${currentStep > i
+                  ? 'bg-crimson text-white shadow-[0_0_10px_rgba(139,0,0,0.4)]'
+                  : currentStep === i
+                    ? 'bg-transparent border-2 border-gold text-gold shadow-[0_0_12px_rgba(212,168,83,0.3)] animate-pulse'
+                    : 'bg-transparent border border-gold-dim/20 text-text-muted'
+                }
+              `}
+            >
+              {currentStep > i ? <Check size={16} strokeWidth={3} /> : i + 1}
             </div>
             <span className="font-heading text-[9px] tracking-[0.1em] uppercase text-text-muted">{stepLabel}</span>
           </div>
@@ -127,7 +142,7 @@ function StepDealInfo({ form, setForm, onNext }) {
   const update = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
 
   return (
-    <ShojiCard hover={false} className="p-6 sm:p-8">
+    <WoodPanel headerBar="Seal Chamber — Contract Builder">
       {/* Section: Parties */}
       <h3 className="font-heading text-sm font-semibold tracking-[0.1em] uppercase text-gold mb-5">Parties</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -226,7 +241,7 @@ function StepDealInfo({ form, setForm, onNext }) {
           </span>
         </Button>
       </div>
-    </ShojiCard>
+    </WoodPanel>
   )
 }
 
@@ -242,116 +257,127 @@ function StepReview({ form, onNext, onBack }) {
   const today = formatDisplayDate(todayString())
 
   return (
-    <ShojiCard hover={false} className="p-6 sm:p-8">
-      <h3 className="font-heading text-sm font-semibold tracking-[0.1em] uppercase text-gold mb-5">Contract Preview</h3>
-
-      {/* Document preview — light background like printed paper */}
-      <div className="bg-white text-gray-900 rounded-xl p-6 sm:p-8 max-w-3xl mx-auto shadow-lg font-serif text-sm leading-relaxed">
-        <h2 className="text-center text-lg font-bold tracking-wide mb-6 uppercase">
-          Purchase and Sale Agreement
-        </h2>
-
-        <p className="mb-4">
-          This Agreement is made on <strong>{today}</strong> between:
-        </p>
-
-        <div className="mb-4 pl-4 border-l-2 border-gray-300">
-          <p className="mb-1">
-            <strong>BUYER:</strong> {form.buyerName || '_______________'}
-          </p>
-          <p className="text-gray-600 text-xs mb-3">
-            {form.buyerEmail || '_______________'} | {form.buyerPhone || '_______________'}
-          </p>
-          <p className="mb-1">
-            <strong>SELLER:</strong> {form.sellerName || '_______________'}
-          </p>
-          <p className="text-gray-600 text-xs">
-            {form.sellerEmail || '_______________'} | {form.sellerPhone || '_______________'}
-          </p>
+    <div className="scroll-card">
+      <div className="parchment-texture rounded-sm border border-gold-dim/20 overflow-hidden">
+        <div className="lacquer-bar px-4 py-2 font-heading text-gold text-sm tracking-widest uppercase">
+          Contract Preview
         </div>
+        <div className="p-6 sm:p-8">
+          {/* Document preview -- formal letter on white with subtle parchment overlay */}
+          <div className="relative bg-white text-gray-900 rounded-sm p-6 sm:p-8 max-w-3xl mx-auto shadow-lg font-serif text-sm leading-relaxed overflow-hidden">
+            {/* subtle parchment texture overlay */}
+            <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' seed='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.5'/%3E%3C/svg%3E")`,
+            }} />
+            <div className="relative z-10">
+              <h2 className="text-center text-lg font-bold tracking-wide mb-6 uppercase">
+                Purchase and Sale Agreement
+              </h2>
 
-        <p className="mb-6">
-          <strong>PROPERTY:</strong> {fullAddress || '_______________'}
-        </p>
+              <p className="mb-4">
+                This Agreement is made on <strong>{today}</strong> between:
+              </p>
 
-        <h3 className="font-bold text-sm uppercase tracking-wide border-b border-gray-300 pb-1 mb-4">
-          Terms and Conditions
-        </h3>
+              <div className="mb-4 pl-4 border-l-2 border-gray-300">
+                <p className="mb-1">
+                  <strong>BUYER:</strong> {form.buyerName || '_______________'}
+                </p>
+                <p className="text-gray-600 text-xs mb-3">
+                  {form.buyerEmail || '_______________'} | {form.buyerPhone || '_______________'}
+                </p>
+                <p className="mb-1">
+                  <strong>SELLER:</strong> {form.sellerName || '_______________'}
+                </p>
+                <p className="text-gray-600 text-xs">
+                  {form.sellerEmail || '_______________'} | {form.sellerPhone || '_______________'}
+                </p>
+              </div>
 
-        <div className="space-y-4">
-          <p>
-            <strong>1. PURCHASE PRICE:</strong> {formatCurrency(form.purchasePrice)}
-          </p>
+              <p className="mb-6">
+                <strong>PROPERTY:</strong> {fullAddress || '_______________'}
+              </p>
 
-          <p>
-            <strong>2. EARNEST MONEY:</strong> Buyer shall deposit{' '}
-            {formatCurrency(form.earnestMoney)} as earnest money within 3 business days of mutual
-            execution.
-          </p>
+              <h3 className="font-bold text-sm uppercase tracking-wide border-b border-gray-300 pb-1 mb-4">
+                Terms and Conditions
+              </h3>
 
-          <p>
-            <strong>3. INSPECTION PERIOD:</strong> Buyer shall have{' '}
-            {form.inspectionDays || '8'} business days from the date of mutual execution to
-            conduct inspections.
-          </p>
+              <div className="space-y-4">
+                <p>
+                  <strong>1. PURCHASE PRICE:</strong> {formatCurrency(form.purchasePrice)}
+                </p>
 
-          <p>
-            <strong>4. CLOSING:</strong> Closing shall occur on or before{' '}
-            {formatDisplayDate(form.closingDate)}.
-          </p>
+                <p>
+                  <strong>2. EARNEST MONEY:</strong> Buyer shall deposit{' '}
+                  {formatCurrency(form.earnestMoney)} as earnest money within 3 business days of mutual
+                  execution.
+                </p>
 
-          <div>
-            <p className="font-bold">5. CONTINGENCIES:</p>
-            <p className="pl-4 whitespace-pre-wrap">{form.contingencies || 'None'}</p>
+                <p>
+                  <strong>3. INSPECTION PERIOD:</strong> Buyer shall have{' '}
+                  {form.inspectionDays || '8'} business days from the date of mutual execution to
+                  conduct inspections.
+                </p>
+
+                <p>
+                  <strong>4. CLOSING:</strong> Closing shall occur on or before{' '}
+                  {formatDisplayDate(form.closingDate)}.
+                </p>
+
+                <div>
+                  <p className="font-bold">5. CONTINGENCIES:</p>
+                  <p className="pl-4 whitespace-pre-wrap">{form.contingencies || 'None'}</p>
+                </div>
+
+                <div>
+                  <p className="font-bold">6. SPECIAL TERMS:</p>
+                  <p className="pl-4 whitespace-pre-wrap">{form.specialTerms || 'None'}</p>
+                </div>
+
+                <p>
+                  <strong>7.</strong> This agreement is subject to the terms and conditions outlined herein.
+                </p>
+              </div>
+
+              {/* Signature lines */}
+              <div className="mt-10 grid grid-cols-2 gap-8">
+                <div>
+                  <div className="border-b border-gray-400 mb-1 h-8" />
+                  <p className="text-xs text-gray-500">Buyer Signature</p>
+                </div>
+                <div>
+                  <div className="border-b border-gray-400 mb-1 h-8" />
+                  <p className="text-xs text-gray-500">Date</p>
+                </div>
+              </div>
+              <div className="mt-6 grid grid-cols-2 gap-8">
+                <div>
+                  <div className="border-b border-gray-400 mb-1 h-8" />
+                  <p className="text-xs text-gray-500">Seller Signature</p>
+                </div>
+                <div>
+                  <div className="border-b border-gray-400 mb-1 h-8" />
+                  <p className="text-xs text-gray-500">Date</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <p className="font-bold">6. SPECIAL TERMS:</p>
-            <p className="pl-4 whitespace-pre-wrap">{form.specialTerms || 'None'}</p>
-          </div>
-
-          <p>
-            <strong>7.</strong> This agreement is subject to the terms and conditions outlined herein.
-          </p>
-        </div>
-
-        {/* Signature lines */}
-        <div className="mt-10 grid grid-cols-2 gap-8">
-          <div>
-            <div className="border-b border-gray-400 mb-1 h-8" />
-            <p className="text-xs text-gray-500">Buyer Signature</p>
-          </div>
-          <div>
-            <div className="border-b border-gray-400 mb-1 h-8" />
-            <p className="text-xs text-gray-500">Date</p>
-          </div>
-        </div>
-        <div className="mt-6 grid grid-cols-2 gap-8">
-          <div>
-            <div className="border-b border-gray-400 mb-1 h-8" />
-            <p className="text-xs text-gray-500">Seller Signature</p>
-          </div>
-          <div>
-            <div className="border-b border-gray-400 mb-1 h-8" />
-            <p className="text-xs text-gray-500">Date</p>
+          {/* Navigation */}
+          <div className="flex justify-between mt-8">
+            <Button variant="outline" onClick={onBack}>
+              <span className="flex items-center gap-2">
+                <ArrowLeft size={16} /> Back
+              </span>
+            </Button>
+            <Button variant="gold" onClick={onNext}>
+              <span className="flex items-center gap-2">
+                Next: Sign <ArrowRight size={16} />
+              </span>
+            </Button>
           </div>
         </div>
       </div>
-
-      {/* Navigation */}
-      <div className="flex justify-between mt-8">
-        <Button variant="outline" onClick={onBack}>
-          <span className="flex items-center gap-2">
-            <ArrowLeft size={16} /> Back
-          </span>
-        </Button>
-        <Button variant="gold" onClick={onNext}>
-          <span className="flex items-center gap-2">
-            Next: Sign <ArrowRight size={16} />
-          </span>
-        </Button>
-      </div>
-    </ShojiCard>
+    </div>
   )
 }
 
@@ -438,18 +464,18 @@ function StepSign({ onNext, onBack, signatureData, setSignatureData }) {
   }
 
   return (
-    <ShojiCard hover={false} className="p-6 sm:p-8">
+    <WoodPanel headerBar="Apply Your Seal">
       <h3 className="font-heading text-sm font-semibold tracking-[0.1em] uppercase text-gold mb-6">Your Signature</h3>
 
-      {/* Mode toggle tabs */}
-      <div className="flex gap-1 mb-6 bg-bg-elevated rounded-xl p-1 w-fit">
+      {/* Mode toggle tabs — wooden plaques */}
+      <div className="flex gap-2 mb-6">
         <button
           onClick={() => setSigMode('draw')}
           className={`
-            flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-heading font-medium tracking-[0.05em] transition-all duration-200
+            flex items-center gap-2 px-5 py-2.5 rounded-sm text-sm font-heading font-medium tracking-[0.05em] transition-all duration-200 wood-panel border border-gold-dim/20
             ${sigMode === 'draw'
-              ? 'bg-gold/15 text-gold border border-gold/30'
-              : 'text-text-dim hover:text-text-primary'
+              ? 'bg-gold/10 text-gold shadow-[0_0_10px_rgba(212,168,83,0.15)]'
+              : 'text-text-dim hover:text-parchment'
             }
           `}
         >
@@ -458,10 +484,10 @@ function StepSign({ onNext, onBack, signatureData, setSignatureData }) {
         <button
           onClick={() => setSigMode('type')}
           className={`
-            flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-heading font-medium tracking-[0.05em] transition-all duration-200
+            flex items-center gap-2 px-5 py-2.5 rounded-sm text-sm font-heading font-medium tracking-[0.05em] transition-all duration-200 wood-panel border border-gold-dim/20
             ${sigMode === 'type'
-              ? 'bg-gold/15 text-gold border border-gold/30'
-              : 'text-text-dim hover:text-text-primary'
+              ? 'bg-gold/10 text-gold shadow-[0_0_10px_rgba(212,168,83,0.15)]'
+              : 'text-text-dim hover:text-parchment'
             }
           `}
         >
@@ -484,7 +510,7 @@ function StepSign({ onNext, onBack, signatureData, setSignatureData }) {
                 ref={canvasRef}
                 width={600}
                 height={200}
-                className="w-full max-w-[400px] h-[150px] border border-gold-dim/[0.15] rounded-xl bg-bg-elevated cursor-crosshair touch-none"
+                className="w-full max-w-[400px] h-[150px] border-2 border-gold-dim/30 rounded-sm bg-bg-card/80 cursor-crosshair touch-none"
                 onMouseDown={startDrawing}
                 onMouseMove={draw}
                 onMouseUp={stopDrawing}
@@ -530,7 +556,7 @@ function StepSign({ onNext, onBack, signatureData, setSignatureData }) {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="mt-5 px-6 py-4 bg-bg-elevated rounded-xl border border-gold-dim/[0.15] max-w-md"
+                className="mt-5 px-6 py-4 rounded-sm border-2 border-gold-dim/30 bg-bg-card/80 max-w-md"
               >
                 <p className="text-xs font-heading font-semibold text-text-muted tracking-[0.08em] uppercase mb-2">Signature Preview</p>
                 <p className="text-3xl text-gold font-display">
@@ -567,7 +593,7 @@ function StepSign({ onNext, onBack, signatureData, setSignatureData }) {
           </span>
         </Button>
       </div>
-    </ShojiCard>
+    </WoodPanel>
   )
 }
 
@@ -585,145 +611,158 @@ function StepExport({ form, signatureData, onReset }) {
   return (
     <div className="space-y-8">
       {/* Success banner */}
-      <ShojiCard hover={false} glow className="p-8 text-center">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.15 }}
-          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/10 mb-4"
-        >
-          <CheckCircle size={48} className="text-success" />
-        </motion.div>
-        <h2 className="font-display text-2xl text-text-primary mb-2">
-          Contract Signed Successfully!
-        </h2>
-        <p className="text-text-dim text-sm max-w-lg mx-auto">
-          Purchase agreement for <span className="text-gold">{fullAddress || 'the property'}</span>{' '}
-          has been signed and is ready to send.
-        </p>
-      </ShojiCard>
+      <WoodPanel glow>
+        <div className="text-center py-4">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.15 }}
+            className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gold/10 mb-4"
+          >
+            <CheckCircle size={48} className="text-gold" />
+          </motion.div>
+          <h2 className="font-display text-2xl text-text-primary mb-2">
+            Contract Sealed Successfully!
+          </h2>
+          <p className="text-text-dim text-sm max-w-lg mx-auto">
+            Purchase agreement for <span className="text-gold">{fullAddress || 'the property'}</span>{' '}
+            has been signed and is ready to send.
+          </p>
+        </div>
+      </WoodPanel>
 
       {/* Signed contract preview */}
-      <ShojiCard hover={false} className="p-6 sm:p-8">
-        <h3 className="font-heading text-sm font-semibold tracking-[0.1em] uppercase text-gold mb-4">Signed Contract</h3>
-
-        <div className="bg-white text-gray-900 rounded-xl p-6 sm:p-8 max-w-3xl mx-auto shadow-lg font-serif text-sm leading-relaxed">
-          <h2 className="text-center text-lg font-bold tracking-wide mb-6 uppercase">
-            Purchase and Sale Agreement
-          </h2>
-
-          <p className="mb-4">
-            This Agreement is made on <strong>{today}</strong> between:
-          </p>
-
-          <div className="mb-4 pl-4 border-l-2 border-gray-300">
-            <p className="mb-1">
-              <strong>BUYER:</strong> {form.buyerName || '_______________'}
-            </p>
-            <p className="text-gray-600 text-xs mb-3">
-              {form.buyerEmail || '_______________'} | {form.buyerPhone || '_______________'}
-            </p>
-            <p className="mb-1">
-              <strong>SELLER:</strong> {form.sellerName || '_______________'}
-            </p>
-            <p className="text-gray-600 text-xs">
-              {form.sellerEmail || '_______________'} | {form.sellerPhone || '_______________'}
-            </p>
+      <div className="scroll-card">
+        <div className="parchment-texture rounded-sm border border-gold-dim/20 overflow-hidden">
+          <div className="lacquer-bar px-4 py-2 font-heading text-gold text-sm tracking-widest uppercase">
+            Signed Contract
           </div>
+          <div className="p-6 sm:p-8">
+            <div className="relative bg-white text-gray-900 rounded-sm p-6 sm:p-8 max-w-3xl mx-auto shadow-lg font-serif text-sm leading-relaxed overflow-hidden">
+              {/* subtle parchment texture overlay */}
+              <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' seed='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p2)' opacity='0.5'/%3E%3C/svg%3E")`,
+              }} />
+              <div className="relative z-10">
+                <h2 className="text-center text-lg font-bold tracking-wide mb-6 uppercase">
+                  Purchase and Sale Agreement
+                </h2>
 
-          <p className="mb-6">
-            <strong>PROPERTY:</strong> {fullAddress || '_______________'}
-          </p>
+                <p className="mb-4">
+                  This Agreement is made on <strong>{today}</strong> between:
+                </p>
 
-          <h3 className="font-bold text-sm uppercase tracking-wide border-b border-gray-300 pb-1 mb-4">
-            Terms and Conditions
-          </h3>
+                <div className="mb-4 pl-4 border-l-2 border-gray-300">
+                  <p className="mb-1">
+                    <strong>BUYER:</strong> {form.buyerName || '_______________'}
+                  </p>
+                  <p className="text-gray-600 text-xs mb-3">
+                    {form.buyerEmail || '_______________'} | {form.buyerPhone || '_______________'}
+                  </p>
+                  <p className="mb-1">
+                    <strong>SELLER:</strong> {form.sellerName || '_______________'}
+                  </p>
+                  <p className="text-gray-600 text-xs">
+                    {form.sellerEmail || '_______________'} | {form.sellerPhone || '_______________'}
+                  </p>
+                </div>
 
-          <div className="space-y-4">
-            <p>
-              <strong>1. PURCHASE PRICE:</strong> {formatCurrency(form.purchasePrice)}
-            </p>
-            <p>
-              <strong>2. EARNEST MONEY:</strong> Buyer shall deposit{' '}
-              {formatCurrency(form.earnestMoney)} as earnest money within 3 business days of mutual execution.
-            </p>
-            <p>
-              <strong>3. INSPECTION PERIOD:</strong> Buyer shall have{' '}
-              {form.inspectionDays || '8'} business days from the date of mutual execution to conduct inspections.
-            </p>
-            <p>
-              <strong>4. CLOSING:</strong> Closing shall occur on or before{' '}
-              {formatDisplayDate(form.closingDate)}.
-            </p>
-            <div>
-              <p className="font-bold">5. CONTINGENCIES:</p>
-              <p className="pl-4 whitespace-pre-wrap">{form.contingencies || 'None'}</p>
-            </div>
-            <div>
-              <p className="font-bold">6. SPECIAL TERMS:</p>
-              <p className="pl-4 whitespace-pre-wrap">{form.specialTerms || 'None'}</p>
-            </div>
-            <p>
-              <strong>7.</strong> This agreement is subject to the terms and conditions outlined herein.
-            </p>
-          </div>
+                <p className="mb-6">
+                  <strong>PROPERTY:</strong> {fullAddress || '_______________'}
+                </p>
 
-          {/* Signed signature lines */}
-          <div className="mt-10 grid grid-cols-2 gap-8">
-            <div>
-              <div className="border-b border-gray-400 mb-1 h-10 flex items-end pb-1">
-                {signatureData?.type === 'draw' && signatureData.data ? (
-                  <img src={signatureData.data} alt="Buyer Signature" className="h-10 object-contain" />
-                ) : signatureData?.type === 'type' && signatureData.data ? (
-                  <span className="text-2xl text-gray-800 font-display">
-                    {signatureData.data}
-                  </span>
-                ) : null}
+                <h3 className="font-bold text-sm uppercase tracking-wide border-b border-gray-300 pb-1 mb-4">
+                  Terms and Conditions
+                </h3>
+
+                <div className="space-y-4">
+                  <p>
+                    <strong>1. PURCHASE PRICE:</strong> {formatCurrency(form.purchasePrice)}
+                  </p>
+                  <p>
+                    <strong>2. EARNEST MONEY:</strong> Buyer shall deposit{' '}
+                    {formatCurrency(form.earnestMoney)} as earnest money within 3 business days of mutual execution.
+                  </p>
+                  <p>
+                    <strong>3. INSPECTION PERIOD:</strong> Buyer shall have{' '}
+                    {form.inspectionDays || '8'} business days from the date of mutual execution to conduct inspections.
+                  </p>
+                  <p>
+                    <strong>4. CLOSING:</strong> Closing shall occur on or before{' '}
+                    {formatDisplayDate(form.closingDate)}.
+                  </p>
+                  <div>
+                    <p className="font-bold">5. CONTINGENCIES:</p>
+                    <p className="pl-4 whitespace-pre-wrap">{form.contingencies || 'None'}</p>
+                  </div>
+                  <div>
+                    <p className="font-bold">6. SPECIAL TERMS:</p>
+                    <p className="pl-4 whitespace-pre-wrap">{form.specialTerms || 'None'}</p>
+                  </div>
+                  <p>
+                    <strong>7.</strong> This agreement is subject to the terms and conditions outlined herein.
+                  </p>
+                </div>
+
+                {/* Signed signature lines */}
+                <div className="mt-10 grid grid-cols-2 gap-8">
+                  <div>
+                    <div className="border-b border-gray-400 mb-1 h-10 flex items-end pb-1">
+                      {signatureData?.type === 'draw' && signatureData.data ? (
+                        <img src={signatureData.data} alt="Buyer Signature" className="h-10 object-contain" />
+                      ) : signatureData?.type === 'type' && signatureData.data ? (
+                        <span className="text-2xl text-gray-800 font-display">
+                          {signatureData.data}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-gray-500">Buyer Signature</p>
+                  </div>
+                  <div>
+                    <div className="border-b border-gray-400 mb-1 h-10 flex items-end pb-1">
+                      <span className="text-sm text-gray-700">
+                        {signatureData?.date ? formatDisplayDate(signatureData.date) : ''}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">Date</p>
+                  </div>
+                </div>
+                <div className="mt-6 grid grid-cols-2 gap-8">
+                  <div>
+                    <div className="border-b border-gray-400 mb-1 h-10" />
+                    <p className="text-xs text-gray-500">Seller Signature</p>
+                  </div>
+                  <div>
+                    <div className="border-b border-gray-400 mb-1 h-10" />
+                    <p className="text-xs text-gray-500">Date</p>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-gray-500">Buyer Signature</p>
-            </div>
-            <div>
-              <div className="border-b border-gray-400 mb-1 h-10 flex items-end pb-1">
-                <span className="text-sm text-gray-700">
-                  {signatureData?.date ? formatDisplayDate(signatureData.date) : ''}
-                </span>
-              </div>
-              <p className="text-xs text-gray-500">Date</p>
-            </div>
-          </div>
-          <div className="mt-6 grid grid-cols-2 gap-8">
-            <div>
-              <div className="border-b border-gray-400 mb-1 h-10" />
-              <p className="text-xs text-gray-500">Seller Signature</p>
-            </div>
-            <div>
-              <div className="border-b border-gray-400 mb-1 h-10" />
-              <p className="text-xs text-gray-500">Date</p>
             </div>
           </div>
         </div>
-      </ShojiCard>
+      </div>
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-3 justify-center">
-        <Button variant="gold">
+        <Button variant="gold" className="gold-shimmer">
           <span className="flex items-center gap-2">
             <Download size={16} /> Download as PDF
           </span>
         </Button>
         <div className="flex flex-col items-center">
-          <Button variant="outline">
-            <span className="flex items-center gap-2">
+          <WoodPanel hover withBrackets={false} className="cursor-pointer">
+            <span className="flex items-center gap-2 text-sm font-body text-text-primary">
               <Mail size={16} /> Send via Email
             </span>
-          </Button>
+          </WoodPanel>
           <span className="text-xs text-text-muted mt-1">(Gmail integration coming soon)</span>
         </div>
-        <Button variant="outline" onClick={onReset}>
-          <span className="flex items-center gap-2">
+        <WoodPanel hover withBrackets={false} onClick={onReset} className="cursor-pointer">
+          <span className="flex items-center gap-2 text-sm font-body text-text-primary">
             <RotateCcw size={16} /> Generate Another
           </span>
-        </Button>
+        </WoodPanel>
       </div>
     </div>
   )
@@ -736,25 +775,24 @@ function StepExport({ form, signatureData, onReset }) {
 function ContractHistory() {
   return (
     <div className="mt-12">
-      <h2 className="font-display text-xl text-text-primary mb-5">Recent <span className="brush-underline">Contracts</span></h2>
-      <ShojiCard hover={false} className="overflow-hidden">
-        <div className="overflow-x-auto">
+      <WoodPanel headerBar="Sealed Contracts" withBrackets>
+        <div className="overflow-x-auto -m-5">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gold-dim/[0.15]">
-                <th className="text-left px-5 py-3.5 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+              <tr className="lacquer-bar">
+                <th className="text-left px-5 py-3.5 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-gold-dim">
                   Date
                 </th>
-                <th className="text-left px-5 py-3.5 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                <th className="text-left px-5 py-3.5 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-gold-dim">
                   Property
                 </th>
-                <th className="text-left px-5 py-3.5 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                <th className="text-left px-5 py-3.5 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-gold-dim">
                   Buyer / Seller
                 </th>
-                <th className="text-left px-5 py-3.5 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                <th className="text-left px-5 py-3.5 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-gold-dim">
                   Status
                 </th>
-                <th className="text-left px-5 py-3.5 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                <th className="text-left px-5 py-3.5 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-gold-dim">
                   Actions
                 </th>
               </tr>
@@ -800,7 +838,7 @@ function ContractHistory() {
             </tbody>
           </table>
         </div>
-      </ShojiCard>
+      </WoodPanel>
     </div>
   )
 }
@@ -838,13 +876,21 @@ export default function ContractGenerator() {
       variants={pageVariants}
       initial="hidden"
       animate="visible"
-      className="max-w-[1200px] mx-auto"
+      className="stone-texture max-w-[1200px] mx-auto"
     >
+      {/* Overhead light */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background: 'radial-gradient(circle at 50% 0%, rgba(255, 154, 60, 0.06) 0%, transparent 40%)',
+        }}
+      />
+
       {/* Header */}
-      <div className="mb-8">
+      <div className="relative z-10 mb-8">
         <div className="flex items-center gap-3 mb-2">
           <FilePen size={28} className="text-gold" />
-          <h1 className="font-display text-3xl text-text-primary">Contract <span className="brush-underline">Generator</span></h1>
+          <h1 className="font-display text-3xl text-text-primary">The Seal <span className="brush-underline">Chamber</span></h1>
         </div>
         <p className="text-text-dim text-base max-w-2xl">
           Build, sign, and send purchase agreements in minutes. A complete contract workflow from deal info to export.
@@ -852,34 +898,40 @@ export default function ContractGenerator() {
       </div>
 
       {/* Step indicator */}
-      <StepIndicator currentStep={currentStep} />
+      <div className="relative z-10">
+        <StepIndicator currentStep={currentStep} />
+      </div>
 
       {/* Step content */}
-      <AnimatePresence mode="wait">
-        {currentStep === 0 && (
-          <motion.div key="step-0" variants={stepVariants} initial="enter" animate="center" exit="exit">
-            <StepDealInfo form={form} setForm={setForm} onNext={goNext} />
-          </motion.div>
-        )}
-        {currentStep === 1 && (
-          <motion.div key="step-1" variants={stepVariants} initial="enter" animate="center" exit="exit">
-            <StepReview form={form} onNext={goNext} onBack={goBack} />
-          </motion.div>
-        )}
-        {currentStep === 2 && (
-          <motion.div key="step-2" variants={stepVariants} initial="enter" animate="center" exit="exit">
-            <StepSign onNext={goNext} onBack={goBack} signatureData={signatureData} setSignatureData={setSignatureData} />
-          </motion.div>
-        )}
-        {currentStep === 3 && (
-          <motion.div key="step-3" variants={stepVariants} initial="enter" animate="center" exit="exit">
-            <StepExport form={form} signatureData={signatureData} onReset={handleReset} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className="relative z-10">
+        <AnimatePresence mode="wait">
+          {currentStep === 0 && (
+            <motion.div key="step-0" variants={stepVariants} initial="enter" animate="center" exit="exit">
+              <StepDealInfo form={form} setForm={setForm} onNext={goNext} />
+            </motion.div>
+          )}
+          {currentStep === 1 && (
+            <motion.div key="step-1" variants={stepVariants} initial="enter" animate="center" exit="exit">
+              <StepReview form={form} onNext={goNext} onBack={goBack} />
+            </motion.div>
+          )}
+          {currentStep === 2 && (
+            <motion.div key="step-2" variants={stepVariants} initial="enter" animate="center" exit="exit">
+              <StepSign onNext={goNext} onBack={goBack} signatureData={signatureData} setSignatureData={setSignatureData} />
+            </motion.div>
+          )}
+          {currentStep === 3 && (
+            <motion.div key="step-3" variants={stepVariants} initial="enter" animate="center" exit="exit">
+              <StepExport form={form} signatureData={signatureData} onReset={handleReset} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-      {/* Contract History — always visible */}
-      <ContractHistory />
+      {/* Contract History -- always visible */}
+      <div className="relative z-10">
+        <ContractHistory />
+      </div>
     </motion.div>
   )
 }
