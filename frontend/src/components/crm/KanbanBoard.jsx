@@ -22,7 +22,7 @@ export default function KanbanBoard({ stages, leads, onLeadClick, onLeadDrop }) 
 
   return (
     <div
-      className="overflow-x-auto flex gap-4 pb-4 min-h-[500px]"
+      className="wood-panel-light overflow-x-auto flex gap-4 pb-4 min-h-[500px] rounded-xl border border-gold-dim/15 p-3"
       onDragEnd={handleDragEnd}
     >
       {stages.map((stage) => {

@@ -24,12 +24,15 @@ import { ACQUISITION_STAGES, DISPOSITION_STAGES } from './mockData'
 // ========== Shared Utilities ==========
 
 const INPUT_CLASS =
-  'input-calligraphy focus:outline-none border-gold-dim/[0.15] bg-bg-elevated border rounded-lg px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors w-full text-sm'
+  'input-calligraphy focus:outline-none bg-bg-card border border-gold-dim/20 rounded-sm px-4 py-3 text-parchment placeholder:text-text-muted transition-colors w-full text-sm focus:border-gold/50'
+
+const SECTION_HEADER_CLASS =
+  'font-heading text-gold tracking-widest uppercase text-xs font-semibold'
 
 const SOURCE_LABELS = {
-  agent_finder: { label: 'Agent Finder', bg: 'bg-info/15', text: 'text-info', border: 'border-info/25' },
-  fsbo: { label: 'FSBO', bg: 'bg-success/15', text: 'text-success', border: 'border-success/25' },
-  manual: { label: 'Manual', bg: 'bg-gold/15', text: 'text-gold', border: 'border-gold/25' },
+  agent_finder: { label: 'Agent Finder', color: 'var(--color-steel)' },
+  fsbo: { label: 'FSBO', color: 'var(--color-bamboo)' },
+  manual: { label: 'Manual', color: 'var(--color-gold-dim)' },
 }
 
 function formatCurrency(amount) {
@@ -58,7 +61,7 @@ function OverviewTab({ lead, onUpdate }) {
     <div className="space-y-5">
       {/* Status */}
       <div>
-        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">Status</label>
+        <label className={`block mb-1.5 ${SECTION_HEADER_CLASS}`}>Status</label>
         <select
           value={lead.status}
           onChange={(e) => onUpdate({ ...lead, status: e.target.value })}
@@ -72,12 +75,12 @@ function OverviewTab({ lead, onUpdate }) {
 
       {/* Motivation */}
       <div>
-        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">Motivation</label>
+        <label className={`block mb-1.5 ${SECTION_HEADER_CLASS}`}>Motivation</label>
         <div className="flex gap-2">
           {[
-            { value: 'hot', label: 'Hot', color: 'bg-error', ring: 'ring-error', border: 'border-error/40', activeBg: 'bg-error/10' },
-            { value: 'warm', label: 'Warm', color: 'bg-warning', ring: 'ring-warning', border: 'border-warning/40', activeBg: 'bg-warning/10' },
-            { value: 'cold', label: 'Cold', color: 'bg-info', ring: 'ring-info', border: 'border-info/40', activeBg: 'bg-info/10' },
+            { value: 'hot', label: 'Hot', color: 'var(--color-crimson)', ring: 'ring-error', border: 'border-error/40', activeBg: 'bg-error/10' },
+            { value: 'warm', label: 'Warm', color: 'var(--color-gold)', ring: 'ring-warning', border: 'border-warning/40', activeBg: 'bg-warning/10' },
+            { value: 'cold', label: 'Cold', color: 'var(--color-steel)', ring: 'ring-info', border: 'border-info/40', activeBg: 'bg-info/10' },
           ].map((m) => (
             <button
               key={m.value}
@@ -86,12 +89,17 @@ function OverviewTab({ lead, onUpdate }) {
                 flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-heading font-medium tracking-wide
                 transition-all duration-200
                 ${lead.motivation === m.value
-                  ? `${m.activeBg} ${m.border} text-text-primary`
-                  : 'border-gold-dim/[0.15] bg-bg-elevated text-text-muted hover:border-gold-dim/25'
+                  ? `${m.activeBg} ${m.border} text-parchment`
+                  : 'border-gold-dim/20 bg-bg-card text-text-muted hover:border-gold-dim/30'
                 }
               `}
             >
-              <span className={`w-2.5 h-2.5 rounded-full ${m.color} ${lead.motivation === m.value ? `ring-2 ${m.ring}/30` : ''}`} />
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${lead.motivation === m.value ? `ring-2 ${m.ring}/30` : ''}`}
+                style={{
+                  background: `radial-gradient(circle at 35% 35%, ${m.color}, color-mix(in srgb, ${m.color} 60%, black))`,
+                }}
+              />
               {m.label}
             </button>
           ))}
@@ -101,15 +109,23 @@ function OverviewTab({ lead, onUpdate }) {
       {/* Source & Date */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">Lead Source</label>
+          <label className={`block mb-1.5 ${SECTION_HEADER_CLASS}`}>Lead Source</label>
           <div className={`${INPUT_CLASS} flex items-center gap-2 cursor-default`}>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${SOURCE_LABELS[lead.source]?.bg} ${SOURCE_LABELS[lead.source]?.text} ${SOURCE_LABELS[lead.source]?.border}`}>
-              {SOURCE_LABELS[lead.source]?.label || lead.source}
-            </span>
+            {SOURCE_LABELS[lead.source] && (
+              <span
+                className="text-[10px] px-2.5 py-0.5 rounded-full font-medium text-parchment/90"
+                style={{
+                  background: `radial-gradient(circle at 35% 35%, ${SOURCE_LABELS[lead.source].color}, color-mix(in srgb, ${SOURCE_LABELS[lead.source].color} 70%, black))`,
+                  boxShadow: 'inset 0 -1px 2px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)',
+                }}
+              >
+                {SOURCE_LABELS[lead.source].label}
+              </span>
+            )}
           </div>
         </div>
         <div>
-          <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">Date Acquired</label>
+          <label className={`block mb-1.5 ${SECTION_HEADER_CLASS}`}>Date Acquired</label>
           <div className={`${INPUT_CLASS} cursor-default text-text-dim font-mono`}>
             {formatDate(lead.createdAt)}
           </div>
@@ -118,7 +134,7 @@ function OverviewTab({ lead, onUpdate }) {
 
       {/* Next Action */}
       <div>
-        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">Next Action</label>
+        <label className={`block mb-1.5 ${SECTION_HEADER_CLASS}`}>Next Action</label>
         <input
           type="text"
           value={lead.nextAction || ''}
@@ -129,7 +145,7 @@ function OverviewTab({ lead, onUpdate }) {
       </div>
 
       <div>
-        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">Due Date</label>
+        <label className={`block mb-1.5 ${SECTION_HEADER_CLASS}`}>Due Date</label>
         <input
           type="date"
           value={lead.nextActionDue || ''}
@@ -140,7 +156,7 @@ function OverviewTab({ lead, onUpdate }) {
 
       {/* Quick Notes */}
       <div>
-        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">Quick Notes</label>
+        <label className={`block mb-1.5 ${SECTION_HEADER_CLASS}`}>Quick Notes</label>
         <textarea
           rows={3}
           placeholder="Add a quick note..."
@@ -168,27 +184,30 @@ function ContactTab({ lead, onUpdate }) {
     <div className="space-y-6">
       {/* Seller */}
       <div>
-        <h4 className="font-heading text-sm font-semibold tracking-wide text-text-primary mb-3 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+        <h4 className={`${SECTION_HEADER_CLASS} text-sm mb-3 flex items-center gap-2`}>
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ background: 'radial-gradient(circle at 35% 35%, var(--color-gold), var(--color-gold-dim))' }}
+          />
           Seller Information
         </h4>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Name</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Name</label>
             <input type="text" value={seller.name || ''} onChange={(e) => updateSeller('name', e.target.value)} className={INPUT_CLASS} placeholder="Seller name" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Phone</label>
+              <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Phone</label>
               <input type="text" value={seller.phone || ''} onChange={(e) => updateSeller('phone', e.target.value)} className={INPUT_CLASS} placeholder="(xxx) xxx-xxxx" />
             </div>
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Email</label>
+              <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Email</label>
               <input type="email" value={seller.email || ''} onChange={(e) => updateSeller('email', e.target.value)} className={INPUT_CLASS} placeholder="email@example.com" />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Mailing Address</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Mailing Address</label>
             <input type="text" defaultValue="" className={INPUT_CLASS} placeholder="Enter mailing address" />
           </div>
         </div>
@@ -196,50 +215,53 @@ function ContactTab({ lead, onUpdate }) {
 
       {/* Agent */}
       <div>
-        <h4 className="font-heading text-sm font-semibold tracking-wide text-text-primary mb-3 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-info" />
+        <h4 className={`${SECTION_HEADER_CLASS} text-sm mb-3 flex items-center gap-2`}>
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ background: 'radial-gradient(circle at 35% 35%, var(--color-steel), color-mix(in srgb, var(--color-steel) 60%, black))' }}
+          />
           Agent Information
         </h4>
         {lead.agent ? (
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Name</label>
+              <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Name</label>
               <input type="text" value={agent.name || ''} onChange={(e) => updateAgent('name', e.target.value)} className={INPUT_CLASS} placeholder="Agent name" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Phone</label>
+                <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Phone</label>
                 <input type="text" value={agent.phone || ''} onChange={(e) => updateAgent('phone', e.target.value)} className={INPUT_CLASS} placeholder="(xxx) xxx-xxxx" />
               </div>
               <div>
-                <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Email</label>
+                <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Email</label>
                 <input type="email" value={agent.email || ''} onChange={(e) => updateAgent('email', e.target.value)} className={INPUT_CLASS} placeholder="email@example.com" />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Brokerage</label>
+              <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Brokerage</label>
               <input type="text" value={agent.brokerage || ''} onChange={(e) => updateAgent('brokerage', e.target.value)} className={INPUT_CLASS} placeholder="Brokerage name" />
             </div>
           </div>
         ) : (
-          <div className="border border-dashed border-gold-dim/[0.15] rounded-lg p-4 text-center">
+          <div className="border border-dashed border-gold-dim/20 rounded-lg p-4 text-center">
             <p className="text-sm text-text-muted">No agent associated</p>
-            <button className="text-xs text-gold hover:text-gold-bright mt-1 font-heading tracking-wide transition-colors">+ Add Agent</button>
+            <button className="text-xs text-gold hover:text-gold-bright mt-1 font-heading tracking-widest uppercase transition-colors">+ Add Agent</button>
           </div>
         )}
       </div>
 
       {/* Tags */}
       <div>
-        <h4 className="font-heading text-sm font-semibold tracking-wide text-text-primary mb-3 flex items-center gap-2">
+        <h4 className={`${SECTION_HEADER_CLASS} text-sm mb-3 flex items-center gap-2`}>
           <Tag size={14} className="text-gold" />
           Tags
         </h4>
         <div className="flex flex-wrap gap-2">
-          <span className="text-[11px] px-2.5 py-1 rounded-full bg-bg border border-gold-dim/[0.15] text-text-dim font-heading tracking-wide">
+          <span className="text-[11px] px-2.5 py-1 rounded-full bg-bg-card border border-gold-dim/20 text-text-dim font-heading tracking-wide">
             Wholesale
           </span>
-          <span className="text-[11px] px-2.5 py-1 rounded-full bg-bg border border-gold-dim/[0.15] text-text-dim font-heading tracking-wide">
+          <span className="text-[11px] px-2.5 py-1 rounded-full bg-bg-card border border-gold-dim/20 text-text-dim font-heading tracking-wide">
             Single Family
           </span>
           <button className="text-[11px] px-2.5 py-1 rounded-full border border-dashed border-gold/30 text-gold hover:bg-gold/5 font-heading tracking-wide transition-colors">
@@ -258,13 +280,16 @@ function PropertyTab({ lead, onUpdate }) {
     <div className="space-y-6">
       {/* Property Details */}
       <div>
-        <h4 className="font-heading text-sm font-semibold tracking-wide text-text-primary mb-3 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+        <h4 className={`${SECTION_HEADER_CLASS} text-sm mb-3 flex items-center gap-2`}>
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ background: 'radial-gradient(circle at 35% 35%, var(--color-gold), var(--color-gold-dim))' }}
+          />
           Property Details
         </h4>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Type</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Type</label>
             <select className={INPUT_CLASS} defaultValue={prop.type || ''}>
               <option value="Single Family">Single Family</option>
               <option value="Multi-Family">Multi-Family</option>
@@ -274,23 +299,23 @@ function PropertyTab({ lead, onUpdate }) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Year Built</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Year Built</label>
             <input type="number" defaultValue={prop.yearBuilt || ''} className={INPUT_CLASS} placeholder="Year" />
           </div>
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Beds</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Beds</label>
             <input type="number" defaultValue={prop.beds || ''} className={INPUT_CLASS} placeholder="0" />
           </div>
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Baths</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Baths</label>
             <input type="number" defaultValue={prop.baths || ''} className={INPUT_CLASS} placeholder="0" />
           </div>
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Sq Ft</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Sq Ft</label>
             <input type="number" defaultValue={prop.sqft || ''} className={INPUT_CLASS} placeholder="0" />
           </div>
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Lot Size</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Lot Size</label>
             <input type="text" defaultValue="" className={INPUT_CLASS} placeholder="e.g. 0.25 acres" />
           </div>
         </div>
@@ -298,8 +323,11 @@ function PropertyTab({ lead, onUpdate }) {
 
       {/* Condition */}
       <div>
-        <h4 className="font-heading text-sm font-semibold tracking-wide text-text-primary mb-3 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+        <h4 className={`${SECTION_HEADER_CLASS} text-sm mb-3 flex items-center gap-2`}>
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ background: 'radial-gradient(circle at 35% 35%, var(--color-gold), var(--color-gold-dim))' }}
+          />
           Condition
         </h4>
         <div className="grid grid-cols-2 gap-3">
@@ -312,7 +340,7 @@ function PropertyTab({ lead, onUpdate }) {
             { label: 'Overall', key: 'overall' },
           ].map((item) => (
             <div key={item.key}>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">{item.label}</label>
+              <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>{item.label}</label>
               <select className={INPUT_CLASS} defaultValue={item.key === 'overall' ? (prop.condition || '') : ''}>
                 <option value="">Select...</option>
                 <option value="Excellent">Excellent</option>
@@ -326,11 +354,11 @@ function PropertyTab({ lead, onUpdate }) {
         </div>
         <div className="grid grid-cols-2 gap-3 mt-3">
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Roof Age (years)</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Roof Age (years)</label>
             <input type="number" defaultValue="" className={INPUT_CLASS} placeholder="0" />
           </div>
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">AC Age (years)</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>AC Age (years)</label>
             <input type="number" defaultValue="" className={INPUT_CLASS} placeholder="0" />
           </div>
         </div>
@@ -338,15 +366,18 @@ function PropertyTab({ lead, onUpdate }) {
 
       {/* Occupancy */}
       <div>
-        <h4 className="font-heading text-sm font-semibold tracking-wide text-text-primary mb-3 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-info" />
+        <h4 className={`${SECTION_HEADER_CLASS} text-sm mb-3 flex items-center gap-2`}>
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ background: 'radial-gradient(circle at 35% 35%, var(--color-steel), color-mix(in srgb, var(--color-steel) 60%, black))' }}
+          />
           Occupancy
         </h4>
         <div className="flex gap-2">
           {['Owner-Occupied', 'Tenant', 'Vacant'].map((occ) => (
             <button
               key={occ}
-              className="flex-1 px-3 py-2.5 rounded-lg border border-gold-dim/[0.15] bg-bg-elevated text-sm font-heading text-text-dim tracking-wide hover:border-gold hover:text-gold transition-colors"
+              className="flex-1 px-3 py-2.5 rounded-lg border border-gold-dim/20 bg-bg-card text-sm font-heading text-text-dim tracking-wide hover:border-gold hover:text-gold transition-colors"
             >
               {occ}
             </button>
@@ -356,21 +387,24 @@ function PropertyTab({ lead, onUpdate }) {
 
       {/* Mortgage (Sub2) */}
       <div>
-        <h4 className="font-heading text-sm font-semibold tracking-wide text-text-primary mb-3 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-success" />
+        <h4 className={`${SECTION_HEADER_CLASS} text-sm mb-3 flex items-center gap-2`}>
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ background: 'radial-gradient(circle at 35% 35%, var(--color-bamboo), color-mix(in srgb, var(--color-bamboo) 60%, black))' }}
+          />
           Mortgage Info (Sub2)
         </h4>
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Balance</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Balance</label>
             <input type="text" defaultValue="" className={INPUT_CLASS} placeholder="$0" />
           </div>
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Lender</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Lender</label>
             <input type="text" defaultValue="" className={INPUT_CLASS} placeholder="Lender name" />
           </div>
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Rate</label>
+            <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Rate</label>
             <input type="text" defaultValue="" className={INPUT_CLASS} placeholder="0.00%" />
           </div>
         </div>
@@ -439,7 +473,7 @@ function DealTab({ lead, onUpdate }) {
     <div className="space-y-6">
       {/* ARV */}
       <div>
-        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">After Repair Value (ARV)</label>
+        <label className={`block mb-1.5 ${SECTION_HEADER_CLASS}`}>After Repair Value (ARV)</label>
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gold font-semibold text-lg">$</span>
           <input
@@ -455,7 +489,7 @@ function DealTab({ lead, onUpdate }) {
       {/* Itemized Repairs */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase">Itemized Repair Estimates</label>
+          <label className={SECTION_HEADER_CLASS}>Itemized Repair Estimates</label>
           <span className="text-xs font-mono font-semibold text-warning">
             Total: {formatCurrency(totalRepairs)}
           </span>
@@ -463,7 +497,7 @@ function DealTab({ lead, onUpdate }) {
         <div className="space-y-2">
           {repairItems.map((item) => (
             <div key={item.key} className="flex items-center gap-3">
-              <span className="text-xs font-heading text-text-dim tracking-wide w-20 shrink-0">{item.label}</span>
+              <span className={`text-xs w-20 shrink-0 ${SECTION_HEADER_CLASS}`}>{item.label}</span>
               <div className="relative flex-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-xs">$</span>
                 <input
@@ -480,8 +514,8 @@ function DealTab({ lead, onUpdate }) {
       </div>
 
       {/* MAO Formula */}
-      <div className="rounded-xl border border-gold/20 bg-gold/5 p-4">
-        <div className="text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-2">Maximum Allowable Offer (MAO)</div>
+      <div className="wood-panel rounded-xl border border-gold/20 p-4">
+        <div className={`mb-2 ${SECTION_HEADER_CLASS}`}>Maximum Allowable Offer (MAO)</div>
         <div className="flex items-center gap-2 text-xs text-text-muted mb-3 flex-wrap">
           <span className="font-mono bg-bg/60 px-2 py-1 rounded text-text-dim">{formatCurrency(arv)}</span>
           <span className="text-gold">&times;</span>
@@ -491,7 +525,7 @@ function DealTab({ lead, onUpdate }) {
           <span className="text-gold">&minus;</span>
           <span className="font-mono bg-bg/60 px-2 py-1 rounded text-text-dim">{formatCurrency(wholesaleFee)}</span>
         </div>
-        <div className="text-2xl font-display font-bold text-gold">
+        <div className="text-2xl font-display font-bold gold-shimmer-text">
           {formatCurrency(mao)}
         </div>
       </div>
@@ -499,7 +533,7 @@ function DealTab({ lead, onUpdate }) {
       {/* Pricing Inputs */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Asking Price</label>
+          <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Asking Price</label>
           <input
             type="number"
             value={askingPrice || ''}
@@ -509,7 +543,7 @@ function DealTab({ lead, onUpdate }) {
           />
         </div>
         <div>
-          <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Your Offer</label>
+          <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Your Offer</label>
           <input
             type="number"
             value={offerAmount || ''}
@@ -519,7 +553,7 @@ function DealTab({ lead, onUpdate }) {
           />
         </div>
         <div>
-          <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1">Wholesale Fee</label>
+          <label className={`block mb-1 ${SECTION_HEADER_CLASS}`}>Wholesale Fee</label>
           <input
             type="number"
             value={wholesaleFee || ''}
@@ -531,7 +565,7 @@ function DealTab({ lead, onUpdate }) {
       </div>
 
       {/* Traffic Light - Profit Indicator */}
-      <div className={`rounded-xl border p-4 ${trafficBorder} ${trafficBg} ${trafficGlow} transition-all duration-500`}>
+      <div className={`wood-panel rounded-xl border p-4 ${trafficBorder} ${trafficGlow} transition-all duration-500`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {trafficIcon}
@@ -542,7 +576,7 @@ function DealTab({ lead, onUpdate }) {
               }`}>
                 {trafficLabel}
               </div>
-              <div className="text-xs text-text-muted font-heading tracking-wide">Expected Profit</div>
+              <div className={`text-xs font-heading tracking-widest uppercase text-text-muted`}>Expected Profit</div>
             </div>
           </div>
           <div className={`text-2xl font-display font-bold ${
@@ -563,11 +597,11 @@ function DocumentsTab({ lead }) {
   return (
     <div className="space-y-5">
       {/* Upload Area */}
-      <div className="border-2 border-dashed border-gold/20 rounded-xl bg-bg/40 p-8 text-center hover:border-gold/40 hover:bg-gold/5 transition-all duration-300 cursor-pointer group">
+      <div className="border-2 border-dashed border-gold/20 rounded-xl wood-panel p-8 text-center hover:border-gold/40 hover:bg-gold/5 transition-all duration-300 cursor-pointer group">
         <Upload size={32} className="mx-auto text-text-muted group-hover:text-gold transition-colors" />
-        <p className="text-sm text-text-dim mt-2 font-heading tracking-wide">Drag & drop files here</p>
+        <p className="text-sm text-text-dim mt-2 font-heading tracking-widest uppercase">Drag & drop files here</p>
         <p className="text-xs text-text-muted mt-1">or click to browse</p>
-        <p className="text-[10px] text-text-muted mt-3 font-heading tracking-wide">
+        <p className={`text-[10px] mt-3 ${SECTION_HEADER_CLASS} text-text-muted`}>
           Mortgage statements, disclosures, LOIs, contracts, other
         </p>
       </div>
@@ -575,16 +609,16 @@ function DocumentsTab({ lead }) {
       {/* Document List */}
       {docs.length > 0 ? (
         <div className="space-y-2">
-          <h4 className="text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-2">Documents ({docs.length})</h4>
+          <h4 className={`mb-2 ${SECTION_HEADER_CLASS}`}>Documents ({docs.length})</h4>
           {docs.map((doc, i) => (
             <div
               key={i}
-              className="flex items-center justify-between bg-bg-elevated border border-gold-dim/[0.15] rounded-lg px-4 py-3 hover:border-gold-dim/25 transition-colors"
+              className="flex items-center justify-between bg-bg-card border border-gold-dim/20 rounded-sm px-4 py-3 hover:border-gold-dim/30 transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <File size={16} className="text-gold shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm text-text-primary truncate font-heading tracking-wide">{doc.name}</p>
+                  <p className="text-sm text-parchment truncate font-heading tracking-wide">{doc.name}</p>
                   <p className="text-[11px] text-text-muted font-mono">{formatDate(doc.date)}</p>
                 </div>
               </div>
@@ -596,7 +630,7 @@ function DocumentsTab({ lead }) {
         </div>
       ) : (
         <div className="text-center py-6">
-          <p className="text-sm text-text-muted font-heading tracking-wide">No documents uploaded yet</p>
+          <p className="text-sm text-text-muted font-heading tracking-widest uppercase">No documents uploaded yet</p>
         </div>
       )}
     </div>
@@ -629,7 +663,7 @@ function ActivityTab({ lead }) {
         />
         <div className="flex justify-end">
           <button
-            className="px-4 py-1.5 rounded-lg text-sm font-heading font-medium tracking-wide uppercase bg-gradient-to-r from-gold-dim via-gold to-gold-bright text-bg hover:shadow-[0_4px_20px_-4px_rgba(201,169,110,0.4)] transition-all"
+            className="gold-shimmer px-4 py-1.5 rounded-lg text-sm font-heading font-medium tracking-widest uppercase text-bg hover:shadow-[0_4px_20px_-4px_rgba(201,169,110,0.4)] transition-all"
           >
             Add Note
           </button>
@@ -647,7 +681,7 @@ function ActivityTab({ lead }) {
                 <Icon size={14} className={config.color} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-text-primary">{activity.text}</p>
+                <p className="text-sm text-parchment">{activity.text}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <Clock size={10} className="text-text-muted" />
                   <span className="text-[11px] text-text-muted font-mono">{formatDate(activity.date)}</span>
@@ -659,7 +693,7 @@ function ActivityTab({ lead }) {
 
         {activities.length === 0 && (
           <div className="text-center py-6">
-            <p className="text-sm text-text-muted font-heading tracking-wide">No activity yet</p>
+            <p className="text-sm text-text-muted font-heading tracking-widest uppercase">No activity yet</p>
           </div>
         )}
       </div>
@@ -667,11 +701,11 @@ function ActivityTab({ lead }) {
       {/* Notes History */}
       {lead.notes && lead.notes.length > 0 && (
         <div>
-          <h4 className="text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-3">Notes</h4>
+          <h4 className={`mb-3 ${SECTION_HEADER_CLASS}`}>Notes</h4>
           <div className="space-y-2">
             {lead.notes.map((note, i) => (
-              <div key={i} className="bg-bg border border-gold-dim/[0.15] rounded-lg p-3">
-                <p className="text-sm text-text-primary">{note.text}</p>
+              <div key={i} className="bg-bg-card border border-gold-dim/20 rounded-sm p-3">
+                <p className="text-sm text-parchment">{note.text}</p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <span className="text-[11px] text-gold font-heading tracking-wide">{note.author}</span>
                   <span className="text-[11px] text-text-muted font-mono">{formatDate(note.date)}</span>
@@ -694,7 +728,7 @@ function DispoTab({ lead }) {
         <div className="w-16 h-16 rounded-full hanko-seal flex items-center justify-center mb-4">
           <Lock size={24} className="text-white" />
         </div>
-        <h4 className="font-heading text-lg font-semibold tracking-wide text-text-primary mb-2">Disposition Not Available</h4>
+        <h4 className="font-heading text-lg font-semibold tracking-widest uppercase text-parchment mb-2">Disposition Not Available</h4>
         <p className="text-sm text-text-muted max-w-[280px]">
           Move this deal to "Under Contract" or later to start the disposition process and manage buyers.
         </p>
@@ -705,19 +739,22 @@ function DispoTab({ lead }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h4 className="font-heading text-sm font-semibold tracking-wide text-text-primary flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+        <h4 className={`${SECTION_HEADER_CLASS} text-sm flex items-center gap-2`}>
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ background: 'radial-gradient(circle at 35% 35%, var(--color-gold), var(--color-gold-dim))' }}
+          />
           Buyer Management
         </h4>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-medium tracking-wide uppercase bg-gradient-to-r from-gold-dim via-gold to-gold-bright text-bg hover:shadow-[0_4px_20px_-4px_rgba(201,169,110,0.4)] transition-all">
+        <button className="gold-shimmer flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-medium tracking-widest uppercase text-bg hover:shadow-[0_4px_20px_-4px_rgba(201,169,110,0.4)] transition-all">
           <UserPlus size={12} />
           Add Buyer
         </button>
       </div>
 
-      <div className="border border-dashed border-gold-dim/[0.15] rounded-xl p-8 text-center">
+      <div className="border border-dashed border-gold-dim/20 rounded-xl wood-panel p-8 text-center">
         <UserPlus size={28} className="mx-auto text-text-muted mb-2" />
-        <p className="text-sm text-text-muted font-heading tracking-wide">No buyers added yet</p>
+        <p className="text-sm text-text-muted font-heading tracking-widest uppercase">No buyers added yet</p>
         <p className="text-xs text-text-muted mt-1">Add interested buyers to track the disposition process</p>
       </div>
     </div>
@@ -772,6 +809,15 @@ export default function LeadDetail({ lead, onClose, onUpdate }) {
     }
   }
 
+  // Map stage color to a CSS variable for the wax seal
+  const stageColorVar = currentStage
+    ? currentStage.color.includes('info') ? 'var(--color-steel)'
+      : currentStage.color.includes('success') ? 'var(--color-bamboo)'
+      : currentStage.color.includes('warning') ? 'var(--color-gold)'
+      : currentStage.color.includes('error') ? 'var(--color-crimson)'
+      : 'var(--color-gold)'
+    : 'var(--color-gold)'
+
   return (
     <>
       {/* Backdrop */}
@@ -784,29 +830,41 @@ export default function LeadDetail({ lead, onClose, onUpdate }) {
         onClick={onClose}
       />
 
-      {/* Panel - ShojiCard-styled detail panel */}
+      {/* Panel - Hanging scroll styled detail panel */}
       <motion.div
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="fixed right-0 top-0 bottom-0 w-[580px] max-w-[90vw] z-50 flex flex-col bg-bg-elevated/95 backdrop-blur-xl border-l border-gold-dim/[0.15] shadow-[-20px_0_60px_-20px_rgba(0,0,0,0.5)]"
+        className="fixed right-0 top-0 bottom-0 w-[580px] max-w-[90vw] z-50 flex flex-col wood-panel rope-top border-l border-gold-dim/20 shadow-[-20px_0_60px_-20px_rgba(0,0,0,0.5)]"
       >
         {/* Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-gold-dim/[0.1] shrink-0">
+        <div className="lacquer-bar px-6 pt-6 pb-4 border-b border-gold-dim/20 shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="font-display text-xl text-text-primary leading-tight truncate tracking-[0.04em]">
+              <h2 className="font-display text-2xl text-parchment leading-tight truncate tracking-[0.04em]">
                 {lead.address}
               </h2>
               <div className="flex items-center gap-2 mt-2">
                 {currentStage && (
-                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-heading font-medium tracking-wide border ${currentStage.color.replace('text-', 'bg-')}/15 ${currentStage.color} ${currentStage.color.replace('text-', 'border-')}/25`}>
+                  <span
+                    className="text-[11px] px-2.5 py-0.5 rounded-full font-heading font-medium tracking-widest uppercase text-parchment/90"
+                    style={{
+                      background: `radial-gradient(circle at 35% 35%, ${stageColorVar}, color-mix(in srgb, ${stageColorVar} 70%, black))`,
+                      boxShadow: 'inset 0 -1px 2px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)',
+                    }}
+                  >
                     {currentStage.label}
                   </span>
                 )}
                 {source && (
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-heading font-medium tracking-wide border ${source.bg} ${source.text} ${source.border}`}>
+                  <span
+                    className="text-[10px] px-2 py-0.5 rounded-full font-heading font-medium tracking-widest uppercase text-parchment/90"
+                    style={{
+                      background: `radial-gradient(circle at 35% 35%, ${source.color}, color-mix(in srgb, ${source.color} 70%, black))`,
+                      boxShadow: 'inset 0 -1px 2px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)',
+                    }}
+                  >
                     {source.label}
                   </span>
                 )}
@@ -814,25 +872,25 @@ export default function LeadDetail({ lead, onClose, onUpdate }) {
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-bg text-text-muted hover:text-text-primary transition-colors shrink-0"
+              className="p-2 rounded-lg hover:bg-bg text-text-muted hover:text-parchment transition-colors shrink-0"
             >
               <X size={18} />
             </button>
           </div>
         </div>
 
-        {/* Tab Bar */}
-        <div className="px-6 border-b border-gold-dim/[0.1] shrink-0 overflow-x-auto">
+        {/* Tab Bar - wooden plaques */}
+        <div className="px-6 border-b border-gold-dim/20 shrink-0 overflow-x-auto wood-panel-dark">
           <div className="flex gap-0 min-w-max">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  px-4 py-3 text-xs font-heading font-medium tracking-wide transition-all duration-200 border-b-2 whitespace-nowrap
+                  px-4 py-3 text-xs font-heading font-medium tracking-widest uppercase transition-all duration-200 border-b-2 whitespace-nowrap
                   ${activeTab === tab.id
-                    ? 'text-gold border-gold bg-gold/[0.05]'
-                    : 'text-text-muted border-transparent hover:text-gold-dim hover:border-gold-dim/20'
+                    ? 'bg-gold/10 text-gold border-gold'
+                    : 'text-text-dim border-transparent hover:text-parchment hover:border-gold-dim/20'
                   }
                 `}
               >

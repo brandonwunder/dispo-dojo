@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, LayoutGrid, List } from 'lucide-react'
 import Button from '../components/Button'
 import KanbanBoard from '../components/crm/KanbanBoard'
@@ -63,23 +63,26 @@ export default function CRM() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="stone-texture space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-display text-2xl tracking-[0.06em] brush-underline text-text-primary">CRM Pipeline</h1>
-          <p className="text-sm text-text-dim mt-1">
-            <span className="font-heading font-semibold tracking-wide">{totalLeads}</span> leads &middot;{' '}
-            <span className="font-mono text-gold">{formatCurrency(totalValue)}</span> in offers
-          </p>
+          <h1 className="font-display text-2xl tracking-[0.06em] brush-underline text-parchment">The War Room</h1>
+          <div className="wood-panel mt-2 inline-flex items-center gap-3 rounded-lg px-4 py-2 border border-gold-dim/20">
+            <span className="font-heading font-semibold tracking-wide text-gold">{totalLeads}</span>
+            <span className="text-sm text-text-dim">leads</span>
+            <span className="text-gold-dim/40">&middot;</span>
+            <span className="font-mono text-gold gold-shimmer-text">{formatCurrency(totalValue)}</span>
+            <span className="text-sm text-text-dim">in offers</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
           {/* View Toggle */}
-          <div className="flex items-center border border-gold-dim/[0.15] rounded-xl overflow-hidden">
+          <div className="flex items-center border border-gold-dim/20 rounded-xl overflow-hidden">
             <button
               onClick={() => setViewMode('kanban')}
-              className={`p-2.5 transition-colors border-r border-gold-dim/[0.15] ${
+              className={`p-2.5 transition-colors border-r border-gold-dim/20 ${
                 viewMode === 'kanban'
                   ? 'bg-gold/[0.08] text-gold'
                   : 'text-text-muted hover:text-gold-dim'
@@ -112,32 +115,36 @@ export default function CRM() {
         </div>
       </div>
 
-      {/* Pipeline Toggle Tabs */}
-      <div className="flex border-b border-gold-dim/[0.1] w-fit">
-        <button
+      {/* Pipeline Toggle Banners */}
+      <div className="flex gap-3">
+        <motion.button
           onClick={() => setActivePipeline('acquisitions')}
+          animate={activePipeline === 'acquisitions' ? { scale: 1.02 } : { scale: 1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           className={`
-            px-5 py-2.5 text-sm font-heading font-medium tracking-wide transition-all duration-200 border-b-2
+            px-6 py-3 rounded-lg font-heading font-semibold text-sm tracking-widest uppercase transition-all duration-300 border
             ${activePipeline === 'acquisitions'
-              ? 'bg-gold/[0.08] text-gold border-gold'
-              : 'text-text-dim hover:text-gold-dim border-transparent'
+              ? 'gold-shimmer text-bg border-gold/40 shadow-[0_0_25px_-8px_rgba(212,168,83,0.4)]'
+              : 'wood-panel text-text-dim border-gold-dim/15 hover:text-text-primary hover:border-gold-dim/30'
             }
           `}
         >
           Acquisitions
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           onClick={() => setActivePipeline('disposition')}
+          animate={activePipeline === 'disposition' ? { scale: 1.02 } : { scale: 1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           className={`
-            px-5 py-2.5 text-sm font-heading font-medium tracking-wide transition-all duration-200 border-b-2
+            px-6 py-3 rounded-lg font-heading font-semibold text-sm tracking-widest uppercase transition-all duration-300 border
             ${activePipeline === 'disposition'
-              ? 'bg-gold/[0.08] text-gold border-gold'
-              : 'text-text-dim hover:text-gold-dim border-transparent'
+              ? 'gold-shimmer text-bg border-gold/40 shadow-[0_0_25px_-8px_rgba(212,168,83,0.4)]'
+              : 'wood-panel text-text-dim border-gold-dim/15 hover:text-text-primary hover:border-gold-dim/30'
             }
           `}
         >
           Disposition
-        </button>
+        </motion.button>
       </div>
 
       {/* Kanban Board */}

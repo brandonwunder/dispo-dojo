@@ -23,6 +23,9 @@ export default function KanbanColumn({ stage, leads, onLeadClick, onDragOver, on
     if (onDrop) onDrop(e, stage.id)
   }
 
+  // Extract the base color for the wax seal from stage.color (e.g. "text-info" -> "info")
+  const colorBase = stage.color.replace('text-', '')
+
   return (
     <div
       onDragOver={handleDragOver}
@@ -30,18 +33,24 @@ export default function KanbanColumn({ stage, leads, onLeadClick, onDragOver, on
       onDrop={handleDrop}
       className={`
         w-[260px] min-w-[260px] flex-shrink-0 flex flex-col
-        bg-bg-elevated/50 rounded-xl border transition-all duration-200
+        wood-panel rounded-xl border transition-all duration-200
         ${isDragOver
-          ? 'border-gold shadow-[0_0_30px_-10px_rgba(201,169,110,0.35)] scale-[1.01]'
-          : 'border-gold-dim/[0.1]'
+          ? 'border-gold shadow-[0_0_15px_rgba(212,168,83,0.15)] scale-[1.01]'
+          : 'border-gold-dim/20'
         }
       `}
     >
-      {/* Column Header - wood-post feel with gold top border */}
-      <div className="px-3 py-3 flex items-center justify-between border-b border-gold-dim/[0.1] border-t-2 border-t-gold/30 rounded-t-xl">
+      {/* Column Header - lacquer bar with wax seal dot */}
+      <div className="lacquer-bar px-3 py-3 flex items-center justify-between rounded-t-xl">
         <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${stage.color.replace('text-', 'bg-')}`} />
-          <h3 className={`font-heading text-sm font-semibold tracking-wide ${stage.color}`}>
+          {/* Wax seal dot */}
+          <span
+            className={`w-3 h-3 rounded-full bg-${colorBase} shadow-[inset_0_-1px_2px_rgba(0,0,0,0.4),0_0_6px_rgba(0,0,0,0.2)]`}
+            style={{
+              background: `radial-gradient(circle at 35% 35%, var(--color-${colorBase === 'info' ? 'steel' : colorBase === 'success' ? 'bamboo' : colorBase === 'warning' ? 'gold' : colorBase === 'error' ? 'crimson' : 'gold'}) 0%, var(--color-${colorBase === 'info' ? 'steel' : colorBase === 'success' ? 'bamboo' : colorBase === 'warning' ? 'gold-dim' : colorBase === 'error' ? 'crimson' : 'gold-dim'}) 100%)`,
+            }}
+          />
+          <h3 className="font-heading text-gold tracking-widest uppercase text-xs font-semibold">
             {stage.label}
           </h3>
         </div>
@@ -66,9 +75,9 @@ export default function KanbanColumn({ stage, leads, onLeadClick, onDragOver, on
           <div className={`
             flex items-center justify-center h-20 rounded-lg border border-dashed
             transition-colors duration-200
-            ${isDragOver ? 'border-gold/40 bg-gold/5' : 'border-gold-dim/[0.1]'}
+            ${isDragOver ? 'border-gold/40 bg-gold/5' : 'border-gold-dim/15'}
           `}>
-            <span className="text-[11px] text-text-muted font-heading tracking-wide">
+            <span className="text-[11px] text-text-muted font-heading tracking-widest uppercase">
               {isDragOver ? 'Drop here' : 'No leads'}
             </span>
           </div>

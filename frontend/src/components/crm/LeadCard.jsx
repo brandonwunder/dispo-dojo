@@ -1,15 +1,15 @@
 import { Clock, AlertCircle } from 'lucide-react'
 
 const SOURCE_BADGES = {
-  agent_finder: { label: 'Agent Finder', bg: 'bg-info/15', text: 'text-info', border: 'border-info/25' },
-  fsbo: { label: 'FSBO', bg: 'bg-success/15', text: 'text-success', border: 'border-success/25' },
-  manual: { label: 'Manual', bg: 'bg-gold/15', text: 'text-gold', border: 'border-gold/25' },
+  agent_finder: { label: 'Agent Finder', color: 'var(--color-steel)' },
+  fsbo: { label: 'FSBO', color: 'var(--color-bamboo)' },
+  manual: { label: 'Manual', color: 'var(--color-gold-dim)' },
 }
 
 const MOTIVATION_DOTS = {
-  hot: { color: 'bg-error', ring: 'ring-error/30', label: 'Hot' },
-  warm: { color: 'bg-warning', ring: 'ring-warning/30', label: 'Warm' },
-  cold: { color: 'bg-info', ring: 'ring-info/30', label: 'Cold' },
+  hot: { color: 'var(--color-crimson)', ring: 'ring-error/30', label: 'Hot' },
+  warm: { color: 'var(--color-gold)', ring: 'ring-warning/30', label: 'Warm' },
+  cold: { color: 'var(--color-steel)', ring: 'ring-info/30', label: 'Cold' },
 }
 
 function formatCurrency(amount) {
@@ -40,13 +40,19 @@ export default function LeadCard({ lead, onClick, onDragStart }) {
       onDragStart={(e) => onDragStart(e, lead.id)}
       onClick={() => onClick(lead)}
       className="
-        bg-bg-card/80 border border-gold-dim/[0.1] rounded-lg p-3 cursor-pointer
-        hover:border-gold-dim/25 hover:shadow-[0_0_20px_-8px_rgba(201,169,110,0.15)]
-        transition-all duration-200 group select-none
+        wood-panel-light border border-gold-dim/15 rounded-lg p-3 cursor-pointer
+        hover:border-gold-dim/30 hover:shadow-[0_0_20px_-8px_rgba(212,168,83,0.2)]
+        transition-all duration-200 group select-none relative
       "
+      style={{
+        clipPath: 'polygon(0 10%, 50% 0, 100% 10%, 100% 100%, 0 100%)',
+      }}
     >
+      {/* Ema top edge accent */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-gold-dim/40 to-transparent" />
+
       {/* Address */}
-      <p className="font-heading font-semibold text-sm text-text-primary truncate leading-tight tracking-wide">
+      <p className="font-heading font-bold text-sm text-parchment truncate leading-tight tracking-wide pt-1">
         {lead.address.split(',')[0]}
       </p>
       <p className="text-[11px] text-text-muted truncate mt-0.5">
@@ -55,15 +61,24 @@ export default function LeadCard({ lead, onClick, onDragStart }) {
 
       {/* Source + Motivation Row */}
       <div className="flex items-center justify-between mt-2">
+        {/* Wax seal source badge */}
         <span
-          className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${source.bg} ${source.text} ${source.border}`}
+          className="text-[10px] px-2.5 py-0.5 rounded-full font-medium text-parchment/90"
+          style={{
+            background: `radial-gradient(circle at 35% 35%, ${source.color}, color-mix(in srgb, ${source.color} 70%, black))`,
+            boxShadow: `inset 0 -1px 2px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)`,
+          }}
         >
           {source.label}
         </span>
 
         <div className="flex items-center gap-1.5">
+          {/* Wax seal motivation dot */}
           <span
-            className={`w-2 h-2 rounded-full ${motivation.color} ring-2 ${motivation.ring}`}
+            className={`w-2.5 h-2.5 rounded-full ring-2 ${motivation.ring}`}
+            style={{
+              background: `radial-gradient(circle at 35% 35%, ${motivation.color}, color-mix(in srgb, ${motivation.color} 60%, black))`,
+            }}
             title={motivation.label}
           />
           <span className="text-[11px] text-text-dim">{lead.seller?.name}</span>
@@ -74,7 +89,7 @@ export default function LeadCard({ lead, onClick, onDragStart }) {
       {lead.deal?.offerAmount && (
         <div className="mt-2 flex items-center gap-1">
           <span className="text-xs text-text-muted font-heading tracking-wide">Offer:</span>
-          <span className="text-xs font-mono font-semibold text-gold">
+          <span className="text-xs font-mono font-semibold gold-shimmer-text">
             {formatCurrency(lead.deal.offerAmount)}
           </span>
         </div>
