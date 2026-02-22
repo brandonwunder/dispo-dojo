@@ -1,8 +1,14 @@
 import { motion } from 'framer-motion'
 import { Shield, Users, Mail, Phone, Calendar, AtSign, Clock } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import StatCard from '../components/StatCard'
-import ShojiCard from '../components/ShojiCard'
+import CountUp from 'react-countup'
+import WoodPanel from '../components/WoodPanel'
+
+const statConfig = [
+  { icon: Users, label: 'Total Users', kanji: '\u7DCF' },
+  { icon: Calendar, label: 'This Week', kanji: '\u9031' },
+  { icon: Clock, label: 'Today', kanji: '\u4ECA' },
+]
 
 export default function AdminDashboard() {
   const { users } = useAuth()
@@ -28,6 +34,8 @@ export default function AdminDashboard() {
     return new Date(u.createdAt).toDateString() === today
   }).length
 
+  const statValues = [users.length, thisWeekCount, todayCount]
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -36,13 +44,13 @@ export default function AdminDashboard() {
       className="max-w-[1200px] mx-auto"
     >
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <div className="hanko-seal w-10 h-10 rounded-full flex items-center justify-center">
             <Shield size={20} className="text-white" />
           </div>
-          <h1 className="font-display text-2xl tracking-[0.06em] text-text-primary brush-underline">
-            Admin Dashboard
+          <h1 className="font-display text-4xl gold-shimmer-text">
+            The Sensei's Quarters
           </h1>
         </div>
         <p className="text-text-dim text-base max-w-2xl mt-3">
@@ -52,58 +60,70 @@ export default function AdminDashboard() {
 
       <div className="katana-line my-4" />
 
-      {/* Stats row */}
+      {/* Stats row — WoodPanel with scroll-card styling */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <StatCard
-          icon={Users}
-          label="Total Users"
-          value={users.length}
-        />
-        <StatCard
-          icon={Calendar}
-          label="This Week"
-          value={thisWeekCount}
-        />
-        <StatCard
-          icon={Clock}
-          label="Today"
-          value={todayCount}
-        />
+        {statConfig.map((stat, i) => {
+          const Icon = stat.icon
+          return (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <WoodPanel hover={false} className="scroll-card relative">
+                {/* Kanji watermark */}
+                <div className="absolute top-2 right-3 font-display text-6xl text-gold/[0.06] pointer-events-none select-none z-0">
+                  {stat.kanji}
+                </div>
+
+                {/* Hanko seal icon */}
+                <div className="hanko-seal w-10 h-10 rounded-full flex items-center justify-center mb-3 relative z-10">
+                  <Icon size={18} className="text-white" />
+                </div>
+
+                {/* Label */}
+                <p className="font-heading text-text-dim tracking-widest uppercase text-xs mb-1 relative z-10">
+                  {stat.label}
+                </p>
+
+                {/* Value */}
+                <p className="font-heading text-3xl gold-shimmer-text tracking-wide relative z-10">
+                  <CountUp end={typeof statValues[i] === 'number' ? statValues[i] : 0} duration={1.5} separator="," />
+                </p>
+              </WoodPanel>
+            </motion.div>
+          )
+        })}
       </div>
 
       {/* User table */}
-      <ShojiCard hover={false} className="p-0 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gold-dim/[0.15]">
-          <h2 className="font-heading text-lg font-semibold tracking-wide text-text-primary">
-            Registered Partners
-          </h2>
-        </div>
-
+      <WoodPanel hover={false} headerBar="Student Roster" className="!p-0">
         {users.length === 0 ? (
           <div className="px-6 py-16 text-center">
             <Users size={40} className="text-text-muted mx-auto mb-3" />
             <p className="text-text-dim text-sm font-heading">
-              No partners have signed up yet.
+              No students have entered the dojo yet.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gold-dim/[0.15]">
-                  <th className="text-left px-6 py-3 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                <tr className="lacquer-bar">
+                  <th className="text-left px-6 py-3 text-gold font-heading tracking-widest uppercase text-xs">
                     Name
                   </th>
-                  <th className="text-left px-6 py-3 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                  <th className="text-left px-6 py-3 text-gold font-heading tracking-widest uppercase text-xs">
                     Username
                   </th>
-                  <th className="text-left px-6 py-3 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                  <th className="text-left px-6 py-3 text-gold font-heading tracking-widest uppercase text-xs">
                     Email
                   </th>
-                  <th className="text-left px-6 py-3 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                  <th className="text-left px-6 py-3 text-gold font-heading tracking-widest uppercase text-xs">
                     Phone
                   </th>
-                  <th className="text-left px-6 py-3 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                  <th className="text-left px-6 py-3 text-gold font-heading tracking-widest uppercase text-xs">
                     Signed Up
                   </th>
                 </tr>
@@ -115,7 +135,7 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
-                    className="border-b border-gold-dim/[0.08] hover:bg-gold/[0.03] transition-colors duration-200"
+                    className="border-b border-gold-dim/[0.08] hover:bg-gold/5 transition-colors duration-200"
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -126,7 +146,7 @@ export default function AdminDashboard() {
                             .map((w) => w[0]?.toUpperCase())
                             .join('')}
                         </div>
-                        <span className="text-sm text-text-primary font-medium">
+                        <span className="text-sm text-parchment font-medium">
                           {u.name}
                         </span>
                       </div>
@@ -158,7 +178,7 @@ export default function AdminDashboard() {
             </table>
           </div>
         )}
-      </ShojiCard>
+      </WoodPanel>
     </motion.div>
   )
 }
