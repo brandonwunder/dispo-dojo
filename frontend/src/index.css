@@ -223,7 +223,7 @@ body {
     var(--color-gold-dim) 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 3s linear infinite;
+  animation: shimmer 4s linear infinite;
 }
 
 .gold-shimmer-text {
@@ -236,7 +236,7 @@ body {
     var(--color-gold-dim) 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 3s linear infinite;
+  animation: shimmer 4s linear infinite;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
