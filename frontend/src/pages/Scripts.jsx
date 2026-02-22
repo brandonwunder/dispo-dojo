@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Phone, MessageSquare, ShieldAlert, ChevronDown, Copy, Check } from 'lucide-react'
-import ShojiCard from '../components/ShojiCard'
+import WoodPanel from '../components/WoodPanel'
 
 const tabs = [
   { id: 'calling', label: 'Calling Scripts', icon: Phone },
@@ -149,7 +149,7 @@ function CopyButton({ text }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-gold hover:text-gold-bright text-xs font-heading uppercase tracking-wide transition-all duration-200"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-gold hover:text-gold-bright text-xs font-heading uppercase tracking-wide transition-all duration-200"
     >
       {copied ? <Check size={13} /> : <Copy size={13} />}
       {copied ? 'Copied!' : 'Copy'}
@@ -165,14 +165,15 @@ function ScriptCard({ title, scenario, script, index }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="rounded-2xl bg-bg-card/60 border border-gold-dim/[0.12] overflow-hidden hover:border-gold-dim/20 transition-colors duration-200"
+      className="scroll-card wood-panel rounded-sm border border-gold-dim/20 overflow-hidden"
     >
+      {/* Title bar -- lacquer-bar style */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gold/[0.04] transition-colors duration-200"
+        className="w-full flex items-center justify-between px-5 py-3.5 text-left lacquer-bar transition-colors duration-200"
       >
         <div>
-          <h3 className="font-heading text-sm font-semibold tracking-wide text-text-primary">{title}</h3>
+          <h3 className="font-heading text-sm font-semibold tracking-wide text-gold">{title}</h3>
           <p className="text-xs text-text-dim mt-0.5">{scenario}</p>
         </div>
         <ChevronDown
@@ -190,12 +191,12 @@ function ScriptCard({ title, scenario, script, index }) {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="px-6 pb-5 border-t border-gold-dim/[0.1]">
+            <div className="px-5 pb-5 border-t border-gold-dim/[0.1]">
               <div className="flex justify-end mt-3 mb-2">
                 <CopyButton text={script} />
               </div>
-              <div className="rounded-xl bg-bg-elevated border border-gold-dim/[0.15] p-4">
-                <pre className="text-sm text-text-primary whitespace-pre-wrap font-body leading-relaxed">
+              <div className="parchment-texture rounded-sm border border-gold-dim/15 p-4">
+                <pre className="text-sm text-ink whitespace-pre-wrap font-body leading-relaxed">
                   {script}
                 </pre>
               </div>
@@ -215,44 +216,46 @@ function ObjectionCard({ objection, response, index }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="rounded-2xl bg-bg-card/60 border border-gold-dim/[0.12] overflow-hidden hover:border-gold-dim/20 transition-colors duration-200"
     >
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gold/[0.04] transition-colors duration-200"
-      >
-        <div className="flex items-start gap-3">
-          <ShieldAlert size={16} className="text-warning shrink-0 mt-0.5" />
-          <p className="font-heading text-sm font-semibold tracking-wide text-text-primary">{objection}</p>
-        </div>
-        <ChevronDown
-          size={18}
-          className={`text-gold-dim shrink-0 ml-4 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
-        />
-      </button>
+      <WoodPanel withBrackets={false}>
+        <button
+          onClick={() => setOpen(!open)}
+          className="w-full flex items-center justify-between text-left -m-5 px-5 py-4 hover:bg-gold/[0.03] transition-colors duration-200"
+        >
+          <div className="flex items-start gap-3 flex-1">
+            <ShieldAlert size={16} className="text-crimson-bright shrink-0 mt-0.5" />
+            <p className="font-heading text-sm font-semibold tracking-wide text-crimson-bright border-l-2 border-crimson pl-3">{objection}</p>
+          </div>
+          <ChevronDown
+            size={18}
+            className={`text-gold-dim shrink-0 ml-4 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+          />
+        </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden"
-          >
-            <div className="px-6 pb-5 border-t border-gold-dim/[0.1]">
-              <div className="flex justify-end mt-3 mb-2">
-                <CopyButton text={response} />
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <div className="pt-5 border-t border-gold-dim/[0.1] mt-4">
+                <div className="flex justify-end mb-2">
+                  <CopyButton text={response} />
+                </div>
+                <div className="border-l-2 border-gold pl-4">
+                  <p className="text-xs font-heading font-semibold text-gold tracking-[0.08em] uppercase mb-2">Your Response</p>
+                  <pre className="text-sm text-text-primary whitespace-pre-wrap font-body leading-relaxed">
+                    {response}
+                  </pre>
+                </div>
               </div>
-              <div className="rounded-xl bg-bg-elevated border border-gold-dim/[0.15] p-4">
-                <pre className="text-sm text-text-primary whitespace-pre-wrap font-body leading-relaxed">
-                  {response}
-                </pre>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </WoodPanel>
     </motion.div>
   )
 }
@@ -265,14 +268,22 @@ export default function Scripts() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="max-w-[900px] mx-auto"
+      className="relative max-w-[900px] mx-auto"
     >
+      {/* Wooden floor gradient at the bottom */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background: 'linear-gradient(to top, rgba(42, 33, 24, 0.3) 0%, transparent 20%)',
+        }}
+      />
+
       {/* Header */}
-      <div className="mb-6">
+      <div className="relative z-10 mb-6">
         <div className="flex items-center gap-3 mb-2">
           <Phone size={28} className="text-gold" />
           <h1 className="font-display text-2xl tracking-[0.06em] brush-underline text-text-primary">
-            Scripts & Objections
+            The Training Dojo
           </h1>
         </div>
         <p className="text-text-dim text-base max-w-2xl">
@@ -281,17 +292,19 @@ export default function Scripts() {
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-gold-dim/[0.1] mb-6">
+      {/* Tabs — wooden plaques */}
+      <div className="relative z-10 flex gap-1 mb-6">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-5 py-3 text-sm font-heading font-medium tracking-wide transition-all duration-200 border-b-2 ${
-              activeTab === tab.id
-                ? 'bg-gold/[0.08] text-gold border-gold'
-                : 'text-text-dim hover:text-gold-dim border-transparent'
-            }`}
+            className={`
+              flex items-center gap-2 px-5 py-3 font-heading tracking-widest uppercase text-sm rounded-sm transition-all duration-200
+              ${activeTab === tab.id
+                ? 'wood-panel bg-gold/10 text-gold border-b-2 border-gold'
+                : 'wood-panel text-text-dim hover:text-parchment'
+              }
+            `}
           >
             <tab.icon size={16} />
             {tab.label}
@@ -300,7 +313,7 @@ export default function Scripts() {
       </div>
 
       {/* Content */}
-      <ShojiCard hover={false} className="p-0 overflow-visible bg-transparent border-none">
+      <div className="relative z-10">
         <AnimatePresence mode="wait">
           {activeTab === 'calling' && (
             <motion.div
@@ -344,7 +357,7 @@ export default function Scripts() {
             </motion.div>
           )}
         </AnimatePresence>
-      </ShojiCard>
+      </div>
     </motion.div>
   )
 }
