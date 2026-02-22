@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   ArrowRight,
 } from 'lucide-react'
-import ShojiCard from '../components/ShojiCard'
+import WoodPanel from '../components/WoodPanel'
 
 const containerVariants = {
   hidden: {},
@@ -126,204 +126,216 @@ export default function DispoProcess() {
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className="max-w-[1000px] mx-auto"
     >
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Rocket size={28} className="text-gold" />
-          <h1 className="font-display text-2xl tracking-[0.06em] brush-underline text-text-primary">
-            Dispo Process
-          </h1>
+      {/* Parchment-texture strategy map container */}
+      <div className="relative parchment-texture rounded-sm border border-gold-dim/20 px-6 sm:px-10 py-10">
+        {/* Header */}
+        <div className="mb-10 text-center">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <Rocket size={28} className="text-gold" />
+            <h1 className="font-display text-4xl gold-shimmer-text tracking-[0.06em]">
+              The Strategy Board
+            </h1>
+          </div>
+          <p className="font-heading tracking-wide text-text-dim text-base max-w-2xl mx-auto leading-relaxed">
+            We give you access to the best disposition tools on the market — period.
+            While most wholesalers are limited to selling to Section 8, STR, MTR,
+            and LTR buyers, our network goes far beyond that, giving you a{' '}
+            <span className="text-gold font-semibold">
+              significantly larger buyer pool
+            </span>{' '}
+            to get your deals sold faster and at higher prices.
+          </p>
         </div>
-        <p className="text-text-dim text-base max-w-2xl leading-relaxed">
-          We give you access to the best disposition tools on the market — period.
-          While most wholesalers are limited to selling to Section 8, STR, MTR,
-          and LTR buyers, our network goes far beyond that, giving you a{' '}
-          <span className="text-gold font-semibold">
-            significantly larger buyer pool
-          </span>{' '}
-          to get your deals sold faster and at higher prices.
-        </p>
-      </div>
 
-      {/* Key advantage banner */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <ShojiCard hover={false} className="flex items-center gap-4 px-6 py-4 mb-8 border-l-2 border-gold">
-          <div className="w-10 h-10 rounded-full hanko-seal flex items-center justify-center shrink-0">
-            <Crown size={20} className="text-white" />
-          </div>
-          <div>
-            <p className="font-heading text-sm font-semibold tracking-wide text-gold mb-0.5">
-              Our Competitive Advantage
-            </p>
-            <p className="text-sm text-text-dim">
-              Most investors only sell to conventional buyer types. We tap into
-              non-conventional investor lists — fix & flip, novation, creative
-              finance, and land trust buyers — giving you access to buyers that
-              your competition doesn't even know exist.
-            </p>
-          </div>
-        </ShojiCard>
-      </motion.div>
-
-      {/* Katana divider */}
-      <div className="katana-line mb-10" />
-
-      {/* Platforms section */}
-      <div className="mb-10">
-        <h2 className="font-display text-2xl tracking-[0.06em] brush-underline text-text-primary mb-1">
-          Our Disposition Platforms
-        </h2>
-        <p className="font-heading text-[11px] font-semibold tracking-[0.18em] uppercase text-gold-dim mt-3 mb-5">
-          Industry-leading tools that put your deals in front of thousands of qualified buyers
-        </p>
-
+        {/* Key advantage banner */}
         <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-10"
         >
-          {platforms.map((platform, i) => (
-            <motion.div key={platform.name} variants={cardVariants}>
-              <ShojiCard className="p-6 h-full">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full hanko-seal flex items-center justify-center">
-                    <platform.icon size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-heading text-sm font-semibold tracking-wide text-text-primary">
-                      {platform.name}
-                    </h3>
-                    <p className="text-[11px] text-gold">{platform.highlight}</p>
-                  </div>
-                </div>
-                <p className="text-sm text-text-dim leading-relaxed">
-                  {platform.description}
+          <WoodPanel glow headerBar="Strategic Advantage">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full hanko-seal flex items-center justify-center shrink-0">
+                <Crown size={20} className="text-white" />
+              </div>
+              <div>
+                <p className="font-heading text-sm font-semibold tracking-wide text-gold mb-0.5">
+                  Our Competitive Advantage
                 </p>
-              </ShojiCard>
+                <p className="text-sm text-text-dim">
+                  Most investors only sell to conventional buyer types. We tap into
+                  non-conventional investor lists — fix & flip, novation, creative
+                  finance, and land trust buyers — giving you access to buyers that
+                  your competition doesn't even know exist.
+                </p>
+              </div>
+            </div>
+          </WoodPanel>
+        </motion.div>
+
+        {/* Katana divider */}
+        <div className="katana-line mb-10" />
+
+        {/* Platforms section */}
+        <div className="mb-10">
+          <h2 className="font-display text-2xl gold-shimmer-text tracking-[0.06em] mb-1 text-center">
+            Our Disposition Platforms
+          </h2>
+          <p className="font-heading text-[11px] font-semibold tracking-[0.18em] uppercase text-gold-dim mt-3 mb-5 text-center">
+            Industry-leading tools that put your deals in front of thousands of qualified buyers
+          </p>
+
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
+            {platforms.map((platform) => (
+              <motion.div key={platform.name} variants={cardVariants}>
+                <WoodPanel className="h-full">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full hanko-seal flex items-center justify-center">
+                      <platform.icon size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-heading text-sm font-semibold tracking-wide text-parchment">
+                        {platform.name}
+                      </h3>
+                      <p className="text-[11px] text-gold">{platform.highlight}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-text-dim leading-relaxed">
+                    {platform.description}
+                  </p>
+                </WoodPanel>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Katana divider */}
+        <div className="katana-line mb-10" />
+
+        {/* Buyer types section */}
+        <div className="mb-10">
+          <h2 className="font-display text-2xl gold-shimmer-text tracking-[0.06em] mb-1 text-center">
+            Who We Sell To
+          </h2>
+          <p className="font-heading text-[11px] font-semibold tracking-[0.18em] uppercase text-gold-dim mt-3 mb-5 text-center">
+            Our buyer network spans both conventional and non-conventional investor types
+          </p>
+
+          {/* Conventional */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-text-muted" />
+              <h3 className="font-heading text-[11px] font-semibold tracking-[0.18em] text-text-muted uppercase">
+                Conventional Buyers
+              </h3>
+              <span className="text-[10px] text-text-muted px-2 py-0.5 rounded-full border border-gold-dim/[0.15]">
+                What everyone sells to
+              </span>
+            </div>
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+            >
+              {conventionalBuyers.map((buyer) => (
+                <motion.div key={buyer.type} variants={cardVariants}>
+                  <WoodPanel className="border-gold-dim/20">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0">
+                        <buyer.icon size={16} className="text-text-dim" />
+                      </div>
+                      <div>
+                        <p className="font-heading text-sm font-medium tracking-wide text-parchment">
+                          {buyer.type}
+                        </p>
+                        <p className="text-xs text-text-dim mt-0.5 leading-relaxed">
+                          {buyer.description}
+                        </p>
+                      </div>
+                    </div>
+                  </WoodPanel>
+                </motion.div>
+              ))}
             </motion.div>
-          ))}
+          </div>
+
+          {/* Non-conventional with gold highlight */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-gold" />
+              <h3 className="font-heading text-[11px] font-semibold tracking-[0.18em] text-gold uppercase">
+                Non-Conventional Buyers
+              </h3>
+              <span className="text-[10px] text-gold px-2 py-0.5 rounded-full border border-gold/25 bg-gold/[0.06]">
+                Our advantage
+              </span>
+            </div>
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+            >
+              {nonConventionalBuyers.map((buyer) => (
+                <motion.div key={buyer.type} variants={cardVariants}>
+                  <WoodPanel glow>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg hanko-seal flex items-center justify-center shrink-0">
+                        <buyer.icon size={16} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="font-heading text-sm font-medium tracking-wide text-parchment">
+                          {buyer.type}
+                        </p>
+                        <p className="text-xs text-text-dim mt-0.5 leading-relaxed">
+                          {buyer.description}
+                        </p>
+                      </div>
+                    </div>
+                  </WoodPanel>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Katana divider */}
+        <div className="katana-line mb-10" />
+
+        {/* Bottom CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+        >
+          <WoodPanel glow className="text-center">
+            <h3 className="font-display text-2xl gold-shimmer-text tracking-[0.06em] mb-2">
+              Bigger Buyer Pool = Faster Sales = More Money
+            </h3>
+            <p className="text-sm text-text-dim max-w-lg mx-auto mb-5">
+              When you JV with us, you're not just getting a deal partner — you're
+              getting access to the most comprehensive disposition network in the game.
+              Your deals don't sit. They sell.
+            </p>
+            <div className="flex items-center justify-center">
+              <span className="inline-flex items-center gap-2 gold-shimmer text-ink font-heading font-bold uppercase tracking-wide text-sm px-6 py-2.5 rounded-sm">
+                Start using these tools today
+                <ArrowRight size={16} />
+              </span>
+            </div>
+          </WoodPanel>
         </motion.div>
       </div>
-
-      {/* Katana divider */}
-      <div className="katana-line mb-10" />
-
-      {/* Buyer types section */}
-      <div className="mb-10">
-        <h2 className="font-display text-2xl tracking-[0.06em] brush-underline text-text-primary mb-1">
-          Who We Sell To
-        </h2>
-        <p className="font-heading text-[11px] font-semibold tracking-[0.18em] uppercase text-gold-dim mt-3 mb-5">
-          Our buyer network spans both conventional and non-conventional investor types
-        </p>
-
-        {/* Conventional */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-text-muted" />
-            <h3 className="font-heading text-[11px] font-semibold tracking-[0.18em] text-text-muted uppercase">
-              Conventional Buyers
-            </h3>
-            <span className="text-[10px] text-text-muted px-2 py-0.5 rounded-full border border-gold-dim/[0.15]">
-              What everyone sells to
-            </span>
-          </div>
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-          >
-            {conventionalBuyers.map((buyer, i) => (
-              <motion.div key={buyer.type} variants={cardVariants}>
-                <ShojiCard hover={false} className="flex items-start gap-3 p-4">
-                  <div className="w-8 h-8 rounded-lg bg-bg-elevated flex items-center justify-center shrink-0">
-                    <buyer.icon size={16} className="text-text-dim" />
-                  </div>
-                  <div>
-                    <p className="font-heading text-sm font-medium tracking-wide text-text-primary">
-                      {buyer.type}
-                    </p>
-                    <p className="text-xs text-text-dim mt-0.5 leading-relaxed">
-                      {buyer.description}
-                    </p>
-                  </div>
-                </ShojiCard>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-
-        {/* Non-conventional with gold highlight */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-gold" />
-            <h3 className="font-heading text-[11px] font-semibold tracking-[0.18em] text-gold uppercase">
-              Non-Conventional Buyers
-            </h3>
-            <span className="text-[10px] text-gold px-2 py-0.5 rounded-full border border-gold/25 bg-gold/[0.06]">
-              Our advantage
-            </span>
-          </div>
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-          >
-            {nonConventionalBuyers.map((buyer, i) => (
-              <motion.div key={buyer.type} variants={cardVariants}>
-                <ShojiCard glow className="flex items-start gap-3 p-4">
-                  <div className="w-8 h-8 rounded-lg hanko-seal flex items-center justify-center shrink-0">
-                    <buyer.icon size={16} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="font-heading text-sm font-medium tracking-wide text-text-primary">
-                      {buyer.type}
-                    </p>
-                    <p className="text-xs text-text-dim mt-0.5 leading-relaxed">
-                      {buyer.description}
-                    </p>
-                  </div>
-                </ShojiCard>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Katana divider */}
-      <div className="katana-line mb-10" />
-
-      {/* Bottom CTA */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-      >
-        <ShojiCard hover={false} className="p-8 text-center">
-          <h3 className="font-display text-2xl tracking-[0.06em] text-text-primary mb-2">
-            Bigger Buyer Pool = Faster Sales = More Money
-          </h3>
-          <p className="text-sm text-text-dim max-w-lg mx-auto mb-5">
-            When you JV with us, you're not just getting a deal partner — you're
-            getting access to the most comprehensive disposition network in the game.
-            Your deals don't sit. They sell.
-          </p>
-          <div className="flex items-center justify-center gap-2 text-gold text-sm font-heading font-semibold uppercase tracking-wide">
-            <span>Start using these tools today</span>
-            <ArrowRight size={16} />
-          </div>
-        </ShojiCard>
-      </motion.div>
     </motion.div>
   )
 }
