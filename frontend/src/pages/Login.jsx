@@ -2,12 +2,15 @@ import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ArrowRight, ArrowLeft } from 'lucide-react'
-import MistLayer from '../components/MistLayer'
-import CherryBlossoms from '../components/CherryBlossoms'
-import { CursorProvider } from '../components/CustomCursor'
+import DojoGateScene from '../components/three/DojoGateScene'
 import NinjaTransition from '../components/NinjaTransition'
-import Button from '../components/Button'
 import { useAuth } from '../context/AuthContext'
+
+const inputClass = `
+  w-full px-4 py-3 bg-bg-card border border-gold-dim/20 rounded-sm
+  text-parchment font-body focus:border-gold/50 focus:outline-none
+  transition-colors placeholder:text-text-dim/50
+`
 
 function SignUpModal({ onClose, onSuccess }) {
   const [step, setStep] = useState(1)
@@ -57,14 +60,6 @@ function SignUpModal({ onClose, onSuccess }) {
     }
   }
 
-  const inputClass = `
-    w-full px-4 py-3 rounded-xl
-    bg-bg-elevated border border-gold-dim/[0.15]
-    text-text-primary text-sm placeholder:text-text-muted
-    input-calligraphy focus:outline-none
-    transition-all duration-200
-  `
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -79,133 +74,138 @@ function SignUpModal({ onClose, onSuccess }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 w-full max-w-[420px]"
+        className="relative z-10 w-full max-w-md"
       >
-        <div className="relative washi-texture overflow-hidden backdrop-blur-xl bg-bg-card/80 border border-gold-dim/[0.15] rounded-2xl p-8 shadow-[0_0_80px_-20px_rgba(212,168,83,0.15)]">
-          {/* Corner accents */}
-          <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-gold-dim/20 pointer-events-none z-10" />
-          <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-gold-dim/20 pointer-events-none z-10" />
-          <div className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-gold-dim/20 pointer-events-none z-10" />
-          <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-gold-dim/20 pointer-events-none z-10" />
+        <div className="wood-panel border border-gold-dim/20 rounded-sm relative overflow-hidden">
+          {/* Rope binding at top */}
+          <div className="rope-top" />
+
+          {/* Metal brackets */}
+          <div className="metal-bracket top-left" />
+          <div className="metal-bracket top-right" />
+          <div className="metal-bracket bottom-left" />
+          <div className="metal-bracket bottom-right" />
 
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-text-muted hover:text-text-primary transition-colors z-20"
+            className="absolute top-4 right-4 text-text-dim hover:text-parchment transition-colors z-20"
           >
             <X size={20} />
           </button>
 
-          {/* Step indicator — dojo belt progression */}
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step >= 1 ? 'bg-gold shadow-[0_0_8px_rgba(212,168,83,0.4)]' : 'bg-border'}`} />
-            <div className="w-8 katana-line" />
-            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step >= 2 ? 'bg-gold shadow-[0_0_8px_rgba(212,168,83,0.4)]' : 'bg-border'}`} />
-          </div>
+          <div className="px-8 pt-8 pb-8">
+            {/* Step indicator */}
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step >= 1 ? 'bg-gold shadow-[0_0_8px_rgba(212,168,83,0.4)]' : 'bg-border'}`} />
+              <div className="w-8 katana-line" />
+              <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step >= 2 ? 'bg-gold shadow-[0_0_8px_rgba(212,168,83,0.4)]' : 'bg-border'}`} />
+            </div>
 
-          <AnimatePresence mode="wait">
-            {step === 1 && (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="text-center mb-8">
-                  <h2 className="font-display text-2xl text-text-primary mb-2 tracking-[0.06em]">
-                    Begin Training
-                  </h2>
-                  <p className="text-sm text-text-dim">Tell us who you are</p>
-                </div>
-
-                {error && (
-                  <div className="mb-4 px-4 py-2.5 rounded-xl bg-crimson/10 border border-crimson/20 text-crimson-bright text-sm text-center">
-                    {error}
-                  </div>
-                )}
-
-                <form onSubmit={handleStep1} className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
-                      Full Name
-                    </label>
-                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
-                      Email Address
-                    </label>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
-                      Phone Number
-                    </label>
-                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" className={inputClass} />
-                  </div>
-                  <Button variant="gold" size="md" className="w-full mt-2">
-                    <span className="flex items-center justify-center gap-2">Continue <ArrowRight size={16} /></span>
-                  </Button>
-                </form>
-              </motion.div>
-            )}
-
-            {step === 2 && (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="text-center mb-8">
-                  <h2 className="font-display text-2xl text-text-primary mb-2 tracking-[0.06em]">
-                    Choose Your Weapons
-                  </h2>
-                  <p className="text-sm text-text-dim">Set up your username & password</p>
-                </div>
-
-                {error && (
-                  <div className="mb-4 px-4 py-2.5 rounded-xl bg-crimson/10 border border-crimson/20 text-crimson-bright text-sm text-center">
-                    {error}
-                  </div>
-                )}
-
-                <form onSubmit={handleStep2} className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
-                      Username
-                    </label>
-                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="johndoe123" className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
-                      Password
-                    </label>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
-                      Confirm Password
-                    </label>
-                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" className={inputClass} />
-                  </div>
-                  <div className="flex gap-3 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => { setStep(1); setError('') }}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gold-dim/[0.15] text-text-dim hover:border-gold hover:text-gold transition-all duration-200 text-sm"
-                    >
-                      <ArrowLeft size={16} /> Back
-                    </button>
-                    <Button variant="gold" size="md" className="flex-1">
+            <AnimatePresence mode="wait">
+              {step === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="text-center mb-8">
+                    <h2 className="font-display text-2xl text-parchment mb-2 tracking-[0.06em]">
                       Begin Training
-                    </Button>
+                    </h2>
+                    <p className="text-sm text-text-dim font-heading tracking-wide">Tell us who you are</p>
                   </div>
-                </form>
-              </motion.div>
-            )}
-          </AnimatePresence>
+
+                  {error && (
+                    <div className="mb-4 p-3 rounded-sm bg-crimson/20 border border-crimson/30 text-crimson-bright text-sm">
+                      {error}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleStep1} className="space-y-5">
+                    <div>
+                      <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
+                        Full Name
+                      </label>
+                      <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
+                        Email Address
+                      </label>
+                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
+                        Phone Number
+                      </label>
+                      <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" className={inputClass} />
+                    </div>
+                    <button type="submit" className="w-full py-3 mt-2 gold-shimmer text-ink font-heading font-bold tracking-widest uppercase rounded-sm hover:shadow-[0_0_20px_rgba(212,168,83,0.3)] transition-shadow">
+                      <span className="flex items-center justify-center gap-2">Continue <ArrowRight size={16} /></span>
+                    </button>
+                  </form>
+                </motion.div>
+              )}
+
+              {step === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="text-center mb-8">
+                    <h2 className="font-display text-2xl text-parchment mb-2 tracking-[0.06em]">
+                      Choose Your Weapons
+                    </h2>
+                    <p className="text-sm text-text-dim font-heading tracking-wide">Set up your username & password</p>
+                  </div>
+
+                  {error && (
+                    <div className="mb-4 p-3 rounded-sm bg-crimson/20 border border-crimson/30 text-crimson-bright text-sm">
+                      {error}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleStep2} className="space-y-5">
+                    <div>
+                      <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
+                        Username
+                      </label>
+                      <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="johndoe123" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
+                        Password
+                      </label>
+                      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
+                        Confirm Password
+                      </label>
+                      <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" className={inputClass} />
+                    </div>
+                    <div className="flex gap-3 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => { setStep(1); setError('') }}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm border border-gold-dim/20 text-text-dim hover:border-gold hover:text-gold transition-all duration-200 text-sm"
+                      >
+                        <ArrowLeft size={16} /> Back
+                      </button>
+                      <button type="submit" className="flex-1 py-3 gold-shimmer text-ink font-heading font-bold tracking-widest uppercase rounded-sm hover:shadow-[0_0_20px_rgba(212,168,83,0.3)] transition-shadow">
+                        Begin Training
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -248,86 +248,86 @@ export default function Login() {
     setShowNinja(true)
   }
 
-  const inputClass = `
-    w-full px-4 py-3 rounded-xl
-    bg-bg-elevated border border-gold-dim/[0.15]
-    text-text-primary text-sm placeholder:text-text-muted
-    input-calligraphy focus:outline-none
-    transition-all duration-200
-  `
-
   return (
-    <CursorProvider>
-      <div className="relative min-h-screen flex items-center justify-center bg-bg overflow-hidden">
-        <MistLayer />
-        <CherryBlossoms />
-        <NinjaTransition active={showNinja} onComplete={handleNinjaComplete} />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* 3D Background */}
+      <DojoGateScene />
 
+      {/* Dark overlay for readability */}
+      <div className="fixed inset-0 z-[1] bg-gradient-to-t from-bg/90 via-bg/40 to-transparent" />
+
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        {/* Login Panel */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          className="w-full max-w-md wood-panel border border-gold-dim/20 rounded-sm relative overflow-hidden"
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-10 w-full max-w-[420px] mx-4"
+          transition={{ duration: 0.8, delay: 0.5 }}
         >
-          <div className="relative washi-texture overflow-hidden backdrop-blur-xl bg-bg-card/80 border border-gold-dim/[0.15] rounded-2xl p-8 shadow-[0_0_80px_-20px_rgba(212,168,83,0.15)]">
-            {/* Corner accents */}
-            <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-gold-dim/20 pointer-events-none z-10" />
-            <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-gold-dim/20 pointer-events-none z-10" />
-            <div className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-gold-dim/20 pointer-events-none z-10" />
-            <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-gold-dim/20 pointer-events-none z-10" />
+          {/* Rope binding at top */}
+          <div className="rope-top" />
 
-            <div className="relative z-[2]">
-              <div className="flex justify-center mb-8">
-                <img src="/logo.png" alt="Dispo Dojo" className="w-[140px] animate-[logoFloat_4s_ease-in-out_infinite]" />
+          {/* Metal brackets */}
+          <div className="metal-bracket top-left" />
+          <div className="metal-bracket top-right" />
+          <div className="metal-bracket bottom-left" />
+          <div className="metal-bracket bottom-right" />
+
+          {/* Logo */}
+          <div className="flex justify-center pt-8 pb-4">
+            <img src="/logo.png" alt="Dispo Dojo" className="w-24 h-24 object-contain" style={{ animation: 'logoFloat 6s ease-in-out infinite' }} />
+          </div>
+
+          <div className="px-8 pb-8">
+            <h1 className="font-display text-3xl text-center text-parchment mb-1">
+              Enter the Dojo
+            </h1>
+            <p className="text-text-dim text-center text-sm mb-6 font-heading tracking-wide">
+              Welcome back, warrior
+            </p>
+
+            {error && (
+              <div className="mb-4 p-3 rounded-sm bg-crimson/20 border border-crimson/30 text-crimson-bright text-sm">
+                {error}
               </div>
+            )}
 
-              <div className="text-center mb-8">
-                <h1 className="font-display text-2xl text-text-primary mb-2 tracking-[0.08em]">
-                  Enter the Dojo
-                </h1>
-                <p className="text-sm text-text-dim">Sign in to begin your training</p>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label htmlFor="identifier" className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
+                  Email or Username
+                </label>
+                <input id="identifier" type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="you@company.com or username" className={inputClass} />
               </div>
-
-              {error && (
-                <div className="mb-4 px-4 py-2.5 rounded-xl bg-crimson/10 border border-crimson/20 text-crimson-bright text-sm text-center">
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label htmlFor="identifier" className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
-                    Email or Username
-                  </label>
-                  <input id="identifier" type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="you@company.com or username" className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="password" className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
-                    Password
-                  </label>
-                  <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className={inputClass} />
-                </div>
-                <Button variant="gold" size="md" className="w-full mt-2">
-                  Enter
-                </Button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <p className="text-sm text-text-dim">
-                  New recruit?{' '}
-                  <button onClick={() => setShowSignUp(true)} className="text-gold hover:text-gold-bright transition-colors duration-200 font-medium">
-                    Begin Training
-                  </button>
-                </p>
+              <div>
+                <label htmlFor="password" className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
+                  Password
+                </label>
+                <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className={inputClass} />
               </div>
-            </div>
+              <button type="submit" className="w-full py-3 mt-4 gold-shimmer text-ink font-heading font-bold tracking-widest uppercase rounded-sm hover:shadow-[0_0_20px_rgba(212,168,83,0.3)] transition-shadow">
+                Enter the Dojo
+              </button>
+            </form>
+
+            <p className="text-center mt-4 text-text-dim text-sm">
+              New to the dojo?{' '}
+              <button onClick={() => setShowSignUp(true)} className="text-gold ml-1 hover:text-gold-bright transition-colors">
+                Begin Training
+              </button>
+            </p>
           </div>
         </motion.div>
-
-        <AnimatePresence>
-          {showSignUp && <SignUpModal onClose={() => setShowSignUp(false)} onSuccess={handleSignupSuccess} />}
-        </AnimatePresence>
       </div>
-    </CursorProvider>
+
+      {/* Sign Up Modal */}
+      <AnimatePresence>
+        {showSignUp && <SignUpModal onClose={() => setShowSignUp(false)} onSuccess={handleSignupSuccess} />}
+      </AnimatePresence>
+
+      {/* NinjaTransition overlay */}
+      <NinjaTransition active={showNinja} onComplete={handleNinjaComplete} />
+    </div>
   )
 }
