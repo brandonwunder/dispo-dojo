@@ -13,11 +13,14 @@ import {
   Pencil,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import ShojiCard from '../components/ShojiCard'
+import WoodPanel from '../components/WoodPanel'
 import Button from '../components/Button'
 
 const inputClass =
-  'bg-bg-elevated border border-gold-dim/[0.15] rounded-lg px-4 py-3 text-text-primary placeholder:text-text-muted input-calligraphy focus:outline-none transition-colors w-full'
+  'bg-bg-card border-b border-gold-dim/20 border-t-0 border-x-0 rounded-none px-4 py-3 text-parchment placeholder:text-text-muted font-body text-sm focus:outline-none focus:border-gold/50 transition-colors w-full'
+
+const labelClass =
+  'block font-heading text-gold-dim tracking-wide text-xs uppercase font-semibold mb-1.5'
 
 const STEPS = [
   { num: 1, label: 'Info' },
@@ -190,20 +193,36 @@ export default function LOIGenerator() {
         </p>
       </div>
 
-      {/* Step Indicator — Mountain path pattern */}
-      <div className="flex items-center justify-center gap-2 mb-8">
+      {/* Step Indicator — Brush-stroke circles connected by gold line */}
+      <div className="flex items-center justify-center gap-0 mb-8">
         {STEPS.map((step, i) => (
           <React.Fragment key={i}>
-            {i > 0 && <div className="w-8 katana-line" />}
-            <div className="flex flex-col items-center gap-1">
-              <div className={`w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center text-[9px] font-bold ${
-                stepIndex > i ? 'bg-gold text-bg shadow-[0_0_8px_rgba(212,168,83,0.4)]'
-                : stepIndex === i ? 'bg-gold/20 border border-gold text-gold'
-                : 'bg-border text-text-muted'
-              }`}>
-                {i + 1}
+            {i > 0 && (
+              <div
+                className={`w-12 h-[2px] transition-all duration-300 ${
+                  stepIndex >= i ? 'bg-gold' : 'bg-gold-dim/30'
+                }`}
+              />
+            )}
+            <div className="flex flex-col items-center gap-1.5">
+              <div
+                className={`w-8 h-8 rounded-full transition-all duration-300 flex items-center justify-center text-xs font-heading font-bold ${
+                  stepIndex > i
+                    ? 'bg-gold text-ink shadow-[0_0_12px_rgba(212,168,83,0.4)]'
+                    : stepIndex === i
+                    ? 'bg-gold text-white shadow-[0_0_12px_rgba(212,168,83,0.4)]'
+                    : 'bg-transparent border-2 border-gold-dim/40 text-gold-dim'
+                }`}
+              >
+                {stepIndex > i ? <Check size={14} /> : i + 1}
               </div>
-              <span className="font-heading text-[9px] tracking-[0.1em] uppercase text-text-muted">{step.label}</span>
+              <span
+                className={`font-heading text-[10px] tracking-widest uppercase transition-colors ${
+                  stepIndex >= i ? 'text-gold' : 'text-text-muted'
+                }`}
+              >
+                {step.label}
+              </span>
             </div>
           </React.Fragment>
         ))}
@@ -282,27 +301,24 @@ export default function LOIGenerator() {
         transition={{ duration: 0.5, delay: 0.3 }}
         className="mt-14"
       >
-        <h2 className="font-display text-2xl text-text-primary mb-5">
-          Recent <span className="brush-underline">LOIs</span>
-        </h2>
-        <ShojiCard hover={false} className="overflow-hidden">
+        <WoodPanel headerBar="Dispatched Scrolls" hover={false}>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-gold-dim/[0.15]">
-                  <th className="px-6 py-4 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                <tr className="lacquer-bar">
+                  <th className="px-6 py-3 font-heading text-xs font-semibold tracking-widest uppercase text-gold">
                     Date
                   </th>
-                  <th className="px-6 py-4 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                  <th className="px-6 py-3 font-heading text-xs font-semibold tracking-widest uppercase text-gold">
                     Property
                   </th>
-                  <th className="px-6 py-4 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                  <th className="px-6 py-3 font-heading text-xs font-semibold tracking-widest uppercase text-gold">
                     Agent
                   </th>
-                  <th className="px-6 py-4 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                  <th className="px-6 py-3 font-heading text-xs font-semibold tracking-widest uppercase text-gold">
                     Status
                   </th>
-                  <th className="px-6 py-4 font-heading text-xs font-semibold tracking-[0.1em] uppercase text-text-dim">
+                  <th className="px-6 py-3 font-heading text-xs font-semibold tracking-widest uppercase text-gold">
                     Actions
                   </th>
                 </tr>
@@ -313,21 +329,21 @@ export default function LOIGenerator() {
                     key={row.id}
                     className="border-b border-gold-dim/[0.08] last:border-0 hover:bg-gold/[0.03] transition-colors"
                   >
-                    <td className="px-6 py-4 text-sm font-mono text-text-dim whitespace-nowrap">
+                    <td className="px-6 py-4 text-sm font-body text-parchment whitespace-nowrap">
                       {row.date}
                     </td>
-                    <td className="px-6 py-4 text-sm text-text-primary whitespace-nowrap">
+                    <td className="px-6 py-4 text-sm font-body text-parchment whitespace-nowrap">
                       {row.property}
                     </td>
-                    <td className="px-6 py-4 text-sm text-text-dim whitespace-nowrap">
+                    <td className="px-6 py-4 text-sm font-body text-parchment whitespace-nowrap">
                       {row.agent}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`
                           inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
-                          ${row.status === 'Sent' ? 'bg-success/10 text-success' : ''}
-                          ${row.status === 'Draft' ? 'bg-warning/10 text-warning' : ''}
+                          ${row.status === 'Sent' ? 'bg-status-success/10 text-status-success' : ''}
+                          ${row.status === 'Draft' ? 'bg-status-warning/10 text-status-warning' : ''}
                         `}
                       >
                         {row.status}
@@ -335,11 +351,11 @@ export default function LOIGenerator() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <button className="p-1.5 rounded-lg text-text-dim hover:text-gold hover:bg-gold-glow transition-colors">
+                        <button className="p-1.5 rounded-sm text-text-dim hover:text-gold hover:bg-gold/[0.08] transition-colors">
                           <Download size={16} />
                         </button>
                         {row.status === 'Draft' && (
-                          <button className="p-1.5 rounded-lg text-text-dim hover:text-gold hover:bg-gold-glow transition-colors">
+                          <button className="p-1.5 rounded-sm text-text-dim hover:text-gold hover:bg-gold/[0.08] transition-colors">
                             <Pencil size={16} />
                           </button>
                         )}
@@ -350,7 +366,7 @@ export default function LOIGenerator() {
               </tbody>
             </table>
           </div>
-        </ShojiCard>
+        </WoodPanel>
       </motion.div>
     </motion.div>
   )
@@ -360,13 +376,13 @@ export default function LOIGenerator() {
 /*  Step 1 — Deal Information                                         */
 /* ------------------------------------------------------------------ */
 function Step1({ form, errors, onChange, onNext }) {
-  const errorRing = 'border-crimson-bright focus:border-crimson-bright focus:ring-crimson-bright'
+  const errorBorder = 'border-b-crimson-bright focus:border-b-crimson-bright'
 
   return (
-    <ShojiCard hover={false} className="p-6 md:p-8">
+    <WoodPanel headerBar="Calligraphy Room — Letter of Intent" hover={false}>
       {/* Section: Property & Contact */}
       <div className="mb-8">
-        <h3 className="font-heading text-sm font-semibold tracking-[0.1em] uppercase text-gold mb-5 flex items-center gap-2">
+        <h3 className="font-heading text-sm font-semibold tracking-widest uppercase text-gold mb-5 flex items-center gap-2">
           <FileText size={20} className="text-gold-dim" />
           Property & Contact
         </h3>
@@ -374,7 +390,7 @@ function Step1({ form, errors, onChange, onNext }) {
         <div className="space-y-4">
           {/* Property Address */}
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
+            <label className={labelClass}>
               Property Address <span className="text-crimson-bright">*</span>
             </label>
             <input
@@ -383,14 +399,14 @@ function Step1({ form, errors, onChange, onNext }) {
               value={form.address}
               onChange={onChange}
               placeholder="123 Main St, Phoenix, AZ 85001"
-              className={`${inputClass} ${errors.address ? errorRing : ''}`}
+              className={`${inputClass} ${errors.address ? errorBorder : ''}`}
             />
           </div>
 
           {/* Row: Agent Name + Email */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
+              <label className={labelClass}>
                 Agent / Seller Name <span className="text-crimson-bright">*</span>
               </label>
               <input
@@ -399,11 +415,11 @@ function Step1({ form, errors, onChange, onNext }) {
                 value={form.agentName}
                 onChange={onChange}
                 placeholder="John Smith"
-                className={`${inputClass} ${errors.agentName ? errorRing : ''}`}
+                className={`${inputClass} ${errors.agentName ? errorBorder : ''}`}
               />
             </div>
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
+              <label className={labelClass}>
                 Agent / Seller Email <span className="text-crimson-bright">*</span>
               </label>
               <input
@@ -412,7 +428,7 @@ function Step1({ form, errors, onChange, onNext }) {
                 value={form.agentEmail}
                 onChange={onChange}
                 placeholder="john@brokerage.com"
-                className={`${inputClass} ${errors.agentEmail ? errorRing : ''}`}
+                className={`${inputClass} ${errors.agentEmail ? errorBorder : ''}`}
               />
             </div>
           </div>
@@ -420,7 +436,7 @@ function Step1({ form, errors, onChange, onNext }) {
           {/* Row: Phone + Brokerage */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
+              <label className={labelClass}>
                 Agent Phone
               </label>
               <input
@@ -433,7 +449,7 @@ function Step1({ form, errors, onChange, onNext }) {
               />
             </div>
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
+              <label className={labelClass}>
                 Brokerage Name
               </label>
               <input
@@ -454,7 +470,7 @@ function Step1({ form, errors, onChange, onNext }) {
 
       {/* Section: Offer Terms */}
       <div className="mb-8">
-        <h3 className="font-heading text-sm font-semibold tracking-[0.1em] uppercase text-gold mb-5 flex items-center gap-2">
+        <h3 className="font-heading text-sm font-semibold tracking-widest uppercase text-gold mb-5 flex items-center gap-2">
           <FileText size={20} className="text-gold-dim" />
           Offer Terms
         </h3>
@@ -463,7 +479,7 @@ function Step1({ form, errors, onChange, onNext }) {
           {/* Row: Offer Price + Earnest Money */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
+              <label className={labelClass}>
                 Offer Price <span className="text-crimson-bright">*</span>
               </label>
               <div className="relative">
@@ -476,12 +492,12 @@ function Step1({ form, errors, onChange, onNext }) {
                   value={form.offerPrice}
                   onChange={onChange}
                   placeholder="250,000"
-                  className={`${inputClass} pl-8 ${errors.offerPrice ? errorRing : ''}`}
+                  className={`${inputClass} pl-8 ${errors.offerPrice ? errorBorder : ''}`}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
+              <label className={labelClass}>
                 Earnest Money
               </label>
               <div className="relative">
@@ -503,7 +519,7 @@ function Step1({ form, errors, onChange, onNext }) {
           {/* Row: Inspection Period + Closing Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
+              <label className={labelClass}>
                 Inspection Period (days)
               </label>
               <input
@@ -516,7 +532,7 @@ function Step1({ form, errors, onChange, onNext }) {
               />
             </div>
             <div>
-              <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
+              <label className={labelClass}>
                 Closing Date
               </label>
               <input
@@ -531,7 +547,7 @@ function Step1({ form, errors, onChange, onNext }) {
 
           {/* Terms / Contingencies */}
           <div>
-            <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
+            <label className={labelClass}>
               Terms / Contingencies
             </label>
             <textarea
@@ -555,7 +571,7 @@ function Step1({ form, errors, onChange, onNext }) {
           </span>
         </Button>
       </div>
-    </ShojiCard>
+    </WoodPanel>
   )
 }
 
@@ -573,77 +589,79 @@ function Step2({
 }) {
   return (
     <div>
-      <ShojiCard hover={false} className="p-6 md:p-8">
-        {/* Document Preview */}
-        <div className="bg-white text-gray-900 rounded-xl p-8 max-w-2xl mx-auto shadow-lg">
-          <h2 className="text-center text-2xl font-bold tracking-wide mb-8 text-gray-800">
-            LETTER OF INTENT
-          </h2>
+      <WoodPanel hover={false}>
+        {/* Scroll card with wooden rollers top/bottom */}
+        <div className="scroll-card">
+          <div className="parchment-texture rounded-sm p-8 max-w-2xl mx-auto">
+            <h2 className="text-center text-2xl font-bold tracking-wide mb-8 text-ink/80 font-heading">
+              LETTER OF INTENT
+            </h2>
 
-          <p className="mb-6 text-sm text-gray-600">
-            Date: {todayFormatted}
-          </p>
-
-          <div className="mb-6 text-sm text-gray-800 leading-relaxed">
-            <p>To: {form.agentName}</p>
-            {form.brokerageName && (
-              <p className="ml-6">{form.brokerageName}</p>
-            )}
-          </div>
-
-          <p className="mb-6 text-sm text-gray-800">
-            Re: Property at {form.address}
-          </p>
-
-          <p className="mb-6 text-sm text-gray-800 leading-relaxed">
-            Dear {form.agentName},
-          </p>
-
-          <p className="mb-6 text-sm text-gray-800 leading-relaxed">
-            This letter serves as a formal expression of interest to purchase
-            the property located at {form.address} under the following terms:
-          </p>
-
-          <div className="mb-6 space-y-2 text-sm text-gray-800">
-            <p>
-              <span className="font-semibold">Purchase Price:</span>{' '}
-              {formatCurrency(form.offerPrice)}
+            <p className="mb-6 text-sm text-ink/60">
+              Date: {todayFormatted}
             </p>
-            <p>
-              <span className="font-semibold">Earnest Money Deposit:</span>{' '}
-              {formatCurrency(form.earnestMoney)}
+
+            <div className="mb-6 text-sm text-ink leading-relaxed">
+              <p>To: {form.agentName}</p>
+              {form.brokerageName && (
+                <p className="ml-6">{form.brokerageName}</p>
+              )}
+            </div>
+
+            <p className="mb-6 text-sm text-ink">
+              Re: Property at {form.address}
             </p>
-            <p>
-              <span className="font-semibold">Inspection Period:</span>{' '}
-              {form.inspectionPeriod || '8'} business days
+
+            <p className="mb-6 text-sm text-ink leading-relaxed">
+              Dear {form.agentName},
             </p>
-            <p>
-              <span className="font-semibold">Proposed Closing Date:</span>{' '}
-              {formatDate(form.closingDate)}
+
+            <p className="mb-6 text-sm text-ink leading-relaxed">
+              This letter serves as a formal expression of interest to purchase
+              the property located at {form.address} under the following terms:
             </p>
-          </div>
 
-          <div className="mb-6 text-sm text-gray-800 leading-relaxed">
-            <p className="font-semibold mb-1">Additional Terms:</p>
-            <p>{form.terms || 'Standard terms apply'}</p>
-          </div>
+            <div className="mb-6 space-y-2 text-sm text-ink">
+              <p>
+                <span className="font-semibold">Purchase Price:</span>{' '}
+                {formatCurrency(form.offerPrice)}
+              </p>
+              <p>
+                <span className="font-semibold">Earnest Money Deposit:</span>{' '}
+                {formatCurrency(form.earnestMoney)}
+              </p>
+              <p>
+                <span className="font-semibold">Inspection Period:</span>{' '}
+                {form.inspectionPeriod || '8'} business days
+              </p>
+              <p>
+                <span className="font-semibold">Proposed Closing Date:</span>{' '}
+                {formatDate(form.closingDate)}
+              </p>
+            </div>
 
-          <p className="mb-6 text-sm text-gray-800 leading-relaxed">
-            This Letter of Intent is non-binding and is intended to serve as
-            the basis for further negotiations and the preparation of a formal
-            purchase agreement.
-          </p>
+            <div className="mb-6 text-sm text-ink leading-relaxed">
+              <p className="font-semibold mb-1">Additional Terms:</p>
+              <p>{form.terms || 'Standard terms apply'}</p>
+            </div>
 
-          <p className="mb-8 text-sm text-gray-800 leading-relaxed">
-            We look forward to your response.
-          </p>
+            <p className="mb-6 text-sm text-ink leading-relaxed">
+              This Letter of Intent is non-binding and is intended to serve as
+              the basis for further negotiations and the preparation of a formal
+              purchase agreement.
+            </p>
 
-          <div className="text-sm text-gray-800">
-            <p>Sincerely,</p>
-            <p className="mt-1 font-semibold">{userName}</p>
+            <p className="mb-8 text-sm text-ink leading-relaxed">
+              We look forward to your response.
+            </p>
+
+            <div className="text-sm text-ink">
+              <p>Sincerely,</p>
+              <p className="mt-1 font-semibold">{userName}</p>
+            </div>
           </div>
         </div>
-      </ShojiCard>
+      </WoodPanel>
 
       {/* Navigation Buttons */}
       <div className="flex justify-between mt-6">
@@ -670,29 +688,30 @@ function Step2({
 function Step3({ onBack, onGenerate }) {
   return (
     <div>
-      <ShojiCard hover={false} className="p-6 md:p-8 space-y-8">
+      <WoodPanel hover={false} className="space-y-6">
         {/* Download Section */}
-        <div>
-          <h3 className="font-heading text-sm font-semibold tracking-[0.1em] uppercase text-gold mb-3">
+        <WoodPanel variant="elevated" hover={false}>
+          <h3 className="font-heading text-sm font-semibold tracking-widest uppercase text-gold mb-3 flex items-center gap-2">
+            <Download size={18} className="text-gold-dim" />
             Download
           </h3>
-          <Button variant="gold" onClick={() => {}}>
-            <span className="flex items-center gap-2">
-              <Download size={16} />
-              Download as PDF
-            </span>
-          </Button>
+          <button
+            onClick={() => {}}
+            className="gold-shimmer text-ink font-heading font-bold tracking-widest uppercase px-6 py-2.5 text-sm rounded-sm flex items-center gap-2 transition-all duration-300 hover:shadow-[0_4px_30px_-4px_rgba(212,168,83,0.6)]"
+          >
+            <Download size={16} />
+            Download as PDF
+          </button>
           <p className="text-xs text-text-muted mt-2">
-            (PDF generation coming soon — currently saves as formatted
+            (PDF generation coming soon -- currently saves as formatted
             document)
           </p>
-        </div>
-
-        <div className="katana-line" />
+        </WoodPanel>
 
         {/* Send via Email */}
-        <ShojiCard hover={false} className="p-5">
-          <h3 className="font-heading text-sm font-semibold tracking-[0.1em] uppercase text-text-primary mb-3 flex items-center gap-2">
+        <WoodPanel variant="elevated" hover={false}>
+          <h3 className="font-heading text-sm font-semibold tracking-widest uppercase text-parchment mb-3 flex items-center gap-2">
+            <Mail size={18} className="text-gold-dim" />
             Send via Email
             <Lock size={14} className="text-text-muted" />
           </h3>
@@ -703,19 +722,20 @@ function Step3({ onBack, onGenerate }) {
             </span>
           </Button>
           <p className="text-xs text-text-muted mt-2">
-            Gmail integration coming soon — connect your account to send LOIs
+            Gmail integration coming soon -- connect your account to send LOIs
             directly
           </p>
-        </ShojiCard>
+        </WoodPanel>
 
         {/* Batch Mode */}
-        <ShojiCard hover={false} className="p-5">
-          <h3 className="font-heading text-sm font-semibold tracking-[0.1em] uppercase text-text-primary mb-3 flex items-center gap-2">
+        <WoodPanel variant="elevated" hover={false}>
+          <h3 className="font-heading text-sm font-semibold tracking-widest uppercase text-parchment mb-3 flex items-center gap-2">
+            <Upload size={18} className="text-gold-dim" />
             Batch Mode
             <Lock size={14} className="text-text-muted" />
           </h3>
-          <div className="bg-info/5 border border-info/20 rounded-lg p-3 mb-3">
-            <p className="text-sm text-info">
+          <div className="bg-status-info/5 border border-status-info/20 rounded-sm p-3 mb-3">
+            <p className="text-sm text-status-info">
               Upload a spreadsheet of properties to generate and send up to 100
               LOIs per day
             </p>
@@ -729,8 +749,8 @@ function Step3({ onBack, onGenerate }) {
           <p className="text-xs text-text-muted mt-2">
             Batch mode coming soon
           </p>
-        </ShojiCard>
-      </ShojiCard>
+        </WoodPanel>
+      </WoodPanel>
 
       {/* Navigation Buttons */}
       <div className="flex justify-between mt-6">
@@ -756,18 +776,18 @@ function Step3({ onBack, onGenerate }) {
 /* ------------------------------------------------------------------ */
 function SuccessCard({ address, onReset }) {
   return (
-    <ShojiCard hover={false} glow className="p-10 text-center max-w-lg mx-auto">
+    <WoodPanel hover={false} glow className="text-center max-w-lg mx-auto">
       <div className="flex justify-center mb-5">
-        <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-          <CheckCircle size={48} className="text-success" />
+        <div className="w-16 h-16 rounded-full bg-gold/15 flex items-center justify-center shadow-[0_0_20px_rgba(212,168,83,0.3)]">
+          <CheckCircle size={48} className="text-gold" />
         </div>
       </div>
-      <h2 className="font-display text-2xl text-text-primary mb-2">
-        LOI Generated Successfully!
+      <h2 className="font-display text-2xl text-parchment mb-2">
+        Scroll Dispatched!
       </h2>
       <p className="text-text-dim mb-8">
         Your Letter of Intent for{' '}
-        <span className="text-text-primary font-medium">{address}</span> has
+        <span className="text-parchment font-medium">{address}</span> has
         been created.
       </p>
       <div className="flex justify-center gap-4">
@@ -778,6 +798,6 @@ function SuccessCard({ address, onReset }) {
           View History
         </Button>
       </div>
-    </ShojiCard>
+    </WoodPanel>
   )
 }
