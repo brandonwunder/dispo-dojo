@@ -1,118 +1,87 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import {
-  Search,
-  Home,
-  Filter,
-  Users,
-  FileCheck,
-  FileText,
-  FilePen,
-  BookOpen,
-  UserPlus,
-  ArrowRight,
-} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import ShojiCard from '../components/ShojiCard'
+import {
+  CompassIcon,
+  MapIcon,
+  ForgeHammerIcon,
+  KatanaIcon,
+  AbacusIcon,
+  InkBrushIcon,
+  SealStampIcon,
+  ScrollIcon,
+  HawkIcon,
+  WarFanIcon,
+  BannerIcon,
+  ToriiIcon,
+} from '../components/icons/index'
+import DojoHallScene from '../components/three/DojoHallScene'
+import WoodPanel from '../components/WoodPanel'
+import CountUp from 'react-countup'
 
-const sections = [
+const allTools = [
   {
-    header: 'Lead Generation',
-    tools: [
-      {
-        name: 'Agent Finder',
-        icon: Search,
-        description: 'Upload property lists and find listing agents instantly',
-        route: '/agent-finder',
-      },
-      {
-        name: 'FSBO Finder',
-        icon: Home,
-        description: 'Find For Sale By Owner listings in any city',
-        route: '/fsbo-finder',
-      },
-      {
-        name: 'Lead Scrubbing',
-        icon: Filter,
-        description: 'Deal Sauce walkthrough for finding and scrubbing leads',
-        route: '/lead-scrubbing',
-      },
-    ],
+    label: 'Agent Finder',
+    icon: CompassIcon,
+    description: 'Upload property lists and find listing agents instantly',
+    to: '/agent-finder',
   },
   {
-    header: 'Deal Management',
-    tools: [
-      {
-        name: 'CRM',
-        icon: Users,
-        description: 'Track your full deal pipeline from lead to close',
-        route: '/crm',
-      },
-      {
-        name: 'Free Underwriting',
-        icon: FileCheck,
-        description: 'Submit properties for free underwriting on cash or Sub2 deals',
-        route: '/underwriting',
-      },
-      {
-        name: 'LOI Generator',
-        icon: FileText,
-        description: 'Generate and send Letters of Intent in bulk',
-        route: '/loi-generator',
-      },
-      {
-        name: 'Contract Generator',
-        icon: FilePen,
-        description: 'Build, sign, and send contracts in minutes',
-        route: '/contract-generator',
-      },
-    ],
+    label: 'FSBO Finder',
+    icon: MapIcon,
+    description: 'Find For Sale By Owner listings in any city',
+    to: '/fsbo-finder',
   },
   {
-    header: 'Resources',
-    tools: [
-      {
-        name: 'Direct Agent Process',
-        icon: BookOpen,
-        description: 'Learn our direct-to-agent outreach process',
-        route: '/direct-agent',
-      },
-      {
-        name: 'Join Our Team',
-        icon: UserPlus,
-        description: 'Cold calling opportunity for experienced closers',
-        route: '/join-team',
-      },
-    ],
+    label: 'Lead Scrubbing',
+    icon: HawkIcon,
+    description: 'Deal Sauce walkthrough for finding and scrubbing leads',
+    to: '/lead-scrubbing',
+  },
+  {
+    label: 'CRM',
+    icon: AbacusIcon,
+    description: 'Track your full deal pipeline from lead to close',
+    to: '/crm',
+  },
+  {
+    label: 'Free Underwriting',
+    icon: ForgeHammerIcon,
+    description: 'Submit properties for free underwriting on cash or Sub2 deals',
+    to: '/underwriting',
+  },
+  {
+    label: 'LOI Generator',
+    icon: ScrollIcon,
+    description: 'Generate and send Letters of Intent in bulk',
+    to: '/loi-generator',
+  },
+  {
+    label: 'Contract Generator',
+    icon: InkBrushIcon,
+    description: 'Build, sign, and send contracts in minutes',
+    to: '/contract-generator',
+  },
+  {
+    label: 'Direct Agent Process',
+    icon: KatanaIcon,
+    description: 'Learn our direct-to-agent outreach process',
+    to: '/direct-agent',
+  },
+  {
+    label: 'Join Our Team',
+    icon: BannerIcon,
+    description: 'Cold calling opportunity for experienced closers',
+    to: '/join-team',
   },
 ]
 
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.06,
-    },
-  },
-}
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] },
-  },
-}
-
-const headerVariants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' },
-  },
-}
+const honorStats = [
+  { kanji: '刀', label: 'Active Deals', value: 12 },
+  { kanji: '金', label: 'Pipeline Value', value: 2450000, prefix: '$', suffix: '' },
+  { kanji: '人', label: 'Agents Found', value: 347 },
+  { kanji: '勝', label: 'Deals Closed', value: 8 },
+]
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -123,81 +92,80 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-[1200px] mx-auto">
-      {/* Greeting */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="mb-10"
-      >
-        <h1 className="font-display text-3xl md:text-4xl text-text-primary mb-2 tracking-[0.06em]">
-          Welcome back, <span className="text-gold brush-underline">{firstName}</span>
-        </h1>
-        <p className="text-text-dim text-base">
-          Your deal-closing arsenal — every weapon you need.
-        </p>
-      </motion.div>
+      <style>{`@keyframes sway { 0%,100% { transform: rotate(-0.5deg); } 50% { transform: rotate(0.5deg); } }`}</style>
 
-      {/* Sections */}
-      {sections.map((section, sIdx) => (
-        <div key={section.header} className="mb-10">
-          {/* Section header */}
-          <motion.div
-            variants={headerVariants}
-            initial="hidden"
-            animate="visible"
-            transition={{ delay: sIdx * 0.1 }}
-            className="mb-5"
+      {/* Zone 1: Hero Banner */}
+      <div className="relative h-[280px] rounded-sm overflow-hidden mb-8 border border-gold-dim/20">
+        <DojoHallScene />
+        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent z-10" />
+        <div className="absolute bottom-8 left-8 z-20">
+          <motion.h1
+            className="font-display text-5xl gold-shimmer-text mb-2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
           >
-            <span className="font-heading text-[11px] font-semibold tracking-[0.18em] uppercase text-gold-dim">
-              {section.header}
-            </span>
-            <div className="mt-2 katana-line" />
-          </motion.div>
-
-          {/* Tool cards grid */}
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
-          >
-            {section.tools.map((tool) => {
-              const Icon = tool.icon
-              return (
-                <motion.div key={tool.name} variants={cardVariants}>
-                  <Link to={tool.route} className="block h-full no-underline">
-                    <ShojiCard className="p-6 h-full flex flex-col justify-between min-h-[170px] group">
-                      <div>
-                        {/* Hanko seal icon */}
-                        <div className="hanko-seal w-9 h-9 rounded-full flex items-center justify-center mb-3">
-                          <Icon size={16} className="text-white" />
-                        </div>
-                        <h3 className="font-heading text-lg font-semibold text-text-primary mb-1.5 tracking-wide">
-                          {tool.name}
-                        </h3>
-                        <p className="text-sm text-text-dim leading-relaxed">
-                          {tool.description}
-                        </p>
-                      </div>
-
-                      <div className="flex justify-end mt-4">
-                        <span className="inline-flex items-center gap-1.5 text-sm text-gold-dim group-hover:text-gold transition-colors duration-300">
-                          Enter
-                          <ArrowRight
-                            size={15}
-                            className="transition-transform duration-300 group-hover:translate-x-1"
-                          />
-                        </span>
-                      </div>
-                    </ShojiCard>
-                  </Link>
-                </motion.div>
-              )
+            Welcome back, {firstName}-san
+          </motion.h1>
+          <p className="font-heading text-text-dim tracking-wide text-lg">
+            {new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
             })}
-          </motion.div>
+          </p>
         </div>
-      ))}
+      </div>
+
+      {/* Zone 2: Honor Wall (stats) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {honorStats.map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            className="scroll-card wood-panel p-6 text-center relative rounded-sm border border-gold-dim/20 overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.15 }}
+            style={{ animation: `sway 4s ease-in-out ${i * 0.5}s infinite` }}
+          >
+            <span className="absolute top-2 left-1/2 -translate-x-1/2 text-5xl font-display text-gold/[0.08] pointer-events-none">
+              {stat.kanji}
+            </span>
+            <div className="relative z-10">
+              <div className="font-heading text-3xl font-bold gold-shimmer-text">
+                {stat.prefix}
+                <CountUp end={stat.value} duration={2} separator="," />
+                {stat.suffix}
+              </div>
+              <div className="font-heading text-sm text-text-dim tracking-widest uppercase mt-1">
+                {stat.label}
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Zone 3: Weapon Wall (tools) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {allTools.map((tool, i) => (
+          <Link to={tool.to} key={tool.to}>
+            <WoodPanel hover className="h-full">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-sm bg-gold/10">
+                  <tool.icon size={36} className="text-gold" />
+                </div>
+                <div>
+                  <h3 className="font-heading text-lg text-parchment tracking-wide">
+                    {tool.label}
+                  </h3>
+                  <p className="text-text-dim text-sm mt-1">{tool.description}</p>
+                </div>
+              </div>
+            </WoodPanel>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }
