@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { CheckCircle, Flame, Wrench, TrendingUp } from 'lucide-react'
-import ShojiCard from '../components/ShojiCard'
-import Button from '../components/Button'
+import WoodPanel from '../components/WoodPanel'
 
 const containerVariants = {
   hidden: {},
@@ -41,7 +40,7 @@ const highlights = [
 ]
 
 const inputClasses =
-  'input-calligraphy focus:outline-none border-gold-dim/[0.15] bg-bg-elevated border rounded-lg px-4 py-3 text-text-primary placeholder:text-text-muted transition-colors w-full'
+  'input-calligraphy focus:outline-none bg-bg-card border border-gold-dim/20 rounded-sm px-4 py-3 text-parchment placeholder:text-text-muted transition-colors w-full'
 
 export default function JoinTeam() {
   const [submitted, setSubmitted] = useState(false)
@@ -66,44 +65,47 @@ export default function JoinTeam() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="max-w-[900px] mx-auto"
+      className="relative max-w-[900px] mx-auto"
     >
+      {/* Banner flags — subtle crimson/gold vertical stripes */}
+      <div className="absolute top-0 left-8 w-3 h-28 bg-gradient-to-b from-crimson/25 to-transparent rounded-b-sm pointer-events-none" />
+      <div className="absolute top-0 left-16 w-2.5 h-24 bg-gradient-to-b from-gold/20 to-transparent rounded-b-sm pointer-events-none" />
+      <div className="absolute top-0 right-12 w-3 h-32 bg-gradient-to-b from-crimson/20 to-transparent rounded-b-sm pointer-events-none" />
+
       {/* -- The Pitch -- */}
       <motion.div variants={itemVariants} className="mb-10">
-        <h1 className="font-display text-2xl tracking-[0.06em] brush-underline text-text-primary mb-3">
-          Do You Like to Cold Call?
-        </h1>
+        <WoodPanel headerBar="Recruitment Hall — Join the Clan">
+          <div className="max-w-3xl space-y-5">
+            <motion.p variants={itemVariants} className="text-text-dim leading-relaxed font-body">
+              We have a ton of leads that we've warmed up, properties that we've
+              underwritten, and a constant flow of deal opportunities coming in. As
+              we scale and open up new lead sources and financing types, we're
+              looking for experienced cold callers to join our team.
+            </motion.p>
 
-        <div className="max-w-3xl space-y-5 mt-8">
-          <motion.p variants={itemVariants} className="text-text-dim leading-relaxed font-body">
-            We have a ton of leads that we've warmed up, properties that we've
-            underwritten, and a constant flow of deal opportunities coming in. As
-            we scale and open up new lead sources and financing types, we're
-            looking for experienced cold callers to join our team.
-          </motion.p>
+            <motion.p variants={itemVariants} className="text-text-dim leading-relaxed font-body">
+              We're not looking for just anybody. We want people who have
+              experience, have closed deals before, or know enough to handle agent
+              objections and close. Our team is extremely small and exclusive —
+              this page is only up because we're looking for one to two people.
+            </motion.p>
 
-          <motion.p variants={itemVariants} className="text-text-dim leading-relaxed font-body">
-            We're not looking for just anybody. We want people who have
-            experience, have closed deals before, or know enough to handle agent
-            objections and close. Our team is extremely small and exclusive —
-            this page is only up because we're looking for one to two people.
-          </motion.p>
+            <motion.p variants={itemVariants} className="text-text-dim leading-relaxed font-body">
+              We run a very tight ship. Both partners in our company will
+              personally vet every candidate to make sure they're the right fit.
+              We're looking for people with a hustle mentality who know how to
+              solve problems without being micromanaged and who have long-term
+              goals in this industry.
+            </motion.p>
 
-          <motion.p variants={itemVariants} className="text-text-dim leading-relaxed font-body">
-            We run a very tight ship. Both partners in our company will
-            personally vet every candidate to make sure they're the right fit.
-            We're looking for people with a hustle mentality who know how to
-            solve problems without being micromanaged and who have long-term
-            goals in this industry.
-          </motion.p>
-
-          <motion.p variants={itemVariants} className="text-text-dim leading-relaxed font-body">
-            We understand that everyone has different goals — and yes, you will
-            always be cold calling — but we'd love to help you grow and reach
-            your goals. We'll provide a position that gives you real experience,
-            money in your pocket, and a path forward.
-          </motion.p>
-        </div>
+            <motion.p variants={itemVariants} className="text-text-dim leading-relaxed font-body">
+              We understand that everyone has different goals — and yes, you will
+              always be cold calling — but we'd love to help you grow and reach
+              your goals. We'll provide a position that gives you real experience,
+              money in your pocket, and a path forward.
+            </motion.p>
+          </div>
+        </WoodPanel>
       </motion.div>
 
       {/* -- Feature Highlights -- */}
@@ -115,17 +117,17 @@ export default function JoinTeam() {
           const Icon = h.icon
           return (
             <motion.div key={h.title} variants={itemVariants}>
-              <ShojiCard hover={false} className="p-5 h-full">
+              <WoodPanel hover={false} className="h-full">
                 <div className="w-12 h-12 rounded-full hanko-seal flex items-center justify-center mb-3">
                   <Icon size={22} className="text-white" />
                 </div>
-                <h3 className="font-heading text-lg font-semibold tracking-wide text-text-primary mb-1.5">
+                <h3 className="font-heading text-lg font-semibold tracking-wide text-parchment mb-1.5">
                   {h.title}
                 </h3>
                 <p className="text-sm text-text-dim leading-relaxed font-body">
                   {h.description}
                 </p>
-              </ShojiCard>
+              </WoodPanel>
             </motion.div>
           )
         })}
@@ -136,42 +138,40 @@ export default function JoinTeam() {
 
       {/* -- Application Form -- */}
       <motion.div variants={itemVariants} className="mb-4">
-        <h2 className="font-display text-2xl tracking-[0.06em] brush-underline text-text-primary mb-1">
-          Apply Now
-        </h2>
-        <p className="text-text-dim font-body mb-6">
-          Brandon or Brad will reach out personally.
-        </p>
-
         {submitted ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
           >
-            <ShojiCard
+            <WoodPanel
               glow
               hover={false}
-              className="p-8 flex flex-col items-center text-center gap-4"
             >
-              <CheckCircle size={48} className="text-gold" />
-              <div>
-                <h3 className="font-display text-xl text-text-primary mb-1">
-                  You've Been Recruited
-                </h3>
-                <p className="text-text-dim font-body">
-                  Brandon or Brad will reach out to you shortly.
-                </p>
+              <div className="flex flex-col items-center text-center gap-4 py-4">
+                <CheckCircle size={48} className="text-gold" />
+                <div>
+                  <h3 className="font-display text-xl text-parchment mb-1">
+                    Welcome to the Clan!
+                  </h3>
+                  <p className="text-text-dim font-body">
+                    Brandon or Brad will reach out to you shortly.
+                  </p>
+                </div>
               </div>
-            </ShojiCard>
+            </WoodPanel>
           </motion.div>
         ) : (
-          <ShojiCard hover={false} className="p-6 md:p-8">
+          <WoodPanel hover={false} headerBar="Pledge Your Blade">
+            <p className="text-text-dim font-body mb-6">
+              Brandon or Brad will reach out personally.
+            </p>
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5"
+                  className="block font-heading text-gold-dim tracking-wide uppercase text-xs mb-1.5"
                 >
                   Full Name
                 </label>
@@ -190,7 +190,7 @@ export default function JoinTeam() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5"
+                  className="block font-heading text-gold-dim tracking-wide uppercase text-xs mb-1.5"
                 >
                   Email
                 </label>
@@ -209,7 +209,7 @@ export default function JoinTeam() {
               <div>
                 <label
                   htmlFor="phone"
-                  className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5"
+                  className="block font-heading text-gold-dim tracking-wide uppercase text-xs mb-1.5"
                 >
                   Phone Number
                 </label>
@@ -228,7 +228,7 @@ export default function JoinTeam() {
               <div>
                 <label
                   htmlFor="experience"
-                  className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5"
+                  className="block font-heading text-gold-dim tracking-wide uppercase text-xs mb-1.5"
                 >
                   Tell us about your experience
                 </label>
@@ -244,11 +244,14 @@ export default function JoinTeam() {
                 />
               </div>
 
-              <Button variant="gold" className="w-full" type="submit">
+              <button
+                type="submit"
+                className="w-full gold-shimmer text-ink font-heading font-bold tracking-widest uppercase px-6 py-3 rounded-sm transition-all duration-300 hover:shadow-[0_0_24px_-4px_rgba(212,168,83,0.5)]"
+              >
                 Submit Application
-              </Button>
+              </button>
             </form>
-          </ShojiCard>
+          </WoodPanel>
         )}
       </motion.div>
     </motion.div>
