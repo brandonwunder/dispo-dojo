@@ -1,0 +1,350 @@
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Phone, MessageSquare, ShieldAlert, ChevronDown, Copy, Check } from 'lucide-react'
+import ShojiCard from '../components/ShojiCard'
+
+const tabs = [
+  { id: 'calling', label: 'Calling Scripts', icon: Phone },
+  { id: 'texting', label: 'Texting Scripts', icon: MessageSquare },
+  { id: 'objections', label: 'Objection Handling', icon: ShieldAlert },
+]
+
+const callingScripts = [
+  {
+    title: 'Initial Agent Outreach',
+    scenario: 'Cold calling a listing agent for the first time about their listing.',
+    script: `Hi [Agent Name], my name is [Your Name] — I came across your listing at [Property Address] and wanted to reach out.
+
+I work with a group of investors and we're actively looking to close deals in [City/Area]. We can close quickly, often in as little as 14 days, and we cover all closing costs.
+
+Would you be open to hearing a creative offer on the property? We have several options that could work for your seller — including ones that can get them full asking price.
+
+[If yes] Great! Can I get the best email to send over our offer details?
+
+[If no] No problem at all. If anything changes or the listing sits a bit, feel free to reach out. I'll send you my info just in case.`,
+  },
+  {
+    title: 'Follow-Up Call (Day 3-5)',
+    scenario: 'Following up with an agent who showed initial interest.',
+    script: `Hey [Agent Name], it's [Your Name] — we spoke a few days ago about [Property Address].
+
+I just wanted to follow up and see if you had a chance to look over what I sent. We're still very interested in the property and ready to move quickly.
+
+Is there a time this week we could chat for 5 minutes to go over the details? I think we can put together something that really works for your seller.`,
+  },
+  {
+    title: 'Sub-To Introduction Call',
+    scenario: 'Explaining Subject-To to an agent who is unfamiliar.',
+    script: `So what we do is called a "Subject-To" acquisition — it's been around for decades and it's completely legal and ethical.
+
+Essentially, your seller transfers the deed to us, and we take over their existing mortgage payments. The loan stays in their name temporarily, but we're contractually obligated to make every payment.
+
+The benefit to your seller is they get out from under the property without having to bring money to closing, and they protect their credit. You still get your full commission — we make sure of that.
+
+Would it help if I sent you a one-page explainer you could share with your seller?`,
+  },
+  {
+    title: 'Expired Listing Outreach',
+    scenario: 'Reaching out to agents whose listings just expired.',
+    script: `Hi [Agent Name], I noticed your listing at [Property Address] recently came off the market. I know that can be frustrating.
+
+I work with a group of investors who specialize in properties that didn't sell traditionally. We have some creative solutions that could still get your seller a great outcome — and you'd still earn your commission.
+
+Would you be open to a quick 5-minute call to see if it's a fit?`,
+  },
+]
+
+const textingScripts = [
+  {
+    title: 'Initial Text to Agent',
+    scenario: 'First contact via text message.',
+    script: `Hi [Agent Name]! This is [Your Name]. I came across your listing at [Address] and I have a buyer who may be interested. Are you open to creative offers? Happy to chat whenever works for you.`,
+  },
+  {
+    title: 'Follow-Up Text',
+    scenario: 'Following up after no response (Day 2-3).',
+    script: `Hey [Agent Name], just following up on [Address]. We're actively closing deals in the area and can move fast. Would love to connect if you have a minute this week!`,
+  },
+  {
+    title: 'Value-Add Text',
+    scenario: 'Providing value to build the relationship.',
+    script: `Hi [Agent Name]! Quick question — if I could bring you a solution that gets your seller full asking price, covers all closing costs, and closes in 14 days, would that be worth a 5-min call? No pressure either way.`,
+  },
+  {
+    title: 'After Sending LOI',
+    scenario: 'Texting after sending a Letter of Intent.',
+    script: `Hey [Agent Name], just sent over our LOI for [Address] to your email. Let me know if you have any questions — happy to hop on a quick call to walk through it. We're ready to move fast on this one.`,
+  },
+  {
+    title: 'Re-Engage Cold Lead',
+    scenario: 'Reaching back out after weeks of silence.',
+    script: `Hey [Agent Name]! It's [Your Name]. We chatted a while back about [Address]. Just checking in — is the property still available? We've closed a few deals in the area recently and are still looking.`,
+  },
+]
+
+const objectionHandling = [
+  {
+    objection: '"My seller would never agree to that."',
+    response: `I totally understand — and honestly, most sellers haven't heard of Subject-To before. But when they see the numbers and realize they can walk away without bringing money to closing, protect their credit, and have someone else handle the payments — it clicks pretty fast.
+
+Would it help if I sent you a simple one-page explainer you could share with them? No pressure at all.`,
+  },
+  {
+    objection: '"That sounds too good to be true."',
+    response: `I get that a lot, and I appreciate the healthy skepticism — that means you're looking out for your client.
+
+Here's the thing: we're contractually obligated to make every mortgage payment. We put that in writing. And this strategy has been used in real estate for decades — it's completely legal and done through a title company just like any other closing.
+
+Happy to connect you with our title company or attorney if that would give you more confidence.`,
+  },
+  {
+    objection: '"I need to get my seller full asking price."',
+    response: `That's actually what we aim for. With a Subject-To deal, we can often offer full asking price because we're not asking for traditional financing or bank approval. We take over the existing payments, so there's no lender discount.
+
+Your seller gets their price, you get your full commission, and we handle the rest. Want me to run the numbers on this specific deal?`,
+  },
+  {
+    objection: '"What happens if you stop making payments?"',
+    response: `Great question — and it's the most important one. First, it's in our contract that we're legally obligated to make every payment. Second, we have a vested interest in keeping that mortgage current because we own the property.
+
+We also carry insurance and have reserves specifically for this. We can even set up an escrow account where your seller can verify payments are being made every month. We want everyone protected.`,
+  },
+  {
+    objection: '"I\'ve never heard of Subject-To before."',
+    response: `That's completely normal — most traditional agents haven't worked with it. But it's been a legitimate real estate strategy for decades.
+
+In simple terms: the seller deeds us the property, and we take over making the mortgage payments. The loan stays in their name temporarily, but we handle everything. It's done through a title company with a standard closing process.
+
+I have a quick explainer I can send over that breaks it all down in plain English. Would that be helpful?`,
+  },
+  {
+    objection: '"I need to talk to my broker first."',
+    response: `Absolutely, please do! We encourage that. Subject-To is a well-known strategy and any experienced broker will be familiar with it.
+
+If your broker has any questions, I'm happy to hop on a call with both of you. We work with brokers and agents all the time on these types of deals. Just let me know when works.`,
+  },
+  {
+    objection: '"We already have other offers."',
+    response: `That's great — competition means it's a solid property. Here's what makes our offer different though:
+
+We can close in as little as 14 days, we cover all closing costs, and there's no financing contingency — so no risk of the deal falling through because a bank says no. If your other offers have any contingencies or delays, ours might be worth considering as a backup at minimum.`,
+  },
+  {
+    objection: '"My seller wants to list it traditionally first."',
+    response: `Totally respect that. Here's what I'd suggest — let them try the market. If it doesn't sell in 30-60 days, or if they get tired of showings and lowball offers, give me a call. We'll still be here and ready to close quickly.
+
+I'll send you my info so you have it on file. No pressure at all.`,
+  },
+]
+
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-gold hover:text-gold-bright text-xs font-heading uppercase tracking-wide transition-all duration-200"
+    >
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+      {copied ? 'Copied!' : 'Copy'}
+    </button>
+  )
+}
+
+function ScriptCard({ title, scenario, script, index }) {
+  const [open, setOpen] = useState(index === 0)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="rounded-2xl bg-bg-card/60 border border-gold-dim/[0.12] overflow-hidden hover:border-gold-dim/20 transition-colors duration-200"
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gold/[0.04] transition-colors duration-200"
+      >
+        <div>
+          <h3 className="font-heading text-sm font-semibold tracking-wide text-text-primary">{title}</h3>
+          <p className="text-xs text-text-dim mt-0.5">{scenario}</p>
+        </div>
+        <ChevronDown
+          size={18}
+          className={`text-gold-dim shrink-0 ml-4 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="px-6 pb-5 border-t border-gold-dim/[0.1]">
+              <div className="flex justify-end mt-3 mb-2">
+                <CopyButton text={script} />
+              </div>
+              <div className="rounded-xl bg-bg-elevated border border-gold-dim/[0.15] p-4">
+                <pre className="text-sm text-text-primary whitespace-pre-wrap font-body leading-relaxed">
+                  {script}
+                </pre>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+function ObjectionCard({ objection, response, index }) {
+  const [open, setOpen] = useState(index === 0)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="rounded-2xl bg-bg-card/60 border border-gold-dim/[0.12] overflow-hidden hover:border-gold-dim/20 transition-colors duration-200"
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gold/[0.04] transition-colors duration-200"
+      >
+        <div className="flex items-start gap-3">
+          <ShieldAlert size={16} className="text-warning shrink-0 mt-0.5" />
+          <p className="font-heading text-sm font-semibold tracking-wide text-text-primary">{objection}</p>
+        </div>
+        <ChevronDown
+          size={18}
+          className={`text-gold-dim shrink-0 ml-4 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="px-6 pb-5 border-t border-gold-dim/[0.1]">
+              <div className="flex justify-end mt-3 mb-2">
+                <CopyButton text={response} />
+              </div>
+              <div className="rounded-xl bg-bg-elevated border border-gold-dim/[0.15] p-4">
+                <pre className="text-sm text-text-primary whitespace-pre-wrap font-body leading-relaxed">
+                  {response}
+                </pre>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+export default function Scripts() {
+  const [activeTab, setActiveTab] = useState('calling')
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="max-w-[900px] mx-auto"
+    >
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-2">
+          <Phone size={28} className="text-gold" />
+          <h1 className="font-display text-2xl tracking-[0.06em] brush-underline text-text-primary">
+            Scripts & Objections
+          </h1>
+        </div>
+        <p className="text-text-dim text-base max-w-2xl">
+          Proven calling scripts, text templates, and objection handlers to help you
+          close deals with listing agents.
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-gold-dim/[0.1] mb-6">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-heading font-medium tracking-wide transition-all duration-200 border-b-2 ${
+              activeTab === tab.id
+                ? 'bg-gold/[0.08] text-gold border-gold'
+                : 'text-text-dim hover:text-gold-dim border-transparent'
+            }`}
+          >
+            <tab.icon size={16} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <ShojiCard hover={false} className="p-0 overflow-visible bg-transparent border-none">
+        <AnimatePresence mode="wait">
+          {activeTab === 'calling' && (
+            <motion.div
+              key="calling"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-3"
+            >
+              {callingScripts.map((s, i) => (
+                <ScriptCard key={s.title} {...s} index={i} />
+              ))}
+            </motion.div>
+          )}
+
+          {activeTab === 'texting' && (
+            <motion.div
+              key="texting"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-3"
+            >
+              {textingScripts.map((s, i) => (
+                <ScriptCard key={s.title} {...s} index={i} />
+              ))}
+            </motion.div>
+          )}
+
+          {activeTab === 'objections' && (
+            <motion.div
+              key="objections"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-3"
+            >
+              {objectionHandling.map((o, i) => (
+                <ObjectionCard key={o.objection} {...o} index={i} />
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </ShojiCard>
+    </motion.div>
+  )
+}

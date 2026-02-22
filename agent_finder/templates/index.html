@@ -1,0 +1,1978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --bg-elevated: #12121a;
+    --bg-card: #16161f;
+    --glass: rgba(22, 22, 31, 0.6);
+    --glass-border: rgba(201, 169, 110, 0.08);
+    --glass-border-hover: rgba(201, 169, 110, 0.18);
+    --border: #1e1e2a;
+    --border-hover: #2e2e3d;
+    --gold: #c9a96e;
+    --gold-bright: #dfc08a;
+    --gold-dim: #a08550;
+    --gold-glow: rgba(201, 169, 110, 0.12);
+    --gold-glow-strong: rgba(201, 169, 110, 0.25);
+    --text: #e8e6e2;
+    --text-dim: #8a8790;
+    --text-muted: #4e4d55;
+    --success: #6ee7a0;
+    --warning: #f0c060;
+    --error: #f07070;
+    --blue: #70b8f0;
+    --purple: #a78bfa;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'DM Sans', -apple-system, sans-serif;
+  }
+
+  html { font-size: 16px; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  #particleCanvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  .gradient-mesh {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .gradient-mesh .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.35;
+  }
+
+  .gradient-mesh .orb-1 {
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(201, 169, 110, 0.2) 0%, transparent 70%);
+    top: -200px;
+    left: 30%;
+    animation: orbFloat1 20s ease-in-out infinite;
+  }
+
+  .gradient-mesh .orb-2 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(120, 100, 180, 0.12) 0%, transparent 70%);
+    top: 40%;
+    right: -100px;
+    animation: orbFloat2 25s ease-in-out infinite;
+  }
+
+  .gradient-mesh .orb-3 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(80, 120, 180, 0.1) 0%, transparent 70%);
+    bottom: -100px;
+    left: -50px;
+    animation: orbFloat3 22s ease-in-out infinite;
+  }
+
+  @keyframes orbFloat1 {
+    0%, 100% { transform: translate(0, 0); }
+    33% { transform: translate(60px, 40px); }
+    66% { transform: translate(-40px, 20px); }
+  }
+
+  @keyframes orbFloat2 {
+    0%, 100% { transform: translate(0, 0); }
+    33% { transform: translate(-50px, -30px); }
+    66% { transform: translate(30px, 50px); }
+  }
+
+  @keyframes orbFloat3 {
+    0%, 100% { transform: translate(0, 0); }
+    33% { transform: translate(40px, -40px); }
+    66% { transform: translate(-30px, 30px); }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 60px 32px 80px;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+
+  .header-logo {
+    width: 180px;
+    height: auto;
+    margin-bottom: 16px;
+    animation: logoFloat 3s ease-in-out infinite;
+    filter: drop-shadow(0 8px 24px rgba(201, 169, 110, 0.2));
+  }
+
+  @keyframes logoFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  header p {
+    margin-top: 0;
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    font-weight: 300;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+  }
+
+  /* ── Active Jobs Banner ── */
+  .active-jobs {
+    display: none;
+    margin-bottom: 28px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .active-jobs.visible { display: block; }
+
+  .active-job-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: var(--glass);
+    border: 1px solid var(--gold-dim);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 10px;
+    box-shadow: 0 0 24px -8px var(--gold-glow);
+  }
+
+  .active-job-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .active-job-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .active-job-label .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .active-job-label .active-job-name {
+    font-weight: 500;
+    font-size: 0.88rem;
+    color: var(--text);
+  }
+
+  .active-job-label .active-job-status {
+    font-size: 0.75rem;
+    color: var(--gold);
+  }
+
+  .active-job-bar {
+    background: var(--bg);
+    border-radius: 4px;
+    height: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .active-job-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    width: 0%;
+    transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .active-job-stats {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .active-job-stats .aji-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .active-job-stats .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* ── Drop Zone ── */
+  .drop-zone {
+    position: relative;
+    border: 1.5px dashed var(--glass-border-hover);
+    border-radius: var(--radius);
+    padding: 64px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: var(--glass);
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--gold-dim);
+    background: linear-gradient(180deg, rgba(201,169,110,0.04) 0%, var(--glass) 100%);
+    box-shadow: 0 0 60px -20px var(--gold-glow-strong);
+  }
+
+  .drop-zone.drag-over {
+    transform: scale(1.01);
+    border-color: var(--gold);
+  }
+
+  .drop-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+
+  .drop-zone:hover .drop-icon {
+    border-color: var(--gold-dim);
+    background: var(--gold-glow);
+  }
+
+  .drop-icon svg {
+    width: 22px;
+    height: 22px;
+    stroke: var(--gold);
+    fill: none;
+    stroke-width: 1.5;
+  }
+
+  .drop-zone h3 {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .drop-zone span {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  /* ── File Selected ── */
+  .file-info {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-top: 16px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .file-info.visible { display: flex; }
+
+  .file-info .file-name {
+    font-weight: 500;
+    font-size: 0.88rem;
+    color: var(--text);
+  }
+
+  .file-info .file-meta {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .btn {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold-bright), var(--gold));
+    background-size: 200% 100%;
+    color: #0b0b0f;
+    font-weight: 600;
+    box-shadow: 0 2px 12px -2px rgba(201,169,110,0.3);
+    transition: all 0.3s ease;
+  }
+
+  .btn-gold:hover {
+    animation: shimmer 1.5s ease infinite;
+    box-shadow: 0 4px 24px -4px rgba(201,169,110,0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-gold:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-outline:hover {
+    border-color: var(--gold-dim);
+    background: var(--gold-glow);
+    color: var(--text);
+    box-shadow: 0 0 20px -6px var(--gold-glow);
+  }
+
+  .btn-sm {
+    padding: 6px 14px;
+    font-size: 0.75rem;
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--error);
+    border: 1px solid rgba(240,112,112,0.25);
+  }
+
+  .btn-danger:hover {
+    background: rgba(240,112,112,0.1);
+    border-color: rgba(240,112,112,0.4);
+    box-shadow: 0 0 20px -6px rgba(240,112,112,0.2);
+    transform: translateY(-1px);
+  }
+
+  /* ── Progress Section ── */
+  .progress-section {
+    display: none;
+    margin-top: 40px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .progress-section.visible { display: block; }
+
+  .progress-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .progress-title-row h2 {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  .progress-bar-wrap {
+    background: var(--bg-card);
+    border-radius: 8px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  .progress-bar {
+    height: 100%;
+    border-radius: 8px;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold), var(--gold-bright), var(--gold));
+    background-size: 300% 100%;
+    animation: progressSweep 2s ease-in-out infinite;
+    width: 0%;
+    transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 0 16px 2px var(--gold-glow-strong);
+  }
+
+  @keyframes progressSweep {
+    0% { background-position: 0% center; }
+    100% { background-position: 300% center; }
+  }
+
+  .progress-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-card .stat-value {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-card .stat-label {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .stat-card.found .stat-value { color: var(--success); }
+  .stat-card.partial .stat-value { color: var(--warning); }
+  .stat-card.cached .stat-value { color: var(--blue); }
+  .stat-card.missing .stat-value { color: var(--error); }
+
+  .stat-card .stat-icon {
+    margin-bottom: 8px;
+    opacity: 0.5;
+  }
+
+  .stat-card .stat-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .stat-card.found .stat-icon { color: var(--success); }
+  .stat-card.partial .stat-icon { color: var(--warning); }
+  .stat-card.cached .stat-icon { color: var(--blue); }
+  .stat-card.missing .stat-icon { color: var(--error); }
+  .stat-card.total-card .stat-icon { color: var(--text-dim); }
+  .stat-card.remaining-card .stat-icon { color: var(--gold); }
+  .stat-card.total-card .stat-value { color: var(--text); }
+  .stat-card.remaining-card .stat-value { color: var(--gold); }
+
+  .progress-address {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    min-height: 20px;
+    transition: opacity 0.2s;
+  }
+
+  /* ── Results Section ── */
+  .results-section {
+    display: none;
+    margin-top: 40px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .results-section.visible { display: block; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .results-header h2 {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  .results-table-wrap {
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    overflow-x: auto;
+    background: var(--glass);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+
+  thead {
+    background: var(--glass);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  tbody tr { transition: background 0.15s; }
+  tbody tr:hover {
+    background: rgba(201, 169, 110, 0.03);
+    box-shadow: inset 3px 0 0 var(--gold-dim);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+
+  .status-badge.found { background: rgba(110,231,160,0.12); color: var(--success); }
+  .status-badge.partial { background: rgba(240,192,96,0.12); color: var(--warning); }
+  .status-badge.cached { background: rgba(112,184,240,0.12); color: var(--blue); }
+  .status-badge.not_found { background: rgba(240,112,112,0.1); color: var(--error); }
+  .status-badge.error { background: rgba(240,112,112,0.1); color: var(--error); }
+
+  .conf-verified { color: var(--success); font-weight: 600; }
+  .conf-low { color: var(--text-dim); }
+
+  .success-rate {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin: 32px 0;
+  }
+
+  .success-ring {
+    position: relative;
+    width: 120px;
+    height: 120px;
+  }
+
+  .success-ring svg {
+    width: 120px;
+    height: 120px;
+    transform: rotate(-90deg);
+  }
+
+  .success-ring .ring-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 8;
+  }
+
+  .success-ring .ring-fill {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 314;
+    stroke-dashoffset: 314;
+    filter: drop-shadow(0 0 6px var(--gold-glow-strong));
+  }
+
+  .success-ring .ring-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  .success-rate-label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  /* ── Error ── */
+  .error-msg {
+    display: none;
+    background: rgba(240,112,112,0.08);
+    border: 1px solid rgba(240,112,112,0.2);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-top: 16px;
+    font-size: 0.88rem;
+    color: var(--error);
+  }
+
+  .error-msg.visible { display: block; }
+
+  /* ── Reset link ── */
+  .reset-link {
+    display: inline-block;
+    margin-top: 24px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+    border: none;
+    background: none;
+    font-family: var(--font-body);
+  }
+
+  .reset-link:hover { color: var(--text); }
+
+  /* ── History Section ── */
+  .history-section {
+    margin-top: 56px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+
+  .history-empty {
+    text-align: center;
+    padding: 32px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .history-header h2 {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  .history-header .history-count {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    transition: all 0.3s ease;
+  }
+
+  .history-item:hover {
+    border-color: var(--glass-border-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px -4px rgba(0,0,0,0.3);
+  }
+
+  .history-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .history-item-name {
+    font-weight: 500;
+    font-size: 0.88rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .history-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+
+  .history-item-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .history-item-stat .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .dot.green { background: var(--success); }
+  .dot.yellow { background: var(--warning); }
+  .dot.red { background: var(--error); }
+  .dot.gold { background: var(--gold); }
+
+  .history-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 16px;
+    flex-shrink: 0;
+  }
+
+  .confirm-delete {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeUp 0.2s ease both;
+  }
+
+  .confirm-delete span {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  /* ── Nav Bar ── */
+  .nav-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10, 10, 15, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    height: 54px;
+    gap: 16px;
+    transition: background 0.3s;
+  }
+
+  .nav-home {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gold);
+    cursor: pointer;
+    white-space: nowrap;
+    border: none;
+    background: none;
+    padding: 0;
+    transition: opacity 0.2s;
+  }
+
+  .nav-home:hover { opacity: 0.8; }
+
+  .nav-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .nav-jobs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    flex: 1;
+  }
+
+  .nav-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-dim);
+    transition: all 0.2s;
+  }
+
+  .nav-pill:hover {
+    border-color: var(--gold-dim);
+    color: var(--text);
+  }
+
+  .nav-pill.active {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: var(--gold-glow);
+    box-shadow: 0 0 16px -4px var(--gold-glow-strong);
+    animation: pillPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pillPulse {
+    0%, 100% { box-shadow: 0 0 16px -4px var(--gold-glow-strong); }
+    50% { box-shadow: 0 0 24px -2px var(--gold-glow-strong); }
+  }
+
+  .nav-pill .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .nav-pill .pill-pct {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+  }
+
+  /* ── Delete Modal ── */
+  .delete-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .delete-modal-overlay.visible { display: flex; }
+
+  .delete-modal {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border-hover);
+    border-radius: var(--radius);
+    padding: 32px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    animation: fadeUp 0.25s ease both;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .delete-modal h3 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .delete-modal p {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .delete-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .nav-bar, header, .drop-zone, .history-section {
+    visibility: hidden;
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .pulsing { animation: pulse 1.8s ease-in-out infinite; }
+
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .nav-bar { padding: 0 16px; }
+    .container { padding: 40px 16px 60px; }
+    .progress-stats { grid-template-columns: repeat(2, 1fr); }
+    .file-info { flex-direction: column; gap: 12px; text-align: center; }
+    .history-item { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .history-item-actions { margin-left: 0; }
+    .active-job-top { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .success-ring { width: 100px; height: 100px; }
+    .success-ring svg { width: 100px; height: 100px; }
+    .success-ring .ring-text { font-size: 1.3rem; }
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+
+<!-- Nav Bar -->
+<nav class="nav-bar" id="navBar">
+  <button class="nav-home" onclick="goHome()">Agent Finder</button>
+  <div class="nav-divider"></div>
+  <div class="nav-jobs" id="navJobs"></div>
+</nav>
+
+<div class="gradient-mesh">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<canvas id="particleCanvas"></canvas>
+
+<div class="container">
+  <header>
+    <img src="/static/logo.png" alt="Dispo Dojo Agent Finder" class="header-logo">
+    <p>Drop your property list and instantly discover the listing agent, brokerage, and contact info for every address.</p>
+  </header>
+
+  <!-- Active Jobs (shown on page load if jobs are running) -->
+  <div class="active-jobs" id="activeJobs"></div>
+
+  <!-- Drop Zone -->
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-icon">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <h3>Drop your CSV or Excel file here</h3>
+    <span>or click to browse &mdash; .csv, .xlsx, .xls</span>
+    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+  </div>
+
+  <!-- File Info + Start Button -->
+  <div class="file-info" id="fileInfo">
+    <div>
+      <div class="file-name" id="fileName"></div>
+      <div class="file-meta" id="fileMeta"></div>
+    </div>
+    <button class="btn btn-gold" id="startBtn" onclick="startProcessing()">Find Agents</button>
+  </div>
+
+  <!-- Error -->
+  <div class="error-msg" id="errorMsg"></div>
+
+  <!-- Progress -->
+  <div class="progress-section" id="progressSection">
+    <div class="progress-title-row">
+      <h2 class="pulsing" id="progressTitle">Searching listings&hellip;</h2>
+      <button class="btn btn-danger btn-sm" id="cancelBtn" onclick="cancelCurrentJob()">Cancel</button>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-stats">
+      <div class="stat-card found">
+        <div class="stat-icon"><i data-lucide="check-circle"></i></div>
+        <div class="stat-value" id="statFound">0</div>
+        <div class="stat-label">Found</div>
+      </div>
+      <div class="stat-card partial">
+        <div class="stat-icon"><i data-lucide="alert-triangle"></i></div>
+        <div class="stat-value" id="statPartial">0</div>
+        <div class="stat-label">Partial</div>
+      </div>
+      <div class="stat-card cached">
+        <div class="stat-icon"><i data-lucide="database"></i></div>
+        <div class="stat-value" id="statCached">0</div>
+        <div class="stat-label">Cached</div>
+      </div>
+      <div class="stat-card missing">
+        <div class="stat-icon"><i data-lucide="x-circle"></i></div>
+        <div class="stat-value" id="statMissing">0</div>
+        <div class="stat-label">Not Found</div>
+      </div>
+      <div class="stat-card total-card">
+        <div class="stat-icon"><i data-lucide="list"></i></div>
+        <div class="stat-value" id="statTotal">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card remaining-card">
+        <div class="stat-icon"><i data-lucide="hourglass"></i></div>
+        <div class="stat-value" id="statRemaining">0</div>
+        <div class="stat-label">Remaining</div>
+      </div>
+    </div>
+    <div class="progress-address" id="progressAddress"></div>
+    <div class="progress-address" id="progressEta" style="margin-top:6px;color:var(--gold-dim);font-weight:500;"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection">
+    <div class="success-rate" id="successRate">
+      <div class="success-ring">
+        <svg viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="50"/>
+          <circle class="ring-fill" id="successRingFill" cx="60" cy="60" r="50"/>
+        </svg>
+        <div class="ring-text" id="successRingText">0%</div>
+      </div>
+      <div class="success-rate-label">success rate</div>
+    </div>
+
+    <div class="results-header">
+      <h2>Results Preview</h2>
+      <button class="btn btn-gold" id="downloadBtn" onclick="downloadResults()">Download ZIP</button>
+    </div>
+
+    <div class="results-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Address</th>
+            <th>Agent</th>
+            <th>Brokerage</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>List Date</th>
+            <th>DOM</th>
+            <th>Confidence</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <div style="text-align:center">
+      <button class="reset-link" onclick="resetAll()">Process another file</button>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="history-section" id="historySection">
+    <div class="history-header">
+      <h2>Past Runs</h2>
+      <span class="history-count" id="historyCount"></span>
+    </div>
+    <div class="history-list" id="historyList">
+      <div class="history-empty" id="historyEmpty">No runs yet. Upload a file above to get started.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="delete-modal-overlay" id="deleteModal">
+  <div class="delete-modal">
+    <h3>Delete this run?</h3>
+    <p id="deleteModalMsg">This will permanently remove the job and its result files.</p>
+    <div class="delete-modal-actions">
+      <button class="btn btn-outline" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-danger" id="deleteModalConfirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const fileName = document.getElementById('fileName');
+const fileMeta = document.getElementById('fileMeta');
+const startBtn = document.getElementById('startBtn');
+const errorMsg = document.getElementById('errorMsg');
+const progressSection = document.getElementById('progressSection');
+const progressBar = document.getElementById('progressBar');
+const progressTitle = document.getElementById('progressTitle');
+const progressAddress = document.getElementById('progressAddress');
+const cancelBtn = document.getElementById('cancelBtn');
+const resultsSection = document.getElementById('resultsSection');
+const resultsBody = document.getElementById('resultsBody');
+const historySection = document.getElementById('historySection');
+const historyList = document.getElementById('historyList');
+const historyCount = document.getElementById('historyCount');
+const activeJobsEl = document.getElementById('activeJobs');
+
+let selectedFile = null;
+let currentJobId = null;
+let currentEventSource = null;
+
+// ETA tracking
+let etaStartTime = null;
+let etaCompletedTimestamps = [];  // rolling window of {time, completed} entries
+
+function formatTimeRemaining(seconds) {
+  if (seconds < 60) return 'Less than a minute remaining';
+  if (seconds < 3600) {
+    const m = Math.ceil(seconds / 60);
+    return `~${m} minute${m !== 1 ? 's' : ''} remaining`;
+  }
+  const h = Math.floor(seconds / 3600);
+  const m = Math.ceil((seconds % 3600) / 60);
+  return `~${h}h ${m}m remaining`;
+}
+
+function updateEta(completed, total) {
+  const etaEl = document.getElementById('progressEta');
+  if (!etaEl || completed <= 0 || completed >= total) {
+    if (etaEl) etaEl.textContent = '';
+    return;
+  }
+
+  const now = Date.now();
+
+  // Record timestamp
+  etaCompletedTimestamps.push({ time: now, completed });
+  // Keep last 20 data points
+  if (etaCompletedTimestamps.length > 20) {
+    etaCompletedTimestamps.shift();
+  }
+
+  // Need at least 2 data points for rate calculation
+  if (etaCompletedTimestamps.length < 2) {
+    etaEl.textContent = 'Estimating time remaining...';
+    return;
+  }
+
+  // Use rolling window rate
+  const oldest = etaCompletedTimestamps[0];
+  const elapsed = (now - oldest.time) / 1000;  // seconds
+  const itemsDone = completed - oldest.completed;
+
+  if (elapsed <= 0 || itemsDone <= 0) {
+    etaEl.textContent = 'Estimating time remaining...';
+    return;
+  }
+
+  const rate = itemsDone / elapsed;  // items per second
+  const remaining = total - completed;
+  const secondsLeft = remaining / rate;
+
+  etaEl.textContent = formatTimeRemaining(secondsLeft);
+}
+
+// ── Drag & Drop ──
+['dragenter','dragover'].forEach(e => {
+  dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.add('drag-over'); });
+});
+['dragleave','drop'].forEach(e => {
+  dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.remove('drag-over'); });
+});
+
+dropZone.addEventListener('drop', ev => {
+  const file = ev.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) handleFile(fileInput.files[0]);
+});
+
+function handleFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['csv','xlsx','xls'].includes(ext)) {
+    showError('Please upload a .csv, .xlsx, or .xls file.');
+    return;
+  }
+  hideError();
+  selectedFile = file;
+  fileName.textContent = file.name;
+  fileMeta.textContent = formatSize(file.size);
+  fileInfo.classList.add('visible');
+  gsap.to('.drop-icon', {
+    rotation: 360, scale: 0, duration: 0.3,
+    onComplete: () => {
+      document.querySelector('.drop-icon').innerHTML = '<i data-lucide="check" style="width:22px;height:22px;color:var(--gold);"></i>';
+      lucide.createIcons();
+      gsap.from('.drop-icon i', { scale: 0, duration: 0.4, ease: 'back.out(3)' });
+    }
+  });
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1048576).toFixed(1) + ' MB';
+}
+
+// ── Upload & Start ──
+async function startProcessing() {
+  if (!selectedFile) return;
+  hideError();
+  startBtn.disabled = true;
+  startBtn.textContent = 'Uploading\u2026';
+
+  const form = new FormData();
+  form.append('file', selectedFile);
+
+  try {
+    const resp = await fetch('/upload', { method: 'POST', body: form });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      showError(data.detail || 'Upload failed.');
+      startBtn.disabled = false;
+      startBtn.textContent = 'Find Agents';
+      return;
+    }
+
+    currentJobId = data.job_id;
+    dropZone.style.display = 'none';
+    fileInfo.style.display = 'none';
+    activeJobsEl.classList.remove('visible');
+    activeJobsEl.innerHTML = '';
+    progressSection.classList.add('visible');
+    cancelBtn.style.display = '';
+
+    listenProgress(data.job_id, data.total);
+    document.getElementById('statTotal').textContent = data.total;
+    document.getElementById('statRemaining').textContent = data.total;
+
+  } catch (err) {
+    showError('Connection error: ' + err.message);
+    startBtn.disabled = false;
+    startBtn.textContent = 'Find Agents';
+  }
+}
+
+// ── Cancel ──
+async function cancelCurrentJob() {
+  if (!currentJobId) return;
+  cancelBtn.disabled = true;
+  cancelBtn.textContent = 'Cancelling\u2026';
+
+  try {
+    await fetch(`/jobs/${currentJobId}/cancel`, { method: 'POST' });
+  } catch (err) {
+    // will be handled by SSE
+  }
+}
+
+async function cancelActiveJob(jobId) {
+  try {
+    const resp = await fetch(`/jobs/${jobId}/cancel`, { method: 'POST' });
+    if (resp.ok) {
+      loadActiveJobs();
+      loadHistory();
+    }
+  } catch (err) {
+    // silently fail
+  }
+}
+
+// ── Reconnect to a running job from active banner ──
+function reconnectJob(jobId, total) {
+  currentJobId = jobId;
+  dropZone.style.display = 'none';
+  fileInfo.style.display = 'none';
+  activeJobsEl.classList.remove('visible');
+  activeJobsEl.innerHTML = '';
+  progressSection.classList.add('visible');
+  cancelBtn.style.display = '';
+  cancelBtn.disabled = false;
+  cancelBtn.textContent = 'Cancel';
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statRemaining').textContent = total;
+
+  // Reset stat cards so they start fresh
+  ['statFound','statPartial','statCached','statMissing'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '0';
+  });
+
+  // Reset donut chart
+  gsap.set('#successRingFill', { strokeDashoffset: 314 });
+  const ringText = document.getElementById('successRingText');
+  if (ringText) ringText.textContent = '0%';
+
+  listenProgress(jobId, total);
+}
+
+// ── GSAP Count-Up Helper ──
+function animateValue(elementId, newValue) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const current = parseInt(el.textContent) || 0;
+  const target = parseInt(newValue) || 0;
+  if (current === target) return;
+  gsap.to({ val: current }, {
+    val: target,
+    duration: 0.4,
+    ease: 'power2.out',
+    onUpdate: function() {
+      el.textContent = Math.round(this.targets()[0].val);
+    }
+  });
+}
+
+// ── SSE Progress ──
+function listenProgress(jobId, total) {
+  if (currentEventSource) {
+    currentEventSource.close();
+  }
+
+  // Reset ETA tracking for new job
+  etaStartTime = Date.now();
+  etaCompletedTimestamps = [];
+
+  const source = new EventSource(`/progress/${jobId}`);
+  currentEventSource = source;
+
+  source.onmessage = (event) => {
+    const d = JSON.parse(event.data);
+
+    if (d.type === 'progress') {
+      const done = (d.completed || 0) + (d.cached || 0);
+      const pct = total > 0 ? (done / total * 100) : 0;
+      progressBar.style.width = Math.min(pct, 100) + '%';
+      animateValue('statFound', d.found);
+      animateValue('statPartial', d.partial);
+      animateValue('statCached', d.cached);
+      animateValue('statMissing', d.not_found);
+      animateValue('statTotal', total);
+      animateValue('statRemaining', Math.max(0, total - done));
+      const newAddr = d.current_address || '';
+      if (progressAddress.textContent !== newAddr) {
+        gsap.to(progressAddress, {
+          opacity: 0, duration: 0.15, ease: 'power1.in',
+          onComplete: () => {
+            progressAddress.textContent = newAddr;
+            gsap.to(progressAddress, { opacity: 1, duration: 0.15, ease: 'power1.out' });
+          }
+        });
+      }
+      updateEta(done, total);
+    }
+
+    else if (d.type === 'complete') {
+      source.close();
+      currentEventSource = null;
+      progressBar.style.width = '100%';
+      progressTitle.classList.remove('pulsing');
+      progressTitle.textContent = 'Complete';
+      progressAddress.textContent = '';
+      document.getElementById('progressEta').textContent = '';
+      cancelBtn.style.display = 'none';
+
+      if (d.summary) {
+        animateValue('statFound', d.summary.found);
+        animateValue('statPartial', d.summary.partial);
+        animateValue('statCached', d.summary.cached);
+        animateValue('statMissing', d.summary.not_found);
+        const pctStr = d.summary.success_rate;
+        const pct = parseFloat(pctStr) / 100;
+        const circumference = 314;
+        const offset = circumference * (1 - pct);
+        document.getElementById('successRingText').textContent = pctStr;
+        gsap.to('#successRingFill', {
+          strokeDashoffset: offset,
+          duration: 1.2,
+          ease: 'power2.out',
+          delay: 0.3
+        });
+      }
+
+      if (d.preview_rows) {
+        resultsBody.innerHTML = '';
+        d.preview_rows.forEach(row => {
+          const tr = document.createElement('tr');
+          const confClass = row.verified ? 'conf-verified' : (row.confidence ? 'conf-low' : '');
+          const checkmark = row.verified ? ' &#10003;' : '';
+          tr.innerHTML = `
+            <td title="${esc(row.address)}">${esc(row.address)}</td>
+            <td>${esc(row.agent_name)}</td>
+            <td>${esc(row.brokerage)}</td>
+            <td>${esc(row.phone)}</td>
+            <td>${esc(row.email)}</td>
+            <td><span class="status-badge ${row.status}">${row.status.replace('_',' ')}</span></td>
+            <td>${esc(row.list_date || '')}</td>
+            <td>${esc(row.days_on_market || '')}</td>
+            <td><span class="${confClass}">${row.confidence || ''}${checkmark}</span></td>
+          `;
+          resultsBody.appendChild(tr);
+        });
+        gsap.from('#resultsBody tr', {
+          y: 12, opacity: 0, duration: 0.3,
+          stagger: 0.03, ease: 'power2.out',
+          clearProps: 'all'
+        });
+      }
+
+      resultsSection.classList.add('visible');
+      loadHistory();
+    }
+
+    else if (d.type === 'cancelled') {
+      source.close();
+      currentEventSource = null;
+      progressTitle.classList.remove('pulsing');
+      progressTitle.textContent = 'Cancelled';
+      progressAddress.textContent = '';
+      document.getElementById('progressEta').textContent = '';
+      cancelBtn.style.display = 'none';
+      loadHistory();
+    }
+
+    else if (d.type === 'error') {
+      source.close();
+      currentEventSource = null;
+      progressTitle.classList.remove('pulsing');
+      progressTitle.textContent = 'Error';
+      document.getElementById('progressEta').textContent = '';
+      cancelBtn.style.display = 'none';
+      showError(d.message);
+      loadHistory();
+    }
+  };
+
+  source.onerror = () => {
+    source.close();
+    currentEventSource = null;
+  };
+}
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Download ──
+function downloadResults() {
+  if (currentJobId) {
+    window.location.href = `/download/${currentJobId}`;
+  }
+}
+
+// ── Reset ──
+function resetAll() {
+  selectedFile = null;
+  currentJobId = null;
+  fileInput.value = '';
+  fileInfo.classList.remove('visible');
+  progressSection.classList.remove('visible');
+  resultsSection.classList.remove('visible');
+  dropZone.style.display = '';
+  progressBar.style.width = '0%';
+  progressTitle.textContent = 'Searching listings\u2026';
+  progressTitle.classList.add('pulsing');
+  document.getElementById('progressEta').textContent = '';
+  etaStartTime = null;
+  etaCompletedTimestamps = [];
+  cancelBtn.style.display = '';
+  cancelBtn.disabled = false;
+  cancelBtn.textContent = 'Cancel';
+  resultsBody.innerHTML = '';
+  startBtn.disabled = false;
+  startBtn.textContent = 'Find Agents';
+  hideError();
+  const dropIcon = document.querySelector('.drop-icon');
+  if (dropIcon) {
+    dropIcon.innerHTML = '<svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:var(--gold);fill:none;stroke-width:1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+  }
+
+  // Reset all stat values
+  ['statFound','statPartial','statCached','statMissing','statTotal','statRemaining'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '0';
+  });
+
+  // Reset donut chart
+  gsap.set('#successRingFill', { strokeDashoffset: 314 });
+  const ringText = document.getElementById('successRingText');
+  if (ringText) ringText.textContent = '0%';
+
+  loadActiveJobs();
+}
+
+// ── Error helpers ──
+function showError(msg) { errorMsg.textContent = msg; errorMsg.classList.add('visible'); }
+function hideError() { errorMsg.classList.remove('visible'); }
+
+// ── Load all jobs (active + history) into one unified list ──
+async function loadAllJobs() {
+  try {
+    const resp = await fetch('/jobs');
+    if (!resp.ok) return;
+    const jobs = await resp.json();
+
+    // Split into active (running/queued) and finished
+    const active = jobs.filter(j => (j.status === 'running' || j.status === 'queued') && j.job_id !== currentJobId);
+    const finished = jobs.filter(j => j.status === 'complete' || j.status === 'error' || j.status === 'cancelled');
+
+    // Active jobs banner (above upload zone)
+    if (active.length > 0) {
+      activeJobsEl.classList.add('visible');
+      activeJobsEl.innerHTML = '';
+      active.forEach(job => {
+        const lp = job.last_progress || {};
+        const pct = job.total > 0 ? (((lp.completed || 0) + (lp.cached || 0)) / job.total * 100) : 0;
+
+        const card = document.createElement('div');
+        card.className = 'active-job-card';
+        card.id = 'active-' + job.job_id;
+        card.innerHTML = `
+          <div class="active-job-top">
+            <div class="active-job-label">
+              <span class="pulse-dot"></span>
+              <span class="active-job-name">${esc(job.filename)}</span>
+              <span class="active-job-status">${job.status === 'queued' ? 'Queued' : 'Processing\u2026'}</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-outline btn-sm" onclick="reconnectJob('${job.job_id}', ${job.total})">View</button>
+              <button class="btn btn-danger btn-sm" onclick="cancelActiveJob('${job.job_id}')">Cancel</button>
+            </div>
+          </div>
+          <div class="active-job-bar"><div class="active-job-bar-fill" style="width:${Math.min(pct,100)}%"></div></div>
+          <div class="active-job-stats">
+            <span>${Math.round(pct)}% complete</span>
+            <span>${job.total} addresses</span>
+            ${lp.found ? `<span class="aji-stat"><span class="dot green"></span>${lp.found} found</span>` : ''}
+            ${lp.not_found ? `<span class="aji-stat"><span class="dot red"></span>${lp.not_found} not found</span>` : ''}
+          </div>
+        `;
+        activeJobsEl.appendChild(card);
+      });
+    } else {
+      activeJobsEl.classList.remove('visible');
+      activeJobsEl.innerHTML = '';
+    }
+
+    // History list (always visible)
+    historyList.innerHTML = '';
+
+    if (finished.length === 0) {
+      historyCount.textContent = '';
+      historyList.innerHTML = '<div class="history-empty">No runs yet. Upload a file above to get started.</div>';
+      return;
+    }
+
+    historyCount.textContent = finished.length + ' run' + (finished.length !== 1 ? 's' : '');
+
+    finished.forEach(job => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.id = 'history-' + job.job_id;
+
+      const dateStr = job.created_at ? formatDate(job.created_at) : '';
+      const s = job.summary || {};
+      const found = (s.found || 0) + (s.cached || 0);
+      const partial = s.partial || 0;
+      const notFound = (s.not_found || 0) + (s.errors || 0);
+
+      let statsHtml = '';
+      if (job.status === 'complete' && job.summary) {
+        statsHtml = `
+          <span class="history-item-stat"><span class="dot green"></span>${found} found</span>
+          <span class="history-item-stat"><span class="dot yellow"></span>${partial} partial</span>
+          <span class="history-item-stat"><span class="dot red"></span>${notFound} not found</span>
+        `;
+      } else if (job.status === 'error') {
+        statsHtml = '<span style="color:var(--error)">Failed</span>';
+      } else if (job.status === 'cancelled') {
+        statsHtml = '<span style="color:var(--warning)">Cancelled</span>';
+      }
+
+      const resumeBtn = (job.status === 'cancelled' || job.status === 'error')
+        ? `<button class="btn btn-gold btn-sm" onclick="resumeJob('${job.job_id}')">Resume</button>`
+        : '';
+
+      item.innerHTML = `
+        <div class="history-item-info">
+          <div class="history-item-name">${esc(job.filename)}</div>
+          <div class="history-item-meta">
+            <span>${dateStr}</span>
+            <span>${job.total} addresses</span>
+            ${statsHtml}
+          </div>
+        </div>
+        <div class="history-item-actions" id="actions-${job.job_id}">
+          ${job.status === 'complete' ? `<button class="btn btn-outline btn-sm" onclick="downloadJob('${job.job_id}')">Download</button>` : ''}
+          ${resumeBtn}
+          <button class="btn btn-danger btn-sm" onclick="confirmDelete('${job.job_id}')">Delete</button>
+        </div>
+      `;
+
+      historyList.appendChild(item);
+    });
+
+    // Animate history items in
+    if (finished.length > 0) {
+      gsap.from('.history-item', {
+        x: 30, opacity: 0, duration: 0.4,
+        stagger: 0.06, ease: 'power2.out',
+        clearProps: 'all'
+      });
+    }
+  } catch (err) {
+    // silently fail
+  }
+}
+
+// Aliases so existing calls still work
+function loadActiveJobs() { loadAllJobs(); }
+function loadHistory() { loadAllJobs(); }
+
+function formatDate(isoStr) {
+  try {
+    const d = new Date(isoStr);
+    const now = new Date();
+    const diff = now - d;
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+    if (diff < 604800000) return Math.floor(diff / 86400000) + 'd ago';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch { return ''; }
+}
+
+function downloadJob(jobId) {
+  window.location.href = `/download/${jobId}`;
+}
+
+function confirmDelete(jobId) {
+  const modal = document.getElementById('deleteModal');
+  const confirmBtn = document.getElementById('deleteModalConfirm');
+  // Bind the jobId directly via closure — no global variable needed
+  confirmBtn.onclick = function(e) {
+    e.stopPropagation();
+    executeDelete(jobId);
+  };
+  modal.classList.add('visible');
+  gsap.from('.delete-modal', { scale: 0.92, opacity: 0, duration: 0.25, ease: 'back.out(1.5)' });
+}
+
+function closeDeleteModal() {
+  gsap.to('.delete-modal', {
+    scale: 0.95, opacity: 0, duration: 0.15, ease: 'power2.in',
+    onComplete: () => {
+      document.getElementById('deleteModal').classList.remove('visible');
+      gsap.set('.delete-modal', { clearProps: 'all' });
+    }
+  });
+}
+
+// Close modal when clicking the backdrop (outside the modal box)
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDeleteModal();
+});
+
+async function executeDelete(jobId) {
+  closeDeleteModal();
+
+  try {
+    const resp = await fetch(`/jobs/${jobId}`, { method: 'DELETE' });
+    if (!resp.ok) {
+      const detail = await resp.text();
+      showError('Delete failed: ' + detail);
+      return;
+    }
+
+    // Animate out then fully reload the list from backend
+    const item = document.getElementById('history-' + jobId);
+    if (item) {
+      gsap.to(item, {
+        x: -30, opacity: 0, height: 0, padding: 0, margin: 0,
+        duration: 0.35, ease: 'power2.in',
+        onComplete: () => { loadHistory(); }
+      });
+    } else {
+      loadHistory();
+    }
+  } catch (err) {
+    showError('Delete failed: ' + err.message);
+  }
+}
+
+// ── Resume a cancelled/errored job ──
+async function resumeJob(jobId) {
+  try {
+    const resp = await fetch(`/jobs/${jobId}/resume`, { method: 'POST' });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      showError(data.detail || 'Resume failed.');
+      return;
+    }
+
+    // Switch to progress view for the new job
+    currentJobId = data.job_id;
+    dropZone.style.display = 'none';
+    fileInfo.style.display = 'none';
+    activeJobsEl.classList.remove('visible');
+    activeJobsEl.innerHTML = '';
+    progressSection.classList.add('visible');
+    progressBar.style.width = '0%';
+    progressTitle.textContent = 'Resuming\u2026';
+    progressTitle.classList.add('pulsing');
+    cancelBtn.style.display = '';
+    cancelBtn.disabled = false;
+    cancelBtn.textContent = 'Cancel';
+    hideError();
+
+    // Reset stat cards
+    document.getElementById('statFound').textContent = '0';
+    document.getElementById('statPartial').textContent = '0';
+    document.getElementById('statCached').textContent = '0';
+    document.getElementById('statMissing').textContent = '0';
+
+    listenProgress(data.job_id, data.total);
+
+  } catch (err) {
+    showError('Connection error: ' + err.message);
+  }
+}
+
+// ── Nav bar: Home button + running job pills ──
+function goHome() {
+  // Detach from current progress view but don't cancel the job
+  if (currentEventSource) {
+    currentEventSource.close();
+    currentEventSource = null;
+  }
+
+  // Hide progress and results
+  progressSection.classList.remove('visible');
+  resultsSection.classList.remove('visible');
+  hideError();
+
+  // Show the upload zone again
+  dropZone.style.display = '';
+  fileInfo.classList.remove('visible');
+  selectedFile = null;
+  fileInput.value = '';
+  startBtn.disabled = false;
+  startBtn.textContent = 'Find Agents';
+
+  // Reset drop zone icon
+  const dropIcon = document.querySelector('.drop-icon');
+  if (dropIcon) {
+    dropIcon.innerHTML = '<svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:var(--gold);fill:none;stroke-width:1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+  }
+
+  // Reset stat values
+  ['statFound','statPartial','statCached','statMissing','statTotal','statRemaining'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '0';
+  });
+
+  // Reset progress bar
+  progressBar.style.width = '0%';
+  progressTitle.textContent = 'Searching listings\u2026';
+  progressTitle.classList.add('pulsing');
+  const etaEl = document.getElementById('progressEta');
+  if (etaEl) etaEl.textContent = '';
+  cancelBtn.style.display = '';
+  cancelBtn.disabled = false;
+  cancelBtn.textContent = 'Cancel';
+
+  // Refresh active jobs list
+  loadAllJobs();
+
+  // Animate entrance
+  gsap.from('.drop-zone', { y: 20, opacity: 0, duration: 0.4, ease: 'power2.out' });
+}
+
+async function updateNavBar() {
+  const navJobs = document.getElementById('navJobs');
+  try {
+    const resp = await fetch('/jobs');
+    if (!resp.ok) return;
+    const allJobs = await resp.json();
+    const running = allJobs.filter(j => j.status === 'running' || j.status === 'queued');
+
+    navJobs.innerHTML = '';
+
+    running.forEach(job => {
+      const lp = job.last_progress || {};
+      const done = (lp.completed || 0) + (lp.cached || 0);
+      const pct = job.total > 0 ? Math.round(done / job.total * 100) : 0;
+      const isActive = (job.job_id === currentJobId && progressSection.classList.contains('visible'));
+
+      const pill = document.createElement('div');
+      pill.className = 'nav-pill' + (isActive ? ' active' : '');
+      pill.onclick = () => reconnectJob(job.job_id, job.total);
+      pill.innerHTML = `
+        <span class="pill-dot"></span>
+        ${esc(job.filename).substring(0, 20)}
+        <span class="pill-pct">${pct}%</span>
+      `;
+      navJobs.appendChild(pill);
+    });
+  } catch (err) {
+    // silently fail
+  }
+}
+
+// Floating particles
+function initParticles() {
+  const canvas = document.getElementById('particleCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  const COUNT = 15;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < COUNT; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 2 + 0.5,
+      speedX: (Math.random() - 0.5) * 0.3,
+      speedY: (Math.random() - 0.5) * 0.2,
+      opacity: Math.random() * 0.4 + 0.1,
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(201, 169, 110, ${p.opacity})`;
+      ctx.fill();
+
+      p.x += p.speedX;
+      p.y += p.speedY;
+
+      if (p.x < -10) p.x = canvas.width + 10;
+      if (p.x > canvas.width + 10) p.x = -10;
+      if (p.y < -10) p.y = canvas.height + 10;
+      if (p.y > canvas.height + 10) p.y = -10;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ── Init: check for active jobs + load history + nav bar ──
+document.addEventListener('DOMContentLoaded', () => {
+  loadActiveJobs();
+  loadHistory();
+  updateNavBar();
+
+  // Periodically refresh nav bar pills
+  setInterval(updateNavBar, 3000);
+
+  // Make elements visible for GSAP
+  gsap.set(['.nav-bar', 'header', '.drop-zone', '.history-section'], { visibility: 'visible' });
+
+  // Page entrance timeline
+  const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+  tl.from('.nav-bar', { y: -20, opacity: 0, duration: 0.5 })
+    .from('.header-logo', { scale: 0.8, opacity: 0, duration: 0.6, ease: 'back.out(1.7)' }, 0.15)
+    .from('header p', { y: 10, opacity: 0, duration: 0.5 }, 0.35)
+    .from('.drop-zone', { y: 20, opacity: 0, duration: 0.5 }, 0.45)
+    .from('.history-section', { y: 20, opacity: 0, duration: 0.5 }, 0.55);
+
+  // Drop zone hover effects
+  dropZone.addEventListener('mouseenter', () => {
+    gsap.to(dropZone, { scale: 1.015, duration: 0.4, ease: 'power2.out' });
+    gsap.to('.drop-icon', { scale: 1.1, rotation: 5, duration: 0.4, ease: 'back.out(2)' });
+  });
+
+  dropZone.addEventListener('mouseleave', () => {
+    gsap.to(dropZone, { scale: 1, duration: 0.3, ease: 'power2.inOut' });
+    gsap.to('.drop-icon', { scale: 1, rotation: 0, duration: 0.3, ease: 'power2.inOut' });
+  });
+
+  // Initialize Lucide icons
+  lucide.createIcons();
+
+  // Initialize floating particles
+  initParticles();
+});
+</script>
+
+</body>
+</html>

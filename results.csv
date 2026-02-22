@@ -1,0 +1,6 @@
+original_address,normalized_address,city,state,zip,agent_name,brokerage,agent_phone,agent_email,data_source,listing_url,lookup_status,sources_tried,error
+123 Main St,"123 MAIN ST, SAN FRANCISCO, CA, 94105",SAN FRANCISCO,CA,94105,Jeong Jeom Yoon,,(415) 407-0016,luciayoonrealtor@gmail.com,homeharvest,https://www.realtor.com/realestateandhomes-detail/123-Main-St_San-Francisco_CA_94105_M15387-77794,cached,,
+456 Oak Ave,"456 OAK AVE, LOS ANGELES, CA, 90001",LOS ANGELES,CA,90001,,,,,homeharvest,https://www.realtor.com/realestateandhomes-detail/456-Oak-Ave_Malaga_NJ_08328_M62901-59928,cached,,
+789 Pine Rd,"789 PINE RD, SEATTLE, WA, 98101",SEATTLE,WA,98101,,,,,,,not_found,"redfin, homeharvest, realtor",
+1010 Maple Dr,"1010 MAPLE DR, AUSTIN, TX, 78701",AUSTIN,TX,78701,,,,,,,not_found,"redfin, homeharvest, realtor",
+555 Broadway,"555 BROADWAY, NEW YORK, NY, 10012",NEW YORK,NY,10012,,,,,,,not_found,"redfin, homeharvest, realtor",
