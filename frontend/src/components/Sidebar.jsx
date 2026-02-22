@@ -60,56 +60,63 @@ const adminSection = {
 }
 
 export default function Sidebar() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, user } = useAuth()
 
   const sections = isAdmin
     ? [navSections[0], adminSection, ...navSections.slice(1)]
     : navSections
 
-  return (
-    <aside className="fixed left-0 top-0 bottom-0 w-[250px] wood-panel-dark z-40 flex flex-col border-r border-gold-dim/20">
+  const name = user?.name || 'Guest'
+  const initials = name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
-      {/* Clan Crest / Logo */}
-      <div className="p-6 flex justify-center">
-        <div
-          className="w-20 h-20 rounded-full border-2 border-gold/40 overflow-hidden shadow-[0_0_20px_rgba(212,168,83,0.15)]"
-          style={{ animation: 'logoFloat 6s ease-in-out infinite' }}
-        >
-          <img src="/logo.png" alt="Dispo Dojo" className="w-full h-full object-cover" />
-        </div>
+  return (
+    <aside className="fixed left-0 top-0 bottom-0 w-[250px] lacquer-deep lacquer-shine z-40 flex flex-col border-r border-gold-dim/15">
+      {/* Wordmark */}
+      <div className="px-6 pt-8 pb-6 text-center">
+        <h1 className="font-display text-3xl gold-shimmer-text tracking-wider">
+          DOJO
+        </h1>
+        <div className="katana-line mt-3" />
       </div>
 
       {/* Navigation sections */}
       <nav className="flex-1 overflow-y-auto px-3 pb-4">
         {sections.map((section) => (
           <div key={section.title} className="mb-4">
-            {/* Section header — pyrography style */}
             <div className="px-3 py-2 text-[10px] font-heading tracking-[0.2em] uppercase text-gold-dim/60">
               {section.title}
             </div>
-            {/* Rope divider */}
-            <div
-              className="mx-3 h-[2px] mb-2"
-              style={{
-                background: 'repeating-linear-gradient(90deg, #8b7355 0px, #6b5a42 4px, #a08968 8px)',
-                opacity: 0.3,
-              }}
-            />
+            <div className="mx-3 katana-line mb-2" />
 
             {section.items.map((item) => (
               <NavLink key={item.to} to={item.to} end={item.to === '/'}>
                 {({ isActive }) => (
                   <motion.div
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-sm mb-0.5 transition-colors ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-sm mb-0.5 transition-colors relative ${
                       isActive
-                        ? 'bg-gold/10 shadow-[0_0_15px_rgba(212,168,83,0.1)] border-l-2 border-gold'
-                        : 'hover:bg-gold/5 border-l-2 border-transparent'
+                        ? 'bg-gold/10'
+                        : 'hover:bg-gold/5'
                     }`}
-                    whileHover={{ x: 4 }}
+                    whileHover={{ x: 6 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                   >
+                    {/* Active glow strip */}
+                    {isActive && (
+                      <div
+                        className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full"
+                        style={{
+                          background: 'linear-gradient(180deg, #d4a853, #f5d078, #d4a853)',
+                          boxShadow: '0 0 8px rgba(212,168,83,0.5), 0 0 16px rgba(212,168,83,0.2)',
+                        }}
+                      />
+                    )}
                     <item.icon
-                      size={22}
+                      size={20}
                       className={isActive ? 'text-gold' : 'text-text-dim'}
                     />
                     <span
@@ -127,8 +134,15 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Bottom mist fade */}
-      <div className="h-12 bg-gradient-to-t from-[#0a0806] to-transparent pointer-events-none" />
+      {/* User info at bottom */}
+      <div className="px-4 py-4 border-t border-gold-dim/10 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full hanko-seal flex items-center justify-center text-xs font-heading font-bold text-parchment">
+          {initials}
+        </div>
+        <span className="font-heading text-sm text-text-dim tracking-wide truncate">
+          {name}
+        </span>
+      </div>
     </aside>
   )
 }
