@@ -17,21 +17,25 @@ export default function Button({
   const variantClasses = {
     gold: `
       relative overflow-hidden
-      bg-gradient-to-r from-gold-dim via-gold to-gold-bright
-      text-bg font-semibold
+      gold-shimmer
+      text-bg font-heading tracking-widest uppercase font-semibold
       shadow-[0_4px_20px_-4px_rgba(212,168,83,0.4)]
       hover:shadow-[0_4px_30px_-4px_rgba(212,168,83,0.6)]
       disabled:opacity-50 disabled:cursor-not-allowed
     `,
     outline: `
-      border border-gold-dim/[0.2] text-text-primary
-      hover:border-gold hover:text-gold
-      hover:shadow-[0_0_20px_-8px_rgba(212,168,83,0.2)]
+      wood-panel border border-gold-dim/20 text-gold
+      hover:bg-gold/10
       disabled:opacity-50 disabled:cursor-not-allowed
     `,
     danger: `
-      bg-crimson/10 border border-crimson/20 text-crimson-bright
-      hover:bg-crimson/20 hover:border-crimson/40
+      bg-crimson text-parchment
+      hover:bg-crimson-bright
+      disabled:opacity-50 disabled:cursor-not-allowed
+    `,
+    seal: `
+      rounded-full w-12 h-12
+      bg-crimson text-parchment font-heading
       disabled:opacity-50 disabled:cursor-not-allowed
     `,
   }
@@ -40,13 +44,13 @@ export default function Button({
     <motion.button
       onClick={onClick}
       disabled={disabled}
-      whileTap={disabled ? undefined : { scale: 0.97 }}
+      whileTap={disabled ? undefined : { scale: 0.95, rotate: -2 }}
       transition={{ duration: 0.1 }}
       className={`
         group relative inline-flex items-center justify-center
-        rounded-xl font-body font-medium
+        ${variant !== 'seal' ? 'rounded-xl' : ''} font-body font-medium
         transition-all duration-300
-        ${sizeClasses[size]}
+        ${sizeClasses[size] || ''}
         ${variantClasses[variant]}
         ${className}
       `}
