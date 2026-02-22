@@ -4,7 +4,6 @@ import {
   Crown,
   Globe,
   Users,
-  ListChecks,
   Zap,
   Target,
   TrendingUp,
