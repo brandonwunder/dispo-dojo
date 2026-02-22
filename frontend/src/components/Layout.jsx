@@ -12,20 +12,20 @@ export default function Layout() {
 
   return (
     <CursorProvider>
-      <div className="min-h-screen bg-bg ink-wash">
+      <div className="min-h-screen bg-bg ink-wash wall-texture">
         {/* === ATMOSPHERE STACK === */}
         {/* Layer 1: Mist (lowest) */}
         <MistLayer />
         {/* Layer 2: Torch light glows */}
         <TorchLight
           positions={[
-            { top: '5%', left: '3%' },
-            { bottom: '10%', right: '5%' },
+            { top: '2%', left: '25%' },
+            { top: '2%', right: '5%' },
           ]}
-          intensity={0.6}
+          intensity={0.5}
         />
         {/* Layer 3: Floating embers */}
-        <EmberField density={25} />
+        <EmberField density={20} />
 
         {/* === LAYOUT === */}
         <Sidebar />

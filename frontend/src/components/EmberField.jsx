@@ -9,7 +9,7 @@ import { prefersReducedMotion } from '../lib/animation/reducedMotion'
 export default function EmberField({
   density = 30,
   className = '',
-  color = { r: 232, g: 140, b: 46 },
+  color = { r: 235, g: 160, b: 60 },
 }) {
   const canvasRef = useRef(null)
 
@@ -32,7 +32,7 @@ export default function EmberField({
     const particles = Array.from({ length: density }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      size: Math.random() * 1.5 + 1.5, // 1.5 - 3px
+      size: Math.random() * 2 + 1.5, // 1.5 - 3.5px
       speedY: -(Math.random() * 0.5 + 0.3), // -0.3 to -0.8 (upward)
       speedX: (Math.random() - 0.5) * 0.3, // -0.15 to 0.15
       opacity: Math.random() * 0.7 + 0.3, // 0.3 - 1.0
@@ -66,7 +66,7 @@ export default function EmberField({
         // Draw ember with glow
         ctx.save()
         ctx.globalAlpha = p.opacity
-        ctx.shadowBlur = 4
+        ctx.shadowBlur = 8
         ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${p.opacity})`
         ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${p.opacity})`
         ctx.beginPath()
