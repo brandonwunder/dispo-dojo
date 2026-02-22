@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -6,18 +5,14 @@ import {
   MapIcon,
   ForgeHammerIcon,
   KatanaIcon,
-  AbacusIcon,
-  InkBrushIcon,
-  SealStampIcon,
   ScrollIcon,
+  InkBrushIcon,
   HawkIcon,
-  WarFanIcon,
   BannerIcon,
-  ToriiIcon,
 } from '../components/icons/index'
-import DojoHallScene from '../components/three/DojoHallScene'
-import WoodPanel from '../components/WoodPanel'
-import CountUp from 'react-countup'
+import InkLandscape from '../components/InkLandscape'
+import HangingScroll from '../components/HangingScroll'
+import ShojiPanel from '../components/ShojiPanel'
 
 const allTools = [
   {
@@ -72,7 +67,7 @@ const allTools = [
 
 const honorStats = [
   { kanji: '刀', label: 'Active Deals', value: 12 },
-  { kanji: '金', label: 'Pipeline Value', value: 2450000, prefix: '$', suffix: '' },
+  { kanji: '金', label: 'Pipeline Value', value: 2450000, prefix: '$' },
   { kanji: '人', label: 'Agents Found', value: 347 },
   { kanji: '勝', label: 'Deals Closed', value: 8 },
 ]
@@ -86,79 +81,76 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-[1200px] mx-auto">
-      <style>{`@keyframes sway { 0%,100% { transform: rotate(-0.5deg); } 50% { transform: rotate(0.5deg); } }`}</style>
+      {/* Zone 1: Ink Landscape Hero */}
+      <InkLandscape>
+        <motion.h1
+          className="font-display text-5xl gold-shimmer-text mb-2"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          Welcome back, {firstName}-san
+        </motion.h1>
+        <motion.p
+          className="font-heading text-text-dim tracking-wide text-lg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+        >
+          {new Date().toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          })}
+        </motion.p>
+      </InkLandscape>
 
-      {/* Zone 1: Hero Banner */}
-      <div className="relative h-[280px] rounded-sm overflow-hidden mb-8 border border-gold-dim/20">
-        <DojoHallScene />
-        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent z-10" />
-        <div className="absolute bottom-8 left-8 z-20">
-          <motion.h1
-            className="font-display text-5xl gold-shimmer-text mb-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            Welcome back, {firstName}-san
-          </motion.h1>
-          <p className="font-heading text-text-dim tracking-wide text-lg">
-            {new Date().toLocaleDateString('en-US', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-          </p>
+      {/* Zone 2: Honor Wall — Hanging Scrolls */}
+      <div className="mb-10">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="katana-line flex-1" />
+          <h2 className="font-display text-lg text-gold/60 tracking-widest">
+            Honor Wall
+          </h2>
+          <div className="katana-line flex-1" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {honorStats.map((stat, i) => (
+            <HangingScroll
+              key={stat.label}
+              kanji={stat.kanji}
+              label={stat.label}
+              value={stat.value}
+              prefix={stat.prefix || ''}
+              suffix={stat.suffix || ''}
+              delay={i * 0.15}
+            />
+          ))}
         </div>
       </div>
 
-      {/* Zone 2: Honor Wall (stats) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {honorStats.map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            className="scroll-card wood-panel p-6 text-center relative rounded-sm border border-gold-dim/20 overflow-hidden"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.15 }}
-            style={{ animation: `sway 4s ease-in-out ${i * 0.5}s infinite` }}
-          >
-            <span className="absolute top-2 left-1/2 -translate-x-1/2 text-5xl font-display text-gold/[0.08] pointer-events-none">
-              {stat.kanji}
-            </span>
-            <div className="relative z-10">
-              <div className="font-heading text-3xl font-bold gold-shimmer-text">
-                {stat.prefix}
-                <CountUp end={stat.value} duration={2} separator="," />
-                {stat.suffix}
-              </div>
-              <div className="font-heading text-sm text-text-dim tracking-widest uppercase mt-1">
-                {stat.label}
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Zone 3: Weapon Wall (tools) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {allTools.map((tool, i) => (
-          <Link to={tool.to} key={tool.to}>
-            <WoodPanel hover className="h-full">
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-sm bg-gold/10">
-                  <tool.icon size={36} className="text-gold" />
-                </div>
-                <div>
-                  <h3 className="font-heading text-lg text-parchment tracking-wide">
-                    {tool.label}
-                  </h3>
-                  <p className="text-text-dim text-sm mt-1">{tool.description}</p>
-                </div>
-              </div>
-            </WoodPanel>
-          </Link>
-        ))}
+      {/* Zone 3: Training Grounds — Shoji Panels */}
+      <div>
+        <div className="flex items-center gap-4 mb-6">
+          <div className="katana-line flex-1" />
+          <h2 className="font-display text-lg text-gold/60 tracking-widest">
+            Training Grounds
+          </h2>
+          <div className="katana-line flex-1" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {allTools.map((tool, i) => (
+            <ShojiPanel
+              key={tool.to}
+              icon={tool.icon}
+              label={tool.label}
+              description={tool.description}
+              to={tool.to}
+              delay={i * 0.08}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )

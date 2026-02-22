@@ -1,5 +1,3 @@
-import { motion } from 'framer-motion'
-
 export default function InkLandscape({ children }) {
   return (
     <div className="relative h-[220px] rounded-sm overflow-hidden mb-8">
