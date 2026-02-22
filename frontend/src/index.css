@@ -9,42 +9,32 @@
 }
 
 @theme {
-  /* Background colors — deeper dojo void */
-  --color-bg: #08080e;
-  --color-bg-elevated: #0f0f18;
-  --color-bg-card: #13131d;
-  --color-glass: rgba(19, 19, 29, 0.6);
-  --color-glass-border: rgba(212, 168, 83, 0.08);
-  --color-glass-border-hover: rgba(212, 168, 83, 0.18);
-  --color-border: #1a1a28;
-
-  /* Gold accent — warm lantern light */
+  --color-bg: #06060f;
+  --color-bg-elevated: #0d0d1a;
+  --color-bg-card: #1a1510;
+  --color-bg-card-hover: #231c14;
+  --color-glass: rgba(26, 21, 16, 0.85);
+  --color-glass-hover: rgba(35, 28, 20, 0.9);
   --color-gold: #d4a853;
-  --color-gold-bright: #e8c36b;
-  --color-gold-dim: #8b7340;
-  --color-gold-glow: rgba(212, 168, 83, 0.12);
-  --color-gold-glow-strong: rgba(212, 168, 83, 0.25);
-
-  /* Crimson — blood red for danger */
-  --color-crimson: #8b2232;
-  --color-crimson-bright: #c43a4f;
-
-  /* Ink & Parchment — dojo texture */
+  --color-gold-dim: #a67c2e;
+  --color-gold-bright: #f5d078;
+  --color-gold-shimmer: #fce8a8;
+  --color-crimson: #8b0000;
+  --color-crimson-bright: #a83232;
+  --color-crimson-glow: rgba(139, 0, 0, 0.4);
+  --color-steel: #4a6fa5;
+  --color-bamboo: #4a7c59;
+  --color-ember: #e8652e;
+  --color-torch: #ff9a3c;
   --color-ink: #1a1a2e;
-  --color-parchment: rgba(214, 198, 172, 0.03);
-
-  /* Text — candlelit warmth */
+  --color-parchment: #f5f0e6;
   --color-text-primary: #ede9e3;
-  --color-text-dim: #7a7680;
-  --color-text-muted: #4a4850;
-
-  /* Status colors */
-  --color-success: #6ee7a0;
-  --color-warning: #f0c060;
-  --color-error: #f07070;
-  --color-info: #70b8f0;
-
-  /* Fonts */
+  --color-text-dim: #8a8578;
+  --color-text-gold: #d4a853;
+  --color-status-success: #4a7c59;
+  --color-status-warning: #d4a853;
+  --color-status-danger: #8b0000;
+  --color-status-info: #4a6fa5;
   --font-display: 'Onari', serif;
   --font-heading: 'Rajdhani', sans-serif;
   --font-body: 'DM Sans', sans-serif;
@@ -133,6 +123,260 @@ body {
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, var(--color-gold-dim) 15%, var(--color-gold) 50%, var(--color-gold-dim) 85%, transparent 100%);
   opacity: 0.3;
+}
+
+/* ═══════════════════════════════════════════
+   Grand Dojo Utility Classes
+   ═══════════════════════════════════════════ */
+
+/* Wood panel textures — procedural SVG turbulence */
+.wood-panel {
+  background-color: #1a1510;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='wood'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.003' numOctaves='5' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wood)' opacity='0.12'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+.wood-panel-dark {
+  background-color: #110e0a;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='wood-dark'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.003' numOctaves='5' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wood-dark)' opacity='0.1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+.wood-panel-light {
+  background-color: #2a2118;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='wood-light'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.003' numOctaves='5' seed='13' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wood-light)' opacity='0.14'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* Torch glow — fixed radial warm light with flicker */
+.torch-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 600px 400px at 50% 0%,
+    rgba(212, 168, 83, 0.06) 0%,
+    rgba(232, 101, 46, 0.03) 40%,
+    transparent 70%
+  );
+  animation: torchFlicker 4s ease-in-out infinite;
+}
+
+@keyframes torchFlicker {
+  0%, 100% { opacity: 1; }
+  25% { opacity: 0.92; }
+  50% { opacity: 0.97; }
+  75% { opacity: 0.88; }
+}
+
+/* Metal bracket — corner decorative borders */
+.metal-bracket {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: var(--color-gold-dim);
+  border-style: solid;
+  border-width: 0;
+  pointer-events: none;
+}
+
+.metal-bracket.top-left {
+  top: 0;
+  left: 0;
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+
+.metal-bracket.top-right {
+  top: 0;
+  right: 0;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+
+.metal-bracket.bottom-left {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+}
+
+.metal-bracket.bottom-right {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+}
+
+/* Gold shimmer — animated metallic gradient */
+.gold-shimmer {
+  background: linear-gradient(
+    110deg,
+    var(--color-gold-dim) 0%,
+    var(--color-gold) 20%,
+    var(--color-gold-shimmer) 40%,
+    var(--color-gold) 60%,
+    var(--color-gold-dim) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+.gold-shimmer-text {
+  background: linear-gradient(
+    110deg,
+    var(--color-gold-dim) 0%,
+    var(--color-gold) 20%,
+    var(--color-gold-shimmer) 40%,
+    var(--color-gold) 60%,
+    var(--color-gold-dim) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Rope border — top edge repeating pattern */
+.rope-top {
+  position: relative;
+}
+
+.rope-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    #8b6914 0px,
+    #a67c2e 2px,
+    #6b4e0a 4px,
+    #8b6914 6px,
+    #a67c2e 8px
+  );
+  border-radius: 2px;
+  opacity: 0.7;
+}
+
+/* Lacquer bar — dark polished wood header */
+.lacquer-bar {
+  background: linear-gradient(180deg, #1a1510 0%, #0f0c08 50%, #1a1510 100%);
+  border-bottom: 1px solid rgba(166, 124, 46, 0.2);
+}
+
+/* Ember float animation */
+@keyframes emberFloat {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-120px) translateX(20px);
+    opacity: 0;
+  }
+}
+
+/* Ink wash — subtle noise overlay for atmospheric backgrounds */
+.ink-wash {
+  position: relative;
+}
+
+.ink-wash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='ink'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.015' numOctaves='3' seed='42' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23ink)' opacity='0.05'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+  border-radius: inherit;
+}
+
+/* Stone texture — rough procedural surface */
+.stone-texture {
+  position: relative;
+}
+
+.stone-texture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='stone'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.08' numOctaves='6' seed='99' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23stone)' opacity='0.08'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+  border-radius: inherit;
+}
+
+/* Parchment texture — cream base with subtle noise */
+.parchment-texture {
+  background-color: var(--color-parchment);
+  color: var(--color-ink);
+  position: relative;
+}
+
+.parchment-texture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='parchment'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' seed='55' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.08'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23parchment)' opacity='0.04'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: multiply;
+  border-radius: inherit;
+}
+
+/* Scroll card — with wooden roller pseudo-elements */
+.scroll-card {
+  position: relative;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.scroll-card::before,
+.scroll-card::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #2a2118 0%, #1a1510 40%, #110e0a 100%);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(166, 124, 46, 0.15);
+}
+
+.scroll-card::before {
+  top: 0;
+}
+
+.scroll-card::after {
+  bottom: 0;
+  background: linear-gradient(180deg, #110e0a 0%, #1a1510 60%, #2a2118 100%);
 }
 
 /* Scrollbar styling — thin, gold */
