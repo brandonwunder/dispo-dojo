@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext'
 import { ChevronDown } from 'lucide-react'
 import {
   NinjaLantern,
-  NinjaWarTable,
   NinjaTelescope,
   NinjaTracker,
   NinjaForge,
@@ -21,7 +20,6 @@ import {
 // Route → page title mapping
 const routeTitles = {
   '/': 'Dashboard',
-  '/crm': 'Deal Pipeline',
   '/agent-finder': 'Agent Finder',
   '/fsbo-finder': 'FSBO Finder',
   '/lead-scrubbing': 'Lead Scrubbing',
@@ -39,7 +37,6 @@ const routeTitles = {
 // Route → ninja logo component mapping
 const routeLogos = {
   '/': NinjaLantern,
-  '/crm': NinjaWarTable,
   '/agent-finder': NinjaTelescope,
   '/fsbo-finder': NinjaTracker,
   '/lead-scrubbing': NinjaForge,
@@ -57,7 +54,6 @@ const routeLogos = {
 // Optional kanji watermarks for flavor (one per page)
 const routeKanji = {
   '/': '道場',      // Dojo
-  '/crm': '戦',     // Battle
   '/agent-finder': '探', // Search
   '/fsbo-finder': '狩', // Hunt
   '/lead-scrubbing': '鍛', // Forge

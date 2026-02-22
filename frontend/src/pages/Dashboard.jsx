@@ -39,12 +39,6 @@ const allTools = [
     to: '/lead-scrubbing',
   },
   {
-    label: 'CRM',
-    icon: AbacusIcon,
-    description: 'Track your full deal pipeline from lead to close',
-    to: '/crm',
-  },
-  {
     label: 'Free Underwriting',
     icon: ForgeHammerIcon,
     description: 'Submit properties for free underwriting on cash or Sub2 deals',

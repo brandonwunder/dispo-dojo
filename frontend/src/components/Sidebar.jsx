@@ -5,7 +5,6 @@ import {
   CompassIcon,
   MapIcon,
   ForgeHammerIcon,
-  KatanaIcon,
   AbacusIcon,
   InkBrushIcon,
   SealStampIcon,
@@ -36,7 +35,6 @@ const navSections = [
   {
     title: 'Deal Management',
     items: [
-      { to: '/crm', icon: KatanaIcon, label: 'CRM' },
       { to: '/underwriting', icon: AbacusIcon, label: 'Free Underwriting' },
       { to: '/loi-generator', icon: InkBrushIcon, label: 'LOI Generator' },
       { to: '/contract-generator', icon: SealStampIcon, label: 'Contract Generator' },
