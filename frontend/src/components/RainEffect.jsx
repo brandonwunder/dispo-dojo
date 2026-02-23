@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-export default function RainEffect() {
+export default function RainEffect({ count = 280, lightning = true }) {
   const canvasRef = useRef(null)
 
   useEffect(() => {
@@ -11,7 +11,7 @@ export default function RainEffect() {
     let running = true
 
     // Config
-    const RAIN_COUNT = 280
+    const RAIN_COUNT = count
     const WIND = 0.15
     const LIGHTNING_MIN = 6000
     const LIGHTNING_MAX = 18000
@@ -117,7 +117,7 @@ export default function RainEffect() {
 
       // Lightning
       const t = Date.now()
-      if (!ltActive && t >= ltNext) {
+      if (lightning && !ltActive && t >= ltNext) {
         ltBolts = bolt(w * (0.05 + Math.random() * 0.9), -30 + Math.random() * 25)
         if (Math.random() < 0.35) ltBolts.push(...bolt(w * (0.05 + Math.random() * 0.9), -30 + Math.random() * 25))
         ltActive = true
