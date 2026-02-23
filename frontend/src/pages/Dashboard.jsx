@@ -8,7 +8,7 @@ import ToolCard from '../components/ToolCard'
 
 const kpis = [
   { label: 'Deals in Underwriting', value: 4 },
-  { label: 'Contracts with Dispo', value: 2 },
+  { label: 'Contracts in Dispo', value: 2 },
   { label: 'Pipeline Value', value: 24837.98, prefix: '$', decimals: 2 },
   { label: 'Deals Closed', value: 9, valueColor: '#00E676' },
   { label: 'Total Assignments Earned', value: 32827.09, prefix: '$', decimals: 2, valueColor: '#00E676' },
