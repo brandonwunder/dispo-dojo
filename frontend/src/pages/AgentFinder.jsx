@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import * as XLSX from 'xlsx'
 import ShurikenLoader from '../components/ShurikenLoader'
 import { CompassIcon } from '../components/icons/index'
 
@@ -238,6 +239,7 @@ export default function AgentFinder() {
   const [groupByAgent, setGroupByAgent] = useState(false)
   const [expandedAgents, setExpandedAgents] = useState(new Set())
   const [exportMenuOpen, setExportMenuOpen] = useState(false)
+  const [historyDownloadMenu, setHistoryDownloadMenu] = useState(null) // job_id or null
   const [bulkCopyToast, setBulkCopyToast] = useState(null)
   const [visibleColumns, setVisibleColumns] = useState(() => {
     try {
@@ -327,6 +329,14 @@ export default function AgentFinder() {
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [exportMenuOpen])
+
+  // ── Close history download menu on outside click ──
+  useEffect(() => {
+    if (!historyDownloadMenu) return
+    const close = () => setHistoryDownloadMenu(null)
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [historyDownloadMenu])
 
   // ── Close column menu on outside click ──
   useEffect(() => {
@@ -634,6 +644,27 @@ export default function AgentFinder() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+    setExportMenuOpen(false)
+  }
+
+  function downloadAsXLSX(rows, filename) {
+    const data = rows.map(r => ({
+      Address:    r.address || '',
+      Agent:      r.agent || r.agent_name || '',
+      Brokerage:  r.brokerage || r.office || '',
+      Phone:      r.phone || '',
+      Email:      r.email || '',
+      Status:     r.status || '',
+      'List Date': r.list_date || '',
+      DOM:        r.dom || r.days_on_market || '',
+      Confidence: r.confidence != null
+        ? (r.confidence > 1 ? r.confidence : Math.round(r.confidence * 100)) + '%'
+        : '',
+    }))
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Results')
+    XLSX.writeFile(wb, filename)
     setExportMenuOpen(false)
   }
 
@@ -1333,45 +1364,86 @@ export default function AgentFinder() {
       {/* Action buttons */}
       <div className="flex items-center gap-3 mt-6">
         {jobId && (
-          <div style={{ position: 'relative' }}>
-            <div style={{ display: 'flex' }}>
-              <a href={`${API_BASE}/api/download/${jobId}`} download
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px',
-                  background: 'linear-gradient(135deg, #F6C445, #C49A20)', color: '#0B0F14',
-                  borderRadius: '10px 0 0 10px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700,
-                  fontSize: '13px', letterSpacing: '0.08em', textTransform: 'uppercase',
-                  textDecoration: 'none', cursor: 'pointer', boxShadow: '0 0 16px rgba(246,196,69,0.3)' }}>
-                ↓ Download All
-              </a>
-              <button onClick={() => setExportMenuOpen(v => !v)}
-                style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #C49A20, #9A7A10)',
-                  color: '#0B0F14', border: 'none', borderLeft: '1px solid rgba(0,0,0,0.2)',
-                  borderRadius: '0 10px 10px 0', cursor: 'pointer', fontSize: '12px' }}>
-                ▾
-              </button>
-            </div>
+          <div style={{ position: 'relative' }} onMouseDown={e => e.stopPropagation()}>
+            <button onClick={() => setExportMenuOpen(v => !v)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
+                background: 'linear-gradient(135deg, #F6C445, #C49A20)', color: '#0B0F14',
+                borderRadius: '10px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700,
+                fontSize: '13px', letterSpacing: '0.08em', textTransform: 'uppercase',
+                border: 'none', cursor: 'pointer', boxShadow: '0 0 16px rgba(246,196,69,0.3)' }}>
+              ↓ Download ▾
+            </button>
             {exportMenuOpen && (
               <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 50,
-                minWidth: '200px', background: 'rgba(17,27,36,0.98)',
+                minWidth: '260px', background: 'rgba(17,27,36,0.98)',
                 border: '1px solid rgba(0,198,255,0.2)', borderRadius: '10px',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.6)', overflow: 'hidden' }}>
+                {/* All results */}
+                <div style={{ padding: '8px 14px 6px', fontSize: '10px', color: '#8A9AAA',
+                  fontFamily: 'Rajdhani, sans-serif', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                  All Results
+                </div>
+                <div style={{ display: 'flex', gap: '6px', padding: '0 14px 10px',
+                  borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                  {[
+                    { label: 'CSV',  action: () => { downloadFilteredCSV('all') } },
+                    { label: 'XLSX', action: () => { downloadAsXLSX(resultRows, `agent-finder-all-${jobId}.xlsx`) } },
+                  ].map(btn => (
+                    <button key={btn.label} onClick={btn.action}
+                      style={{ flex: 1, textAlign: 'center', padding: '6px 10px', borderRadius: '6px',
+                        fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '12px', letterSpacing: '0.1em',
+                        textTransform: 'uppercase', background: 'rgba(0,198,255,0.1)', color: '#00C6FF',
+                        border: '1px solid rgba(0,198,255,0.2)', cursor: 'pointer' }}>
+                      {btn.label}
+                    </button>
+                  ))}
+                  <a href={`${API_BASE}/api/download/${jobId}`} download onClick={() => setExportMenuOpen(false)}
+                    style={{ flex: 1, textAlign: 'center', padding: '6px 10px', borderRadius: '6px',
+                      fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '12px', letterSpacing: '0.1em',
+                      textTransform: 'uppercase', textDecoration: 'none', background: 'rgba(246,196,69,0.1)',
+                      color: '#F6C445', border: '1px solid rgba(246,196,69,0.2)', cursor: 'pointer' }}>
+                    ZIP
+                  </a>
+                </div>
+                {/* Filtered by status */}
+                <div style={{ padding: '8px 14px 6px', fontSize: '10px', color: '#8A9AAA',
+                  fontFamily: 'Rajdhani, sans-serif', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                  Filtered
+                </div>
                 {[
-                  { label: 'Download Found Only', filter: 'found' },
-                  { label: 'Download Partial Only', filter: 'partial' },
-                  { label: 'Download Cached Only', filter: 'cached' },
-                  { label: 'Download Not Found Only', filter: 'not_found' },
-                  { label: 'Download Current View', filter: 'view' },
-                ].map(opt => (
-                  <button key={opt.filter} onClick={() => downloadFilteredCSV(opt.filter)}
-                    style={{ display: 'block', width: '100%', padding: '10px 16px',
-                      background: 'transparent', border: 'none', textAlign: 'left',
-                      cursor: 'pointer', color: '#F4F7FA', fontSize: '13px',
-                      fontFamily: 'DM Sans, sans-serif',
-                      borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.1s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,198,255,0.08)' }}
+                  { label: 'Found Only',    filter: 'found' },
+                  { label: 'Partial Only',  filter: 'partial' },
+                  { label: 'Cached Only',   filter: 'cached' },
+                  { label: 'Not Found Only', filter: 'not_found' },
+                  { label: 'Current View',  filter: 'view' },
+                ].map((opt, i) => (
+                  <div key={opt.filter}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '7px 14px', borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,198,255,0.04)' }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
-                    {opt.label}
-                  </button>
+                    <span style={{ fontSize: '13px', color: '#F4F7FA', fontFamily: 'DM Sans, sans-serif' }}>{opt.label}</span>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button onClick={() => { downloadFilteredCSV(opt.filter); setExportMenuOpen(false) }}
+                        style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '11px',
+                          fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, letterSpacing: '0.08em',
+                          background: 'rgba(0,198,255,0.1)', color: '#00C6FF',
+                          border: '1px solid rgba(0,198,255,0.2)', cursor: 'pointer' }}>
+                        CSV
+                      </button>
+                      <button onClick={() => {
+                        const rows = opt.filter === 'view' ? filteredRows
+                          : resultRows.filter(r => (r.status || 'not_found') === opt.filter)
+                        downloadAsXLSX(rows, `agent-finder-${opt.filter}-${jobId}.xlsx`)
+                      }}
+                        style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '11px',
+                          fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, letterSpacing: '0.08em',
+                          background: 'rgba(0,198,255,0.06)', color: '#7DCEFF',
+                          border: '1px solid rgba(0,198,255,0.15)', cursor: 'pointer' }}>
+                        XLSX
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -1897,19 +1969,103 @@ export default function AgentFinder() {
               >
                 {expandedJobs.has(job.job_id || job.id) ? '▼' : '▶'}
               </button>
-              {(job.status === 'complete' || job.status === 'completed') && (
-                <a
-                  href={`${API_BASE}/api/download/${job.job_id || job.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg font-heading tracking-wider uppercase text-xs font-semibold px-3 py-1.5 gold-shimmer text-bg hover:shadow-[0_2px_10px_-2px_rgba(212,168,83,0.4)] transition-all"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  Download
-                </a>
-              )}
+              {(job.status === 'complete' || job.status === 'completed') && (() => {
+                const jid = job.job_id || job.id
+                const menuOpen = historyDownloadMenu === jid
+                const cachedRows = jobResults[jid]
+
+                async function fetchAndDownload(fmt) {
+                  setHistoryDownloadMenu(null)
+                  let rows = cachedRows
+                  if (!rows) {
+                    try {
+                      const res = await fetch(`${API_BASE}/api/jobs/${jid}/results`)
+                      if (res.ok) {
+                        const data = await res.json()
+                        rows = data.results || []
+                        setJobResults(prev => ({ ...prev, [jid]: rows }))
+                      }
+                    } catch {}
+                  }
+                  if (!rows || rows.length === 0) return
+                  const fname = (job.filename || 'results').replace(/\.[^.]+$/, '')
+                  if (fmt === 'csv') {
+                    const COLS = [
+                      { header: 'Address',    get: r => r.address || '' },
+                      { header: 'Agent',      get: r => r.agent || r.agent_name || '' },
+                      { header: 'Brokerage',  get: r => r.brokerage || r.office || '' },
+                      { header: 'Phone',      get: r => r.phone || '' },
+                      { header: 'Email',      get: r => r.email || '' },
+                      { header: 'Status',     get: r => r.status || '' },
+                      { header: 'List Date',  get: r => r.list_date || '' },
+                      { header: 'DOM',        get: r => r.dom || r.days_on_market || '' },
+                      { header: 'Confidence', get: r => r.confidence != null ? (r.confidence > 1 ? r.confidence : Math.round(r.confidence * 100)) + '%' : '' },
+                    ]
+                    const esc = v => `"${String(v).replace(/"/g, '""')}"`
+                    const csv = COLS.map(c => c.header).join(',') + '\n' + rows.map(r => COLS.map(c => esc(c.get(r))).join(',')).join('\n')
+                    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+                    const a = document.createElement('a'); a.href = url; a.download = `${fname}.csv`
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
+                  } else {
+                    const data = rows.map(r => ({
+                      Address: r.address || '', Agent: r.agent || r.agent_name || '',
+                      Brokerage: r.brokerage || r.office || '', Phone: r.phone || '',
+                      Email: r.email || '', Status: r.status || '',
+                      'List Date': r.list_date || '', DOM: r.dom || r.days_on_market || '',
+                      Confidence: r.confidence != null ? (r.confidence > 1 ? r.confidence : Math.round(r.confidence * 100)) + '%' : '',
+                    }))
+                    const ws = XLSX.utils.json_to_sheet(data)
+                    const wb = XLSX.utils.book_new()
+                    XLSX.utils.book_append_sheet(wb, ws, 'Results')
+                    XLSX.writeFile(wb, `${fname}.xlsx`)
+                  }
+                }
+
+                return (
+                  <div style={{ position: 'relative' }} onMouseDown={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => setHistoryDownloadMenu(menuOpen ? null : jid)}
+                      className="inline-flex items-center gap-1.5 rounded-lg font-heading tracking-wider uppercase text-xs font-semibold px-3 py-1.5 gold-shimmer text-bg hover:shadow-[0_2px_10px_-2px_rgba(212,168,83,0.4)] transition-all"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Download ▾
+                    </button>
+                    {menuOpen && (
+                      <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', zIndex: 60,
+                        minWidth: '160px', background: 'rgba(17,27,36,0.98)',
+                        border: '1px solid rgba(0,198,255,0.2)', borderRadius: '10px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.6)', overflow: 'hidden' }}>
+                        {[
+                          { label: 'CSV',  fmt: 'csv' },
+                          { label: 'XLSX', fmt: 'xlsx' },
+                        ].map(opt => (
+                          <button key={opt.fmt} onClick={() => fetchAndDownload(opt.fmt)}
+                            style={{ display: 'block', width: '100%', padding: '9px 14px',
+                              background: 'transparent', border: 'none', textAlign: 'left',
+                              cursor: 'pointer', color: '#F4F7FA', fontSize: '13px',
+                              fontFamily: 'DM Sans, sans-serif',
+                              borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,198,255,0.08)' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+                            {opt.label}
+                          </button>
+                        ))}
+                        <a href={`${API_BASE}/api/download/${jid}`} download onClick={() => setHistoryDownloadMenu(null)}
+                          style={{ display: 'block', padding: '9px 14px', textDecoration: 'none',
+                            color: '#F6C445', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(246,196,69,0.08)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+                          ZIP (full archive)
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
               <button
                 onClick={() => handleDelete(job.job_id || job.id)}
                 className="inline-flex items-center gap-1.5 rounded-lg font-heading tracking-wider uppercase text-xs px-3 py-1.5 transition-all"
