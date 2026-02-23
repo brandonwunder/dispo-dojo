@@ -867,10 +867,185 @@ export default function AgentFinder() {
     )}
   </motion.div>
 )}
-          {/* ERROR — Task 6 */}
+          {phase === 'error' && (
+  <motion.div
+    key="error"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.3 }}
+  >
+    <GlassCard>
+      <div className="text-center py-8">
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+          style={{ background: 'rgba(229,57,53,0.14)' }}
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#EF5350" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+        </div>
+
+        <h3
+          className="font-heading text-lg tracking-wider uppercase mb-2"
+          style={{ color: '#EF5350' }}
+        >
+          {error?.includes('backend') || error?.includes('connection') || error?.includes('Failed to fetch')
+            ? 'Backend Unavailable'
+            : 'Something Went Wrong'}
+        </h3>
+
+        <p className="text-sm max-w-md mx-auto mb-2" style={{ color: '#C8D1DA' }}>{error}</p>
+
+        {(error?.includes('backend') || error?.includes('connection') || error?.includes('Failed to fetch')) && (
+          <div
+            className="rounded-xl p-4 max-w-md mx-auto mt-4 text-left"
+            style={{
+              background: 'rgba(0,0,0,0.3)',
+              border: '1px solid rgba(0,198,255,0.08)',
+            }}
+          >
+            <p
+              className="text-xs font-heading tracking-wider uppercase mb-2"
+              style={{ color: '#C49A20' }}
+            >
+              To start the backend:
+            </p>
+            <div className="rounded p-3 font-mono text-xs" style={{ background: 'rgba(0,0,0,0.4)' }}>
+              <p style={{ color: '#F6C445' }}>cd backend</p>
+              <p style={{ color: '#F6C445' }}>python main.py</p>
+              <p className="mt-1" style={{ color: 'rgba(200,209,218,0.4)' }}># Runs on localhost:9000</p>
+            </div>
+          </div>
+        )}
+
+        <motion.button
+          onClick={handleReset}
+          whileTap={{ scale: 0.97 }}
+          className="mt-6 inline-flex items-center justify-center font-heading tracking-widest uppercase font-semibold rounded-xl px-6 py-2.5 text-sm transition-all"
+          style={{
+            background: 'rgba(0,198,255,0.06)',
+            border: '1px solid rgba(0,198,255,0.15)',
+            color: '#00C6FF',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,198,255,0.12)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,198,255,0.06)'}
+        >
+          Try Again
+        </motion.button>
+      </div>
+    </GlassCard>
+  </motion.div>
+)}
         </AnimatePresence>
 
-        {/* JOB HISTORY — Task 6 */}
+        {jobs.length > 0 && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ delay: 0.3 }}
+  >
+    <GlassCard>
+      <h2
+        className="font-heading text-xs uppercase mb-5"
+        style={{ color: '#00C6FF', letterSpacing: '0.14em' }}
+      >
+        Job History
+      </h2>
+
+      <div className="space-y-2">
+        {jobs.map((job) => (
+          <div
+            key={job.job_id || job.id}
+            className="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            style={{
+              background: 'rgba(0,198,255,0.03)',
+              border: '1px solid rgba(0,198,255,0.08)',
+            }}
+          >
+            <div className="min-w-0">
+              <p className="font-heading text-sm truncate" style={{ color: '#F4F7FA' }}>
+                {job.filename || job.file_name || 'Unknown file'}
+              </p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                <span className="text-xs" style={{ color: '#8A9AAA' }}>
+                  {formatDate(job.created_at || job.date)}
+                </span>
+                <span className="text-xs" style={{ color: '#8A9AAA' }}>
+                  {job.total || job.address_count || '?'} addresses
+                </span>
+                {(job.found != null || job.status_counts) && (
+                  <span className="text-xs">
+                    <span style={{ color: '#4a7c59' }}>
+                      {job.found ?? job.status_counts?.found ?? 0} found
+                    </span>
+                    {' / '}
+                    <span style={{ color: '#EF5350' }}>
+                      {job.not_found ?? job.status_counts?.not_found ?? 0} missed
+                    </span>
+                  </span>
+                )}
+                {job.status && (
+                  <span
+                    className="text-xs font-heading tracking-wider uppercase"
+                    style={{
+                      color:
+                        job.status === 'complete' ? '#4a7c59' :
+                        job.status === 'processing' ? '#d4a853' :
+                        job.status === 'cancelled' ? '#8A9AAA' :
+                        '#EF5350',
+                    }}
+                  >
+                    {job.status}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {(job.status === 'complete' || job.status === 'completed') && (
+                <a
+                  href={`${API_BASE}/api/download/${job.job_id || job.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg font-heading tracking-wider uppercase text-xs font-semibold px-3 py-1.5 gold-shimmer text-bg hover:shadow-[0_2px_10px_-2px_rgba(212,168,83,0.4)] transition-all"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Download
+                </a>
+              )}
+              <button
+                onClick={() => handleDelete(job.job_id || job.id)}
+                className="inline-flex items-center gap-1.5 rounded-lg font-heading tracking-wider uppercase text-xs px-3 py-1.5 transition-all"
+                style={{ color: '#8A9AAA', border: '1px solid transparent' }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = '#EF5350'
+                  e.currentTarget.style.background = 'rgba(229,57,53,0.08)'
+                  e.currentTarget.style.borderColor = 'rgba(229,57,53,0.2)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = '#8A9AAA'
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.borderColor = 'transparent'
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </GlassCard>
+  </motion.div>
+)}
       </motion.div>
     </div>
   )
