@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import re
 from typing import List, Optional
 
 import httpx
@@ -29,8 +28,7 @@ class RealtorFSBOScraper(FSBOBaseScraper):
         if self.is_circuit_open:
             return []
         try:
-            loop = asyncio.get_event_loop()
-            results = await loop.run_in_executor(None, self._sync_search, criteria)
+            results = await asyncio.to_thread(self._sync_search, criteria)
             self._record_success()
             logger.info("realtor_fsbo: found %d listings", len(results))
             return results
