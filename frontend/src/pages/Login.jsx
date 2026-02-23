@@ -6,12 +6,6 @@ import RainEffect from '../components/RainEffect'
 import NinjaTransition from '../components/NinjaTransition'
 import { useAuth } from '../context/AuthContext'
 
-const inputClass = `
-  w-full px-4 py-3 bg-bg-card border border-[rgba(0,198,255,0.15)] rounded-sm
-  text-parchment font-body focus:border-[rgba(0,198,255,0.4)] focus:shadow-[0_0_8px_rgba(0,198,255,0.15)] focus:outline-none
-  transition-colors placeholder:text-text-dim/50
-`
-
 function SignUpModal({ onClose, onSuccess }) {
   const [step, setStep] = useState(1)
   const [name, setName] = useState('')
