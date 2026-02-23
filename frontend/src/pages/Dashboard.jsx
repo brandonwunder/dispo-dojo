@@ -46,9 +46,11 @@ import ToolCard from '../components/ToolCard'
 /* ── Seed data ─────────────────────────────────── */
 
 const kpis = [
-  { label: 'Active Deals', value: 27, delta: '▲ 5 this week' },
-  { label: 'Pipeline Value', value: 3250000, prefix: '$', delta: '+$500k this week' },
-  { label: 'Deals Closed', value: 9, delta: '▲ 3 this week' },
+  { label: 'Deals in Underwriting', value: 4 },
+  { label: 'Contracts with Dispo', value: 2 },
+  { label: 'Pipeline Value', value: 24837.98, prefix: '$', decimals: 2 },
+  { label: 'Deals Closed', value: 9 },
+  { label: 'Total Assignments Earned', value: 32827.09, prefix: '$', decimals: 2 },
 ]
 
 const tools = [
@@ -169,13 +171,14 @@ export default function Dashboard() {
 
       {/* ── KPI Row ─────────────────────────────── */}
       <section className="mb-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {kpis.map((kpi, i) => (
             <KpiCard
               key={kpi.label}
               label={kpi.label}
               value={kpi.value}
               prefix={kpi.prefix || ''}
+              decimals={kpi.decimals || 0}
               delta={kpi.delta}
               delay={i * 0.1}
             />

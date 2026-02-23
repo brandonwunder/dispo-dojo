@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import CountUp from 'react-countup'
 import { Card, CardContent } from '@/components/ui/card'
 
-export default function KpiCard({ label, value, prefix = '', suffix = '', delta, delay = 0 }) {
+export default function KpiCard({ label, value, prefix = '', suffix = '', decimals = 0, delta, delay = 0 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -15,12 +15,13 @@ export default function KpiCard({ label, value, prefix = '', suffix = '', delta,
           <p className="font-body text-[13px] uppercase tracking-wider text-[#8a8578] mb-3">
             {label}
           </p>
-          <p className="font-heading text-4xl font-bold text-[#ede9e3] tracking-tight">
+          <p className="font-heading text-2xl lg:text-3xl font-bold text-[#ede9e3] tracking-tight">
             {prefix}
             <CountUp
               end={value}
               duration={2}
               separator=","
+              decimals={decimals}
               preserveValue
             />
             {suffix}
