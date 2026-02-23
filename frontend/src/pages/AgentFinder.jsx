@@ -212,6 +212,7 @@ export default function AgentFinder() {
   const [uploading, setUploading] = useState(false)
   const [activeStatusFilter, setActiveStatusFilter] = useState('all')
   const [tableSearch, setTableSearch] = useState('')
+  const [sortConfig, setSortConfig] = useState(null) // { column: string, direction: 'asc'|'desc' }
 
   const fileInputRef = useRef(null)
   const sseRef = useRef(null)
@@ -443,6 +444,14 @@ export default function AgentFinder() {
     }
   }
 
+  function toggleSort(column) {
+    setSortConfig(prev => {
+      if (!prev || prev.column !== column) return { column, direction: 'asc' }
+      if (prev.direction === 'asc') return { column, direction: 'desc' }
+      return null // third click resets
+    })
+  }
+
   const handleReset = () => {
     setFile(null)
     setPhase('upload')
@@ -457,6 +466,7 @@ export default function AgentFinder() {
     setProcessingSpeed(null)
     setActiveStatusFilter('all')
     setTableSearch('')
+    setSortConfig(null)
     prevProgressRef.current = { found: 0, partial: 0, cached: 0, not_found: 0 }
     prevAddressRef.current = ''
     tickerIdRef.current = 0
@@ -529,8 +539,43 @@ export default function AgentFinder() {
       })
     }
 
+    if (sortConfig) {
+      rows = [...rows].sort((a, b) => {
+        let aVal, bVal
+        switch (sortConfig.column) {
+          case 'agent':
+            aVal = (a.agent || a.agent_name || '').toLowerCase()
+            bVal = (b.agent || b.agent_name || '').toLowerCase()
+            break
+          case 'brokerage':
+            aVal = (a.brokerage || a.office || '').toLowerCase()
+            bVal = (b.brokerage || b.office || '').toLowerCase()
+            break
+          case 'status': {
+            const order = { found: 0, partial: 1, cached: 2, not_found: 3 }
+            aVal = order[a.status || 'not_found'] ?? 3
+            bVal = order[b.status || 'not_found'] ?? 3
+            break
+          }
+          case 'confidence':
+            aVal = a.confidence ?? -1
+            bVal = b.confidence ?? -1
+            break
+          case 'dom':
+            aVal = parseFloat(a.dom || a.days_on_market || 0) || 0
+            bVal = parseFloat(b.dom || b.days_on_market || 0) || 0
+            break
+          default:
+            return 0
+        }
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1
+        return 0
+      })
+    }
+
     return rows
-  }, [resultRows, activeStatusFilter, tableSearch])
+  }, [resultRows, activeStatusFilter, tableSearch, sortConfig])
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -1139,15 +1184,35 @@ export default function AgentFinder() {
           <table className="w-full min-w-[900px]" style={{ padding: '0 24px' }}>
             <thead>
               <tr style={{ background: 'rgba(0,198,255,0.06)' }}>
-                {['Address','Agent','Brokerage','Phone','Email','Status','List Date','DOM','Confidence'].map(col => (
-                  <th
-                    key={col}
-                    className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap"
-                    style={{ color: '#F6C445', letterSpacing: '0.1em' }}
-                  >
-                    {col}
-                  </th>
-                ))}
+                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>Address</th>
+                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
+                  <button onClick={() => toggleSort('agent')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
+                    Agent <span style={{ opacity: 0.5, fontSize: '10px' }}>{sortConfig?.column === 'agent' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
+                  <button onClick={() => toggleSort('brokerage')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
+                    Brokerage <span style={{ opacity: 0.5, fontSize: '10px' }}>{sortConfig?.column === 'brokerage' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>Phone</th>
+                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>Email</th>
+                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
+                  <button onClick={() => toggleSort('status')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
+                    Status <span style={{ opacity: 0.5, fontSize: '10px' }}>{sortConfig?.column === 'status' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>List Date</th>
+                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
+                  <button onClick={() => toggleSort('dom')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
+                    DOM <span style={{ opacity: 0.5, fontSize: '10px' }}>{sortConfig?.column === 'dom' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
+                  <button onClick={() => toggleSort('confidence')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
+                    Confidence <span style={{ opacity: 0.5, fontSize: '10px' }}>{sortConfig?.column === 'confidence' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
