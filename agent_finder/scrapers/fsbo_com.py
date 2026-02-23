@@ -43,8 +43,7 @@ class FsboComScraper(FSBOBaseScraper):
                 listing = await self._scrape_listing(url, criteria)
                 if listing:
                     results.append(listing)
-            if results:
-                self._record_success()
+            self._record_success()
             logger.info("fsbo.com: found %d listings", len(results))
             return results
         except Exception as e:
@@ -171,7 +170,7 @@ class FsboComScraper(FSBOBaseScraper):
             m = re.search(r"(\d+)", str(dom_el))
             if m:
                 dom = int(m.group(1))
-        if criteria.max_days_on_market and dom and dom > criteria.max_days_on_market:
+        if criteria.max_days_on_market and dom is not None and dom > criteria.max_days_on_market:
             return None  # filtered out
 
         # Owner contact
