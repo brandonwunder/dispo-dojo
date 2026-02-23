@@ -49,6 +49,13 @@ const COLUMN_DEFS = [
 ]
 const DEFAULT_VISIBLE = new Set(COLUMN_DEFS.filter(c => c.defaultVisible).map(c => c.key))
 
+function getFoundRate(job) {
+  const total = job.total || job.address_count || 0
+  if (!total) return null
+  const found = (job.found || 0) + (job.partial || 0) + (job.cached || 0)
+  return Math.round(found / total * 100)
+}
+
 // ─── Status Badge ───────────────────────────────────────────────────────────
 
 function StatusBadge({ status }) {
@@ -241,6 +248,9 @@ export default function AgentFinder() {
     }
   })
   const [colMenuOpen, setColMenuOpen] = useState(false)
+  const [expandedJobs, setExpandedJobs] = useState(new Set())
+  const [jobResults, setJobResults] = useState({}) // jobId -> rows array
+  const [jobResultsLoading, setJobResultsLoading] = useState(new Set())
   const [notifPermission, setNotifPermission] = useState(
     typeof Notification !== 'undefined' ? Notification.permission : 'denied'
   )
@@ -492,6 +502,64 @@ export default function AgentFinder() {
     } catch {
       // Best effort
     }
+  }
+
+  async function expandJob(jobId) {
+    setExpandedJobs(prev => {
+      const next = new Set(prev)
+      next.has(jobId) ? next.delete(jobId) : next.add(jobId)
+      return next
+    })
+
+    if (jobResults[jobId] !== undefined) return // already loaded
+
+    setJobResultsLoading(prev => new Set([...prev, jobId]))
+    try {
+      const res = await fetch(`${API_BASE}/api/jobs/${jobId}/results`)
+      if (!res.ok) throw new Error('Not available')
+      const data = await res.json()
+      setJobResults(prev => ({ ...prev, [jobId]: data.results || data.rows || [] }))
+    } catch {
+      setJobResults(prev => ({ ...prev, [jobId]: null })) // null = error state
+    } finally {
+      setJobResultsLoading(prev => {
+        const next = new Set(prev)
+        next.delete(jobId)
+        return next
+      })
+    }
+  }
+
+  function resumeMonitoring(job) {
+    const id = job.job_id || job.id
+    const total = job.total || job.address_count || 0
+
+    // Close any existing SSE connection
+    if (sseRef.current) {
+      sseRef.current.close()
+      sseRef.current = null
+    }
+
+    // Reset ticker and speed refs
+    prevProgressRef.current = { found: 0, partial: 0, cached: 0, not_found: 0 }
+    prevAddressRef.current = ''
+    setTickerLog([])
+    setProcessingSpeed(null)
+
+    // Set state to processing phase for this job
+    setJobId(id)
+    setProgress({
+      completed: 0,
+      total,
+      found: 0,
+      partial: 0,
+      cached: 0,
+      not_found: 0,
+      current_address: '',
+    })
+    startTimeRef.current = Date.now()
+    setPhase('processing')
+    connectSSE(id)
   }
 
   function copyToClipboard(value, key) {
@@ -753,6 +821,10 @@ export default function AgentFinder() {
         @keyframes progressShimmer {
           0% { background-position: -200% 0; }
           100% { background-position: 200% 0; }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.85); }
         }
       `}</style>
 
@@ -1670,8 +1742,8 @@ export default function AgentFinder() {
 
       <div className="space-y-2">
         {jobs.map((job) => (
+          <div key={job.job_id || job.id}>
           <div
-            key={job.job_id || job.id}
             className="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             style={{
               background: 'rgba(0,198,255,0.03)',
@@ -1681,6 +1753,21 @@ export default function AgentFinder() {
             <div className="min-w-0">
               <p className="font-heading text-sm truncate" style={{ color: '#F4F7FA' }}>
                 {job.filename || job.file_name || 'Unknown file'}
+                {(() => {
+                  const rate = getFoundRate(job)
+                  return rate != null ? (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center',
+                      padding: '2px 8px', borderRadius: '10px', marginLeft: '8px',
+                      fontSize: '11px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700,
+                      background: rate >= 70 ? 'rgba(74,124,89,0.2)' : rate >= 40 ? 'rgba(212,168,83,0.2)' : 'rgba(163,50,50,0.2)',
+                      border: rate >= 70 ? '1px solid rgba(74,124,89,0.4)' : rate >= 40 ? '1px solid rgba(212,168,83,0.4)' : '1px solid rgba(163,50,50,0.4)',
+                      color: rate >= 70 ? '#4a7c59' : rate >= 40 ? '#d4a853' : '#a83232',
+                    }}>
+                      {rate}% found
+                    </span>
+                  ) : null
+                })()}
               </p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
                 <span className="text-xs" style={{ color: '#8A9AAA' }}>
@@ -1718,6 +1805,48 @@ export default function AgentFinder() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              {/* Resume monitoring for in-progress jobs */}
+              {(job.status === 'processing' || job.status === 'running') && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Pulsing live badge */}
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    padding: '2px 8px', borderRadius: '10px',
+                    background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)',
+                    color: '#00C6FF', fontSize: '11px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700,
+                  }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00C6FF', display: 'inline-block', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                    Live
+                  </span>
+                  {/* Monitor button */}
+                  <button
+                    onClick={() => resumeMonitoring(job)}
+                    style={{
+                      padding: '3px 10px', borderRadius: '6px',
+                      background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)',
+                      color: '#00C6FF', fontSize: '12px', fontFamily: 'Rajdhani, sans-serif',
+                      fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
+                      cursor: 'pointer', transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,198,255,0.2)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,198,255,0.1)' }}
+                  >
+                    Monitor
+                  </button>
+                </div>
+              )}
+              {/* Expand chevron button */}
+              <button
+                onClick={() => expandJob(job.job_id || job.id)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: expandedJobs.has(job.job_id || job.id) ? '#00C6FF' : '#C8D1DA',
+                  fontSize: '13px', padding: '4px 8px', transition: 'color 0.15s',
+                }}
+                title="Preview results"
+              >
+                {expandedJobs.has(job.job_id || job.id) ? '▼' : '▶'}
+              </button>
               {(job.status === 'complete' || job.status === 'completed') && (
                 <a
                   href={`${API_BASE}/api/download/${job.job_id || job.id}`}
@@ -1753,6 +1882,59 @@ export default function AgentFinder() {
                 Delete
               </button>
             </div>
+          </div>
+          {/* Inline result preview panel */}
+          {expandedJobs.has(job.job_id || job.id) && (
+            <div style={{
+              margin: '0 0 8px 0',
+              padding: '12px',
+              background: 'rgba(0,0,0,0.25)',
+              border: '1px solid rgba(0,198,255,0.08)',
+              borderRadius: '8px',
+            }}>
+              {jobResultsLoading.has(job.job_id || job.id) ? (
+                <div style={{ textAlign: 'center', padding: '16px', color: '#C8D1DA', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <ShurikenLoader size={16} /> Loading...
+                </div>
+              ) : jobResults[job.job_id || job.id] === null ? (
+                <p style={{ color: '#C8D1DA', fontSize: '13px', textAlign: 'center', padding: '12px' }}>
+                  Preview not available for this job.
+                </p>
+              ) : jobResults[job.job_id || job.id]?.length === 0 ? (
+                <p style={{ color: '#C8D1DA', fontSize: '13px', textAlign: 'center', padding: '12px' }}>
+                  No results found.
+                </p>
+              ) : (
+                <>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                        {['Address', 'Agent', 'Phone', 'Email', 'Status'].map(h => (
+                          <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: '#C8D1DA', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '10px' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(jobResults[job.job_id || job.id] || []).slice(0, 10).map((row, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <td style={{ padding: '6px 10px', color: '#C8D1DA', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.address || '--'}</td>
+                          <td style={{ padding: '6px 10px', color: '#F4F7FA' }}>{row.agent || row.agent_name || '--'}</td>
+                          <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: '#F4F7FA' }}>{row.phone || '--'}</td>
+                          <td style={{ padding: '6px 10px', color: '#C8D1DA' }}>{row.email || '--'}</td>
+                          <td style={{ padding: '6px 10px' }}><StatusBadge status={row.status} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {(jobResults[job.job_id || job.id] || []).length > 10 && (
+                    <p style={{ textAlign: 'center', marginTop: '8px', fontSize: '12px', color: '#C8D1DA' }}>
+                      +{(jobResults[job.job_id || job.id] || []).length - 10} more rows — download to see all
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
           </div>
         ))}
       </div>
