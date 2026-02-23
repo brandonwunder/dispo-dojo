@@ -83,7 +83,7 @@ export default function Sidebar({ isOpen, onClose }) {
     <>
       {/* Wordmark */}
       <div className="px-6 pt-8 pb-6 text-center">
-        <h1 className="font-display text-2xl text-white tracking-wider">
+        <h1 className="font-display text-2xl neon-shimmer-text tracking-wider">
           DISPO DOJO
         </h1>
         <div className="katana-line mt-3" />

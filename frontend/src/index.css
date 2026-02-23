@@ -310,6 +310,23 @@ body {
   color: transparent;
 }
 
+.neon-shimmer-text {
+  background: linear-gradient(
+    120deg,
+    #7F00FF 0%,
+    #C8275E 25%,
+    #ffffff 50%,
+    #00C6FF 75%,
+    #7F00FF 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 4s linear infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }

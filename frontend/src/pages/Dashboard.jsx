@@ -106,7 +106,7 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="font-display text-4xl text-white mb-1">
+        <h1 className="font-display text-4xl neon-shimmer-text mb-1">
           Welcome Back<span style={{ fontFamily: 'Rajdhani, sans-serif' }}>,</span> {firstName}
         </h1>
         <p className="font-body text-sm text-[#C8D1DA] mb-4">{today}</p>
