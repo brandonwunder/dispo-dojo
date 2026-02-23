@@ -79,7 +79,7 @@ class RealtorFSBOScraper(FSBOBaseScraper):
         agent_name_raw = safe(row.get("agent_name") or row.get("list_agent_name", ""))
         # Heuristic: if it has a named agent AND a brokerage, likely not FSBO
         broker_raw = safe(row.get("broker_name") or row.get("brokerage", ""))
-        if agent_name_raw and broker_raw and len(agent_name_raw) > 3:
+        if agent_name_raw and broker_raw and len(agent_name_raw) > 3 and len(broker_raw) > 3:
             return None  # Skip — has a real estate agent
 
         address = safe(row.get("full_street_line") or row.get("street_address", ""))
