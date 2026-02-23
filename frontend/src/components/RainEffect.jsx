@@ -1,254 +1,175 @@
-import { useEffect, useRef, useCallback } from 'react'
-
-const RAIN_COUNT = 280
-const RAIN_SPEED_MIN = 14
-const RAIN_SPEED_MAX = 30
-const RAIN_LENGTH_MIN = 20
-const RAIN_LENGTH_MAX = 42
-const WIND_ANGLE = 0.15
-const LIGHTNING_MIN_INTERVAL = 6000
-const LIGHTNING_MAX_INTERVAL = 18000
-const LIGHTNING_FLASH_DURATION = 180
-const LIGHTNING_BOLT_DURATION = 400
+import { useEffect, useRef } from 'react'
 
 export default function RainEffect() {
   const canvasRef = useRef(null)
-  const animRef = useRef(null)
-  const raindrops = useRef([])
-  const splashes = useRef([])
-  const lightning = useRef({
-    active: false,
-    bolts: [],
-    flashOpacity: 0,
-    nextStrike: 0,
-    fadeStart: 0,
-  })
-
-  const initRaindrop = useCallback((canvas, existing) => {
-    const speed = RAIN_SPEED_MIN + Math.random() * (RAIN_SPEED_MAX - RAIN_SPEED_MIN)
-    const length = RAIN_LENGTH_MIN + Math.random() * (RAIN_LENGTH_MAX - RAIN_LENGTH_MIN)
-    const opacity = 0.15 + Math.random() * 0.25
-    const width = Math.random() > 0.6 ? 1.5 : 1
-    const layer = Math.random() // depth layer: 0 = far, 1 = near
-
-    if (existing) {
-      existing.x = Math.random() * (canvas.width + 200) - 100
-      existing.y = -length - Math.random() * canvas.height * 0.5
-      existing.speed = speed * (0.6 + layer * 0.4)
-      existing.length = length * (0.5 + layer * 0.5)
-      existing.opacity = opacity * (0.4 + layer * 0.6)
-      existing.width = width * (0.5 + layer * 0.5)
-      existing.layer = layer
-      return existing
-    }
-
-    return {
-      x: Math.random() * (canvas.width + 200) - 100,
-      y: Math.random() * canvas.height * 2 - canvas.height,
-      speed: speed * (0.6 + layer * 0.4),
-      length: length * (0.5 + layer * 0.5),
-      opacity: opacity * (0.4 + layer * 0.6),
-      width: width * (0.5 + layer * 0.5),
-      layer,
-    }
-  }, [])
-
-  const generateBolt = useCallback((startX, startY, canvas) => {
-    const segments = []
-    let x = startX
-    let y = startY
-    const endY = startY + canvas.height * (0.3 + Math.random() * 0.5)
-
-    while (y < endY) {
-      const newX = x + (Math.random() - 0.5) * 70
-      const newY = y + 8 + Math.random() * 22
-      segments.push({ x1: x, y1: y, x2: newX, y2: newY, width: 2.5 + Math.random() * 1.5, main: true })
-
-      // Branches
-      if (Math.random() < 0.35) {
-        const dir = Math.random() > 0.5 ? 1 : -1
-        let bx = newX, by = newY
-        const len = 2 + Math.floor(Math.random() * 5)
-        for (let i = 0; i < len; i++) {
-          const nbx = bx + dir * (12 + Math.random() * 30)
-          const nby = by + 6 + Math.random() * 14
-          segments.push({ x1: bx, y1: by, x2: nbx, y2: nby, width: 0.8 + Math.random() * 0.8, main: false })
-          bx = nbx
-          by = nby
-        }
-      }
-
-      x = newX
-      y = newY
-    }
-
-    return segments
-  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
+    let animId = null
+    let running = true
 
-    const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      canvas.width = window.innerWidth * dpr
-      canvas.height = window.innerHeight * dpr
-      canvas.style.width = window.innerWidth + 'px'
-      canvas.style.height = window.innerHeight + 'px'
-      ctx.scale(dpr, dpr)
+    // Config
+    const RAIN_COUNT = 280
+    const WIND = 0.15
+    const LIGHTNING_MIN = 6000
+    const LIGHTNING_MAX = 18000
+
+    // State
+    const drops = []
+    const splashes = []
+    let ltActive = false
+    let ltBolts = []
+    let ltFlash = 0
+    let ltFadeStart = 0
+    let ltNext = Date.now() + 2000 + Math.random() * 4000
+
+    function resize() {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
     }
     resize()
-    window.addEventListener('resize', resize)
 
-    raindrops.current = Array.from({ length: RAIN_COUNT }, () => initRaindrop(canvas, null))
-    lightning.current.nextStrike = Date.now() + 2000 + Math.random() * 4000
+    function makeDrop(fresh) {
+      const layer = Math.random()
+      const speed = (14 + Math.random() * 16) * (0.6 + layer * 0.4)
+      const len = (20 + Math.random() * 22) * (0.5 + layer * 0.5)
+      return {
+        x: Math.random() * (canvas.width + 200) - 100,
+        y: fresh ? Math.random() * canvas.height * 2 - canvas.height : -len - Math.random() * canvas.height * 0.3,
+        speed,
+        len,
+        opacity: (0.15 + Math.random() * 0.25) * (0.4 + layer * 0.6),
+        width: (Math.random() > 0.6 ? 1.5 : 1) * (0.5 + layer * 0.5),
+      }
+    }
 
-    let lastTime = performance.now()
-    const W = () => window.innerWidth
-    const H = () => window.innerHeight
+    for (let i = 0; i < RAIN_COUNT; i++) drops.push(makeDrop(true))
 
-    const animate = (now) => {
-      const dt = Math.min((now - lastTime) / 16.67, 3)
-      lastTime = now
-      ctx.clearRect(0, 0, W(), H())
+    function bolt(sx, sy) {
+      const segs = []
+      let x = sx, y = sy
+      const ey = sy + canvas.height * (0.3 + Math.random() * 0.5)
+      while (y < ey) {
+        const nx = x + (Math.random() - 0.5) * 70
+        const ny = y + 8 + Math.random() * 22
+        segs.push({ x1: x, y1: y, x2: nx, y2: ny, w: 2.5 + Math.random() * 1.5, m: true })
+        if (Math.random() < 0.35) {
+          const d = Math.random() > 0.5 ? 1 : -1
+          let bx = nx, by = ny
+          for (let i = 0; i < 2 + Math.floor(Math.random() * 5); i++) {
+            const nbx = bx + d * (12 + Math.random() * 30)
+            const nby = by + 6 + Math.random() * 14
+            segs.push({ x1: bx, y1: by, x2: nbx, y2: nby, w: 0.8 + Math.random() * 0.8, m: false })
+            bx = nbx; by = nby
+          }
+        }
+        x = nx; y = ny
+      }
+      return segs
+    }
 
-      // === RAIN ===
+    let last = performance.now()
+
+    function frame(now) {
+      if (!running) return
+      const dt = Math.min((now - last) / 16.67, 3)
+      last = now
+      const w = canvas.width, h = canvas.height
+      ctx.clearRect(0, 0, w, h)
+
+      // Rain
       ctx.lineCap = 'round'
-      for (const drop of raindrops.current) {
-        drop.y += drop.speed * dt
-        drop.x += WIND_ANGLE * drop.speed * dt
-
-        if (drop.y > H() + drop.length) {
-          // Spawn splash
-          if (Math.random() < 0.3) {
-            splashes.current.push({
-              x: drop.x + WIND_ANGLE * drop.length,
-              y: H() - 2 + Math.random() * 4,
-              radius: 1 + Math.random() * 2,
-              opacity: 0.3 + Math.random() * 0.2,
-              life: 0,
-              maxLife: 8 + Math.random() * 6,
+      for (const d of drops) {
+        d.y += d.speed * dt
+        d.x += WIND * d.speed * dt
+        if (d.y > h + d.len) {
+          if (Math.random() < 0.25) {
+            splashes.push({
+              x: d.x + WIND * d.len, y: h - 2 + Math.random() * 4,
+              r: 1 + Math.random() * 2, o: 0.3 + Math.random() * 0.2,
+              life: 0, max: 8 + Math.random() * 6,
             })
           }
-          initRaindrop({ width: W(), height: H() }, drop)
-          drop.y = -drop.length
+          Object.assign(d, makeDrop(false))
         }
-
         ctx.beginPath()
-        ctx.moveTo(drop.x, drop.y)
-        ctx.lineTo(drop.x + WIND_ANGLE * drop.length, drop.y + drop.length)
-        ctx.strokeStyle = `rgba(170, 195, 220, ${drop.opacity})`
-        ctx.lineWidth = drop.width
+        ctx.moveTo(d.x, d.y)
+        ctx.lineTo(d.x + WIND * d.len, d.y + d.len)
+        ctx.strokeStyle = `rgba(170,195,220,${d.opacity})`
+        ctx.lineWidth = d.width
         ctx.stroke()
       }
 
-      // === SPLASHES ===
-      for (let i = splashes.current.length - 1; i >= 0; i--) {
-        const s = splashes.current[i]
+      // Splashes
+      for (let i = splashes.length - 1; i >= 0; i--) {
+        const s = splashes[i]
         s.life += dt
-        if (s.life >= s.maxLife) {
-          splashes.current.splice(i, 1)
-          continue
-        }
-        const progress = s.life / s.maxLife
-        const alpha = s.opacity * (1 - progress)
-        const r = s.radius * (1 + progress * 2)
+        if (s.life >= s.max) { splashes.splice(i, 1); continue }
+        const p = s.life / s.max
         ctx.beginPath()
-        ctx.arc(s.x, s.y, r, 0, Math.PI * 2)
-        ctx.strokeStyle = `rgba(180, 200, 220, ${alpha})`
+        ctx.arc(s.x, s.y, s.r * (1 + p * 2), 0, Math.PI * 2)
+        ctx.strokeStyle = `rgba(180,200,220,${s.o * (1 - p)})`
         ctx.lineWidth = 0.5
         ctx.stroke()
       }
 
-      // === LIGHTNING ===
-      const lt = lightning.current
-      const time = Date.now()
-
-      if (!lt.active && time >= lt.nextStrike) {
-        const startX = W() * (0.15 + Math.random() * 0.7)
-        lt.bolts = generateBolt(startX, -10, { width: W(), height: H() })
-        lt.active = true
-        lt.flashOpacity = 0.3 + Math.random() * 0.25
-        lt.fadeStart = time + LIGHTNING_FLASH_DURATION
-
-        if (Math.random() < 0.35) {
-          const startX2 = W() * (0.1 + Math.random() * 0.8)
-          lt.bolts.push(...generateBolt(startX2, -10, { width: W(), height: H() }))
-        }
-
-        lt.nextStrike = time + LIGHTNING_MIN_INTERVAL + Math.random() * (LIGHTNING_MAX_INTERVAL - LIGHTNING_MIN_INTERVAL)
+      // Lightning
+      const t = Date.now()
+      if (!ltActive && t >= ltNext) {
+        ltBolts = bolt(w * (0.15 + Math.random() * 0.7), -10)
+        if (Math.random() < 0.35) ltBolts.push(...bolt(w * (0.1 + Math.random() * 0.8), -10))
+        ltActive = true
+        ltFlash = 0.3 + Math.random() * 0.25
+        ltFadeStart = t + 180
+        ltNext = t + LIGHTNING_MIN + Math.random() * (LIGHTNING_MAX - LIGHTNING_MIN)
       }
 
-      if (lt.active) {
-        const elapsed = time - (lt.fadeStart - LIGHTNING_FLASH_DURATION)
-
-        // Screen flash
-        if (time < lt.fadeStart) {
-          ctx.fillStyle = `rgba(200, 215, 240, ${lt.flashOpacity})`
-          ctx.fillRect(0, 0, W(), H())
+      if (ltActive) {
+        const elapsed = t - (ltFadeStart - 180)
+        // Flash
+        if (t < ltFadeStart) {
+          ctx.fillStyle = `rgba(200,215,240,${ltFlash})`
+          ctx.fillRect(0, 0, w, h)
         } else {
-          const fadeProgress = (time - lt.fadeStart) / (LIGHTNING_BOLT_DURATION - LIGHTNING_FLASH_DURATION)
-          if (fadeProgress < 1) {
-            ctx.fillStyle = `rgba(200, 215, 240, ${lt.flashOpacity * 0.25 * (1 - fadeProgress)})`
-            ctx.fillRect(0, 0, W(), H())
+          const fp = (t - ltFadeStart) / 220
+          if (fp < 1) {
+            ctx.fillStyle = `rgba(200,215,240,${ltFlash * 0.25 * (1 - fp)})`
+            ctx.fillRect(0, 0, w, h)
           }
         }
-
-        // Draw bolts
-        const boltFade = elapsed < LIGHTNING_FLASH_DURATION
-          ? 1
-          : Math.max(0, 1 - (time - lt.fadeStart) / (LIGHTNING_BOLT_DURATION * 1.5))
-
-        if (boltFade > 0) {
-          ctx.lineCap = 'round'
-          for (const seg of lt.bolts) {
-            const alpha = seg.main
-              ? boltFade * (0.85 + Math.random() * 0.15)
-              : boltFade * (0.4 + Math.random() * 0.25)
-
-            // Outer glow
-            ctx.beginPath()
-            ctx.moveTo(seg.x1, seg.y1)
-            ctx.lineTo(seg.x2, seg.y2)
-            ctx.strokeStyle = `rgba(140, 170, 255, ${alpha * 0.25})`
-            ctx.lineWidth = seg.width * 8
-            ctx.stroke()
-
-            // Mid glow
-            ctx.beginPath()
-            ctx.moveTo(seg.x1, seg.y1)
-            ctx.lineTo(seg.x2, seg.y2)
-            ctx.strokeStyle = `rgba(190, 205, 255, ${alpha * 0.55})`
-            ctx.lineWidth = seg.width * 3.5
-            ctx.stroke()
-
+        // Bolts
+        const fade = elapsed < 180 ? 1 : Math.max(0, 1 - (t - ltFadeStart) / 600)
+        if (fade > 0) {
+          for (const s of ltBolts) {
+            const a = s.m ? fade * (0.85 + Math.random() * 0.15) : fade * (0.4 + Math.random() * 0.25)
+            // Glow
+            ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2)
+            ctx.strokeStyle = `rgba(140,170,255,${a * 0.25})`; ctx.lineWidth = s.w * 8; ctx.stroke()
+            // Mid
+            ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2)
+            ctx.strokeStyle = `rgba(190,205,255,${a * 0.55})`; ctx.lineWidth = s.w * 3.5; ctx.stroke()
             // Core
-            ctx.beginPath()
-            ctx.moveTo(seg.x1, seg.y1)
-            ctx.lineTo(seg.x2, seg.y2)
-            ctx.strokeStyle = `rgba(235, 240, 255, ${alpha})`
-            ctx.lineWidth = seg.width
-            ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2)
+            ctx.strokeStyle = `rgba(235,240,255,${a})`; ctx.lineWidth = s.w; ctx.stroke()
           }
         }
-
-        if (time > lt.fadeStart + LIGHTNING_BOLT_DURATION * 1.5) {
-          lt.active = false
-          lt.bolts = []
-        }
+        if (t > ltFadeStart + 600) { ltActive = false; ltBolts = [] }
       }
 
-      animRef.current = requestAnimationFrame(animate)
+      animId = requestAnimationFrame(frame)
     }
 
-    animRef.current = requestAnimationFrame(animate)
+    animId = requestAnimationFrame(frame)
+    window.addEventListener('resize', resize)
 
     return () => {
-      cancelAnimationFrame(animRef.current)
+      running = false
+      cancelAnimationFrame(animId)
       window.removeEventListener('resize', resize)
     }
-  }, [initRaindrop, generateBolt])
+  }, [])
 
   return (
     <canvas
