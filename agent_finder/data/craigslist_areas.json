@@ -8,7 +8,7 @@
   "seattle": "seattle", "tacoma": "seattle", "bellevue": "seattle",
   "portland": "portland", "eugene": "eugene",
   "denver": "denver", "colorado springs": "cosprings", "boulder": "boulder",
-  "dallas": "dallas", "fort worth": "dallas", "arlington": "dallas",
+  "dallas": "dallas", "fort worth": "dallas", "arlington tx": "dallas", "arlington va": "washingtondc",
   "houston": "houston", "austin": "austin", "san antonio": "sanantonio",
   "chicago": "chicago", "naperville": "chicago", "evanston": "chicago",
   "new york": "newyork", "brooklyn": "newyork", "queens": "newyork",
@@ -38,5 +38,6 @@
   "new orleans": "neworleans", "baton rouge": "batonrouge",
   "birmingham": "birmingham", "huntsville": "huntsville",
   "jackson": "jackson", "little rock": "littlerock",
-  "anchorage": "anchorage", "honolulu": "honolulu"
+  "anchorage": "anchorage", "honolulu": "honolulu",
+  "portland maine": "maine", "burlington": "vermont"
 }
