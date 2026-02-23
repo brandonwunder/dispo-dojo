@@ -453,18 +453,13 @@ if FRONTEND_DIR.exists():
     # Serve built React static assets (JS, CSS, images)
     app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIR / "assets")), name="frontend-assets")
 
-    # Serve other static files from frontend dist (favicon, logo, etc.)
-    @app.get("/logo.png")
-    async def frontend_logo():
-        logo_path = FRONTEND_DIR / "logo.png"
-        if logo_path.exists():
-            return FileResponse(str(logo_path))
-        raise HTTPException(404)
-
-    # SPA catch-all: serve index.html for all unmatched routes
+    # SPA catch-all: serve real files from dist if they exist, otherwise serve index.html
     @app.get("/{full_path:path}")
     async def serve_react(full_path: str):
-        """Serve React SPA for all non-API routes."""
+        """Serve static files from dist, or index.html for SPA routes."""
+        candidate = FRONTEND_DIR / full_path
+        if candidate.is_file():
+            return FileResponse(str(candidate))
         index_path = FRONTEND_DIR / "index.html"
         if index_path.exists():
             return HTMLResponse(content=index_path.read_text(encoding="utf-8"))
