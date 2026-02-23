@@ -213,6 +213,8 @@ export default function AgentFinder() {
   const [activeStatusFilter, setActiveStatusFilter] = useState('all')
   const [tableSearch, setTableSearch] = useState('')
   const [sortConfig, setSortConfig] = useState(null) // { column: string, direction: 'asc'|'desc' }
+  const [copiedCell, setCopiedCell] = useState(null) // "rowIndex-field"
+  const [hoveredCell, setHoveredCell] = useState(null)
 
   const fileInputRef = useRef(null)
   const sseRef = useRef(null)
@@ -442,6 +444,14 @@ export default function AgentFinder() {
     } catch {
       // Best effort
     }
+  }
+
+  function copyToClipboard(value, key) {
+    if (!value || value === '--') return
+    navigator.clipboard.writeText(value).then(() => {
+      setCopiedCell(key)
+      setTimeout(() => setCopiedCell(null), 1500)
+    }).catch(() => {})
   }
 
   function toggleSort(column) {
@@ -1226,8 +1236,32 @@ export default function AgentFinder() {
                   <td className="px-4 py-3 text-sm max-w-[200px] truncate" style={{ color: '#F4F7FA' }}>{row.address || '--'}</td>
                   <td className="px-4 py-3 text-sm" style={{ color: '#F4F7FA' }}>{row.agent || row.agent_name || '--'}</td>
                   <td className="px-4 py-3 text-sm" style={{ color: '#C8D1DA' }}>{row.brokerage || row.office || '--'}</td>
-                  <td className="px-4 py-3 text-sm font-mono" style={{ color: '#C8D1DA' }}>{row.phone || '--'}</td>
-                  <td className="px-4 py-3 text-sm" style={{ color: '#C8D1DA' }}>{row.email || '--'}</td>
+                  <td
+                    style={{ padding: '10px 12px', position: 'relative', cursor: (row.phone && row.phone !== '--') ? 'pointer' : 'default', fontFamily: 'monospace', fontSize: '13px', color: '#F4F7FA' }}
+                    onMouseEnter={() => setHoveredCell(`${i}-phone`)}
+                    onMouseLeave={() => setHoveredCell(null)}
+                    onClick={() => copyToClipboard(row.phone, `${i}-phone`)}
+                  >
+                    <span style={{ transition: 'color 0.2s', color: copiedCell === `${i}-phone` ? '#00C6FF' : 'inherit' }}>
+                      {copiedCell === `${i}-phone` ? '✓ Copied' : (row.phone || '--')}
+                    </span>
+                    {hoveredCell === `${i}-phone` && row.phone && row.phone !== '--' && copiedCell !== `${i}-phone` && (
+                      <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '12px' }}>⧉</span>
+                    )}
+                  </td>
+                  <td
+                    style={{ padding: '10px 12px', position: 'relative', cursor: (row.email && row.email !== '--') ? 'pointer' : 'default', fontSize: '13px', color: '#C8D1DA' }}
+                    onMouseEnter={() => setHoveredCell(`${i}-email`)}
+                    onMouseLeave={() => setHoveredCell(null)}
+                    onClick={() => copyToClipboard(row.email, `${i}-email`)}
+                  >
+                    <span style={{ transition: 'color 0.2s', color: copiedCell === `${i}-email` ? '#00C6FF' : 'inherit' }}>
+                      {copiedCell === `${i}-email` ? '✓ Copied' : (row.email || '--')}
+                    </span>
+                    {hoveredCell === `${i}-email` && row.email && row.email !== '--' && copiedCell !== `${i}-email` && (
+                      <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '12px' }}>⧉</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-center"><StatusBadge status={row.status || 'not_found'} /></td>
                   <td className="px-4 py-3 text-sm" style={{ color: '#C8D1DA' }}>{row.list_date || '--'}</td>
                   <td className="px-4 py-3 text-sm text-right font-mono" style={{ color: '#C8D1DA' }}>{row.dom ?? row.days_on_market ?? '--'}</td>
