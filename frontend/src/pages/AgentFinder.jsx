@@ -36,6 +36,19 @@ const STATUS_COLORS = {
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
+const COLUMN_DEFS = [
+  { key: 'address',    label: 'Address',    defaultVisible: true },
+  { key: 'agent',      label: 'Agent',      defaultVisible: true },
+  { key: 'brokerage',  label: 'Brokerage',  defaultVisible: true },
+  { key: 'phone',      label: 'Phone',      defaultVisible: true },
+  { key: 'email',      label: 'Email',      defaultVisible: true },
+  { key: 'status',     label: 'Status',     defaultVisible: true },
+  { key: 'list_date',  label: 'List Date',  defaultVisible: false },
+  { key: 'dom',        label: 'DOM',        defaultVisible: false },
+  { key: 'confidence', label: 'Confidence', defaultVisible: true },
+]
+const DEFAULT_VISIBLE = new Set(COLUMN_DEFS.filter(c => c.defaultVisible).map(c => c.key))
+
 // ─── Status Badge ───────────────────────────────────────────────────────────
 
 function StatusBadge({ status }) {
@@ -219,6 +232,15 @@ export default function AgentFinder() {
   const [expandedAgents, setExpandedAgents] = useState(new Set())
   const [exportMenuOpen, setExportMenuOpen] = useState(false)
   const [bulkCopyToast, setBulkCopyToast] = useState(null)
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    try {
+      const saved = localStorage.getItem('agentfinder_columns')
+      return saved ? new Set(JSON.parse(saved)) : new Set(DEFAULT_VISIBLE)
+    } catch {
+      return new Set(DEFAULT_VISIBLE)
+    }
+  })
+  const [colMenuOpen, setColMenuOpen] = useState(false)
 
   const fileInputRef = useRef(null)
   const sseRef = useRef(null)
@@ -291,6 +313,14 @@ export default function AgentFinder() {
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [exportMenuOpen])
+
+  // ── Close column menu on outside click ──
+  useEffect(() => {
+    if (!colMenuOpen) return
+    const close = () => setColMenuOpen(false)
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [colMenuOpen])
 
   // ── API calls ──
 
@@ -466,6 +496,15 @@ export default function AgentFinder() {
     }).catch(() => {})
   }
 
+  function toggleColumn(key) {
+    setVisibleColumns(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      try { localStorage.setItem('agentfinder_columns', JSON.stringify([...next])) } catch {}
+      return next
+    })
+  }
+
   function downloadFilteredCSV(statusFilter) {
     const rows = statusFilter === 'all'
       ? resultRows
@@ -545,6 +584,7 @@ export default function AgentFinder() {
     setExpandedAgents(new Set())
     setExportMenuOpen(false)
     setBulkCopyToast(null)
+    setColMenuOpen(false)
     prevProgressRef.current = { found: 0, partial: 0, cached: 0, not_found: 0 }
     prevAddressRef.current = ''
     tickerIdRef.current = 0
@@ -1345,6 +1385,29 @@ export default function AgentFinder() {
           >
             {groupByAgent ? '⊞ View by Property' : '⊟ View by Agent'}
           </button>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setColMenuOpen(v => !v)} title="Show/hide columns"
+              style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '14px',
+                cursor: 'pointer', border: '1px solid rgba(255,255,255,0.15)',
+                background: colMenuOpen ? 'rgba(255,255,255,0.08)' : 'transparent',
+                color: '#C8D1DA', transition: 'all 0.15s' }}>
+              ⚙
+            </button>
+            {colMenuOpen && (
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', zIndex: 50,
+                background: 'rgba(17,27,36,0.98)', border: '1px solid rgba(0,198,255,0.2)',
+                borderRadius: '10px', padding: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.6)', minWidth: '160px' }}>
+                <p style={{ fontSize: '10px', color: '#C8D1DA', fontFamily: 'Rajdhani, sans-serif', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 8px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '6px' }}>Columns</p>
+                {COLUMN_DEFS.map(col => (
+                  <label key={col.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', cursor: 'pointer', borderRadius: '6px' }}>
+                    <input type="checkbox" checked={visibleColumns.has(col.key)} onChange={() => toggleColumn(col.key)}
+                      style={{ accentColor: '#00C6FF', cursor: 'pointer' }} />
+                    <span style={{ fontSize: '13px', color: '#F4F7FA', fontFamily: 'DM Sans, sans-serif' }}>{col.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {groupByAgent && groupedRows ? (
@@ -1398,35 +1461,35 @@ export default function AgentFinder() {
           <table className="w-full min-w-[900px]" style={{ padding: '0 24px' }}>
             <thead>
               <tr style={{ background: 'rgba(0,198,255,0.06)' }}>
-                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>Address</th>
-                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
+                {visibleColumns.has('address') && <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>Address</th>}
+                {visibleColumns.has('agent') && <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
                   <button onClick={() => toggleSort('agent')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
                     Agent <span style={{ opacity: 0.5, fontSize: '10px' }}>{sortConfig?.column === 'agent' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
                   </button>
-                </th>
-                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
+                </th>}
+                {visibleColumns.has('brokerage') && <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
                   <button onClick={() => toggleSort('brokerage')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
                     Brokerage <span style={{ opacity: 0.5, fontSize: '10px' }}>{sortConfig?.column === 'brokerage' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
                   </button>
-                </th>
-                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>Phone</th>
-                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>Email</th>
-                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
+                </th>}
+                {visibleColumns.has('phone') && <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>Phone</th>}
+                {visibleColumns.has('email') && <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>Email</th>}
+                {visibleColumns.has('status') && <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
                   <button onClick={() => toggleSort('status')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
                     Status <span style={{ opacity: 0.5, fontSize: '10px' }}>{sortConfig?.column === 'status' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
                   </button>
-                </th>
-                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>List Date</th>
-                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
+                </th>}
+                {visibleColumns.has('list_date') && <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>List Date</th>}
+                {visibleColumns.has('dom') && <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
                   <button onClick={() => toggleSort('dom')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
                     DOM <span style={{ opacity: 0.5, fontSize: '10px' }}>{sortConfig?.column === 'dom' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
                   </button>
-                </th>
-                <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
+                </th>}
+                {visibleColumns.has('confidence') && <th className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap" style={{ color: '#F6C445', letterSpacing: '0.1em' }}>
                   <button onClick={() => toggleSort('confidence')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
                     Confidence <span style={{ opacity: 0.5, fontSize: '10px' }}>{sortConfig?.column === 'confidence' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : '⇅'}</span>
                   </button>
-                </th>
+                </th>}
               </tr>
             </thead>
             <tbody>
@@ -1437,10 +1500,10 @@ export default function AgentFinder() {
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(246,196,69,0.02)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <td className="px-4 py-3 text-sm max-w-[200px] truncate" style={{ color: '#F4F7FA' }}>{row.address || '--'}</td>
-                  <td className="px-4 py-3 text-sm" style={{ color: '#F4F7FA' }}>{row.agent || row.agent_name || '--'}</td>
-                  <td className="px-4 py-3 text-sm" style={{ color: '#C8D1DA' }}>{row.brokerage || row.office || '--'}</td>
-                  <td
+                  {visibleColumns.has('address') && <td className="px-4 py-3 text-sm max-w-[200px] truncate" style={{ color: '#F4F7FA' }}>{row.address || '--'}</td>}
+                  {visibleColumns.has('agent') && <td className="px-4 py-3 text-sm" style={{ color: '#F4F7FA' }}>{row.agent || row.agent_name || '--'}</td>}
+                  {visibleColumns.has('brokerage') && <td className="px-4 py-3 text-sm" style={{ color: '#C8D1DA' }}>{row.brokerage || row.office || '--'}</td>}
+                  {visibleColumns.has('phone') && <td
                     style={{ padding: '10px 12px', position: 'relative', cursor: (row.phone && row.phone !== '--') ? 'pointer' : 'default', fontFamily: 'monospace', fontSize: '13px', color: '#F4F7FA' }}
                     onMouseEnter={() => setHoveredCell(`${i}-phone`)}
                     onMouseLeave={() => setHoveredCell(null)}
@@ -1452,8 +1515,8 @@ export default function AgentFinder() {
                     {hoveredCell === `${i}-phone` && row.phone && row.phone !== '--' && copiedCell !== `${i}-phone` && (
                       <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '12px' }}>⧉</span>
                     )}
-                  </td>
-                  <td
+                  </td>}
+                  {visibleColumns.has('email') && <td
                     style={{ padding: '10px 12px', position: 'relative', cursor: (row.email && row.email !== '--') ? 'pointer' : 'default', fontSize: '13px', color: '#C8D1DA' }}
                     onMouseEnter={() => setHoveredCell(`${i}-email`)}
                     onMouseLeave={() => setHoveredCell(null)}
@@ -1465,11 +1528,11 @@ export default function AgentFinder() {
                     {hoveredCell === `${i}-email` && row.email && row.email !== '--' && copiedCell !== `${i}-email` && (
                       <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '12px' }}>⧉</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-center"><StatusBadge status={row.status || 'not_found'} /></td>
-                  <td className="px-4 py-3 text-sm" style={{ color: '#C8D1DA' }}>{row.list_date || '--'}</td>
-                  <td className="px-4 py-3 text-sm text-right font-mono" style={{ color: '#C8D1DA' }}>{row.dom ?? row.days_on_market ?? '--'}</td>
-                  <td className="px-4 py-3"><ConfidenceBar value={row.confidence} /></td>
+                  </td>}
+                  {visibleColumns.has('status') && <td className="px-4 py-3 text-center"><StatusBadge status={row.status || 'not_found'} /></td>}
+                  {visibleColumns.has('list_date') && <td className="px-4 py-3 text-sm" style={{ color: '#C8D1DA' }}>{row.list_date || '--'}</td>}
+                  {visibleColumns.has('dom') && <td className="px-4 py-3 text-sm text-right font-mono" style={{ color: '#C8D1DA' }}>{row.dom ?? row.days_on_market ?? '--'}</td>}
+                  {visibleColumns.has('confidence') && <td className="px-4 py-3"><ConfidenceBar value={row.confidence} /></td>}
                 </tr>
               ))}
             </tbody>
