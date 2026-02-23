@@ -473,7 +473,141 @@ export default function AgentFinder() {
 
         {/* Phase panels */}
         <AnimatePresence mode="wait">
-          {/* UPLOAD — Task 3 */}
+          {phase === 'upload' && (
+  <motion.div
+    key="upload"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.3 }}
+  >
+    <GlassCard>
+      <h2
+        className="font-heading text-xs uppercase mb-5"
+        style={{ color: '#00C6FF', letterSpacing: '0.14em' }}
+      >
+        Upload Property List
+      </h2>
+
+      {/* Drop zone */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className="relative cursor-pointer rounded-xl flex flex-col items-center justify-center py-10 px-6 transition-all duration-300"
+        style={{
+          border: `2px dashed ${
+            dragOver ? '#00C6FF' :
+            file ? 'rgba(74, 124, 89, 0.5)' :
+            'rgba(0, 198, 255, 0.25)'
+          }`,
+          background: dragOver
+            ? 'rgba(0, 198, 255, 0.05)'
+            : file
+            ? 'rgba(74, 124, 89, 0.04)'
+            : 'rgba(0, 198, 255, 0.02)',
+          boxShadow: dragOver ? '0 0 30px rgba(0,198,255,0.12)' : 'none',
+        }}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,.xlsx,.xls"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+
+        {file ? (
+          <div className="text-center">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+              style={{ background: 'rgba(74,124,89,0.2)' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+            </div>
+            <p className="font-heading text-lg" style={{ color: '#F4F7FA' }}>{file.name}</p>
+            <p className="text-sm mt-1" style={{ color: '#C8D1DA' }}>{formatBytes(file.size)}</p>
+            <p className="text-xs mt-2" style={{ color: '#C49A20' }}>Click or drop to change file</p>
+          </div>
+        ) : (
+          <div className="text-center">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+              style={{ background: 'rgba(0,198,255,0.08)' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00C6FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <p style={{ color: '#C8D1DA' }}>
+              <span className="font-heading" style={{ color: '#00C6FF' }}>Drop your file here</span>
+              {' '}or click to browse
+            </p>
+            <p className="text-xs mt-2" style={{ color: 'rgba(200,209,218,0.45)' }}>
+              Accepts .csv, .xlsx, .xls
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Error message */}
+      {error && (
+        <p className="text-sm mt-3" style={{ color: '#EF5350' }}>{error}</p>
+      )}
+
+      {/* Upload button row */}
+      <div className="mt-5 flex items-center gap-3">
+        <motion.button
+          onClick={handleUpload}
+          disabled={!file || uploading}
+          whileTap={file && !uploading ? { scale: 0.97 } : undefined}
+          className={`
+            group relative flex-1 inline-flex items-center justify-center
+            font-heading tracking-widest uppercase font-semibold
+            rounded-xl px-8 py-3 text-sm transition-all duration-300
+            ${file && !uploading
+              ? 'gold-shimmer text-bg shadow-[0_4px_20px_-4px_rgba(212,168,83,0.4)] hover:shadow-[0_4px_30px_-4px_rgba(212,168,83,0.6)]'
+              : 'cursor-not-allowed'
+            }
+          `}
+          style={!file || uploading ? { background: 'rgba(255,255,255,0.06)', color: '#8A9AAA' } : {}}
+        >
+          {file && !uploading && (
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:translate-x-full transition-transform duration-700 pointer-events-none rounded-xl" />
+          )}
+          <span className="relative z-10 flex items-center gap-2">
+            {uploading ? (
+              <><ShurikenLoader size={18} /> Uploading...</>
+            ) : (
+              <><CompassIcon size={18} /> Find Agents</>
+            )}
+          </span>
+        </motion.button>
+
+        {file && !uploading && (
+          <button
+            onClick={() => { setFile(null); setError(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
+            className="font-heading tracking-wider uppercase text-sm transition-colors"
+            style={{ color: '#8A9AAA' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#EF5350'}
+            onMouseLeave={e => e.currentTarget.style.color = '#8A9AAA'}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+    </GlassCard>
+  </motion.div>
+)}
           {/* PROCESSING — Task 4 */}
           {/* COMPLETE — Task 5 */}
           {/* ERROR — Task 6 */}
