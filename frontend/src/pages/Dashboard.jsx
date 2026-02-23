@@ -153,16 +153,17 @@ export default function Dashboard() {
         <h1 className="font-display text-4xl gold-shimmer-text mb-1">
           Welcome back<span style={{ fontFamily: 'Rajdhani, sans-serif' }}>,</span> {firstName}
         </h1>
-        <p className="font-body text-sm text-[#8a8578] mb-6">{today}</p>
+        <p className="font-body text-sm text-[#C8D1DA] mb-6">{today}</p>
         <div className="flex gap-3 justify-center">
           <Button
-            className="font-heading tracking-wide bg-[#d4a853] text-[#06060f] hover:bg-[#f5d078] shadow-[0_0_16px_rgba(212,168,83,0.25)] hover:shadow-[0_0_24px_rgba(212,168,83,0.4)] transition-shadow duration-200"
+            className="font-heading tracking-wide text-white shadow-[0_0_16px_rgba(229,57,53,0.3)] hover:shadow-[0_0_24px_rgba(229,57,53,0.5)] transition-shadow duration-200"
+            style={{ background: 'linear-gradient(135deg, #E53935, #B3261E)' }}
           >
             Submit a Deal
           </Button>
           <Button
             variant="outline"
-            className="font-heading tracking-wide border-[rgba(212,168,83,0.25)] text-[#d4a853] hover:bg-[rgba(212,168,83,0.08)] hover:text-[#f5d078]"
+            className="font-heading tracking-wide border-[rgba(0,198,255,0.3)] text-[#00C6FF] hover:bg-[rgba(0,198,255,0.08)] hover:text-[#FFD97A] hover:border-[rgba(0,198,255,0.5)] hover:shadow-[0_0_16px_rgba(0,198,255,0.15)] transition-shadow duration-200"
           >
             View Dispo Pipeline
           </Button>
@@ -192,12 +193,12 @@ export default function Dashboard() {
         <div
           className="pointer-events-none absolute inset-0 -z-10"
           style={{
-            background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212,168,83,0.05) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,198,255,0.04) 0%, transparent 70%)',
           }}
         />
         <div className="flex items-center gap-4 mb-8">
           <div className="katana-line flex-1" style={{ opacity: 0.7 }} />
-          <h2 className="font-display text-lg text-[rgba(212,168,83,0.8)] tracking-widest whitespace-nowrap">
+          <h2 className="font-display text-lg text-[rgba(0,198,255,0.8)] tracking-widest whitespace-nowrap">
             Tools to Succeed
           </h2>
           <div className="katana-line flex-1" style={{ opacity: 0.7 }} />
