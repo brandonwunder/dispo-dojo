@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ShurikenLoader from '../components/ShurikenLoader'
 import { CompassIcon } from '../components/icons/index'
@@ -156,6 +156,40 @@ function GlassCard({ children, maxWidth = '680px' }) {
   )
 }
 
+// ─── CSV Preview Helper ──────────────────────────────────────────────────────
+
+async function parseCSVPreview(file) {
+  return new Promise((resolve) => {
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      // For .xlsx/.xls we can't parse client-side without a library — skip
+      resolve({ rowCount: null, detectedColumn: null, allColumns: [] })
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result
+        const lines = text.split('\n').filter(l => l.trim())
+        if (lines.length === 0) { resolve(null); return }
+        const rawHeaders = lines[0].split(',')
+        const headers = rawHeaders.map(h =>
+          h.trim().replace(/^["']|["']$/g, '').toLowerCase()
+        )
+        const rowCount = lines.length - 1
+        const addressKeywords = ['address', 'property_address', 'prop_address', 'street', 'location', 'addr']
+        const detectedColumn = headers.find(h =>
+          addressKeywords.some(kw => h === kw || h.includes(kw))
+        ) || null
+        resolve({ rowCount, detectedColumn, allColumns: headers })
+      } catch {
+        resolve(null)
+      }
+    }
+    reader.onerror = () => resolve(null)
+    reader.readAsText(file)
+  })
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function AgentFinder() {
@@ -181,6 +215,8 @@ export default function AgentFinder() {
   const sseRef = useRef(null)
   const startTimeRef = useRef(null)
   const [eta, setEta] = useState(null)
+  const [csvPreview, setCsvPreview] = useState(null) // { rowCount, detectedColumn, allColumns }
+  const [columnMap, setColumnMap] = useState(null)   // user-selected column override
 
   // ── Load job history on mount ──
   useEffect(() => {
@@ -208,6 +244,19 @@ export default function AgentFinder() {
     }
   }, [progress.completed, progress.total, phase])
 
+  // ── Parse CSV preview when file is selected ──
+  useEffect(() => {
+    if (!file) {
+      setCsvPreview(null)
+      setColumnMap(null)
+      return
+    }
+    parseCSVPreview(file).then(preview => {
+      setCsvPreview(preview)
+      setColumnMap(null) // reset any prior manual selection
+    })
+  }, [file])
+
   // ── API calls ──
 
   const loadJobs = async () => {
@@ -229,6 +278,9 @@ export default function AgentFinder() {
 
     const formData = new FormData()
     formData.append('file', file)
+    if (columnMap) {
+      formData.append('address_column', columnMap)
+    }
 
     try {
       const res = await fetch(`${API_BASE}/api/upload`, {
@@ -343,6 +395,8 @@ export default function AgentFinder() {
     setResults(null)
     setError(null)
     setEta(null)
+    setCsvPreview(null)
+    setColumnMap(null)
     startTimeRef.current = null
   }
 
@@ -570,6 +624,61 @@ export default function AgentFinder() {
           </div>
         )}
       </div>
+
+      {/* CSV Preview Panel */}
+      {file && csvPreview && (
+        <div style={{
+          marginTop: '12px',
+          padding: '12px 16px',
+          background: 'rgba(0,198,255,0.05)',
+          border: '1px solid rgba(0,198,255,0.15)',
+          borderRadius: '10px',
+        }}>
+          {/* Row count */}
+          {csvPreview.rowCount != null && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <span style={{ color: '#00C6FF', fontSize: '12px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                {csvPreview.rowCount.toLocaleString()} addresses detected
+              </span>
+              {csvPreview.rowCount > 1000 && (
+                <span style={{ color: '#F6C445', fontSize: '11px', fontFamily: 'DM Sans, sans-serif' }}>
+                  · est. {Math.round(csvPreview.rowCount / 100)} min
+                </span>
+              )}
+            </div>
+          )}
+          {/* Column detection */}
+          {csvPreview.detectedColumn ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#4a7c59', fontFamily: 'DM Sans, sans-serif' }}>
+              <span>✓</span>
+              <span>Address column: <strong>{csvPreview.detectedColumn}</strong></span>
+            </div>
+          ) : csvPreview.allColumns.length > 0 ? (
+            <div style={{ fontSize: '12px', color: '#F6C445', fontFamily: 'DM Sans, sans-serif' }}>
+              <span>⚠ No address column detected — pick one:</span>
+              <select
+                value={columnMap || ''}
+                onChange={e => setColumnMap(e.target.value || null)}
+                style={{
+                  marginLeft: '8px',
+                  background: 'rgba(11,15,20,0.8)',
+                  border: '1px solid rgba(0,198,255,0.3)',
+                  borderRadius: '6px',
+                  color: '#F4F7FA',
+                  fontSize: '12px',
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">Select column...</option>
+                {csvPreview.allColumns.map(col => (
+                  <option key={col} value={col}>{col}</option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {/* Error message */}
       {error && (
