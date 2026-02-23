@@ -9,7 +9,7 @@ const ACCENTS = [
   '#F6C445', // gold glow
 ]
 
-export default function ToolCard({ icon: Icon, label, description, to, delay = 0, index = 0 }) {
+export default function ToolCard({ icon: Icon, image, label, description, to, delay = 0, index = 0 }) {
   const navigate = useNavigate()
   const accent = ACCENTS[index % ACCENTS.length]
 
@@ -42,17 +42,26 @@ export default function ToolCard({ icon: Icon, label, description, to, delay = 0
           <div
             className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl"
             style={{
-              background: `radial-gradient(circle at 30% 30%, ${accent}22 0%, ${accent}0d 60%, transparent 100%)`,
-              border: `1px solid ${accent}26`,
+              background: image ? 'transparent' : `radial-gradient(circle at 30% 30%, ${accent}22 0%, ${accent}0d 60%, transparent 100%)`,
+              border: image ? 'none' : `1px solid ${accent}26`,
               '--glow-base': `inset 0 1px 0 ${accent}1a, 0 0 8px ${accent}40`,
               '--glow-peak': `inset 0 1px 0 ${accent}1a, 0 0 16px ${accent}60`,
-              animation: 'glowPulse 2.5s ease-in-out infinite',
+              animation: image ? 'none' : 'glowPulse 2.5s ease-in-out infinite',
             }}
           >
-            <Icon
-              className="h-6 w-6"
-              style={{ color: accent, filter: `drop-shadow(0 0 6px ${accent}60)` }}
-            />
+            {image ? (
+              <img
+                src={image}
+                alt={label}
+                className="h-[52px] w-[52px] object-contain"
+                style={{ filter: `drop-shadow(0 0 8px ${accent}50)` }}
+              />
+            ) : (
+              <Icon
+                className="h-6 w-6"
+                style={{ color: accent, filter: `drop-shadow(0 0 6px ${accent}60)` }}
+              />
+            )}
           </div>
 
           {/* Text */}

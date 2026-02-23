@@ -1,44 +1,5 @@
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
-import {
-  Compass,
-  Map,
-  Hammer,
-  ScrollText,
-  PenTool,
-  Sword,
-  Users,
-} from 'lucide-react'
-
-function SauceBottle({ className, style, ...props }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      style={style}
-      {...props}
-    >
-      {/* Nozzle tip */}
-      <path d="M11.5 1.5 L12 3.5 L12.5 1.5" />
-      {/* Cap */}
-      <rect x="10.5" y="3.5" width="3" height="2.5" rx="0.5" />
-      {/* Neck ring */}
-      <path d="M9.5 6h5" />
-      {/* Body */}
-      <path d="M9.5 6 L8 9 L8 19.5 a2 2 0 0 0 2 2 h4 a2 2 0 0 0 2-2 L16 9 L14.5 6" />
-      {/* Label area */}
-      <rect x="9" y="12" width="6" height="5" rx="0.5" />
-      {/* Sauce drip */}
-      <path d="M12 3.5 Q14 4.5 13.5 6" strokeWidth={1.25} />
-    </svg>
-  )
-}
 import { Button } from '@/components/ui/button'
 import KpiCard from '../components/KpiCard'
 import ToolCard from '../components/ToolCard'
@@ -49,58 +10,52 @@ const kpis = [
   { label: 'Deals in Underwriting', value: 4 },
   { label: 'Contracts with Dispo', value: 2 },
   { label: 'Pipeline Value', value: 24837.98, prefix: '$', decimals: 2 },
-  { label: 'Deals Closed', value: 9, valueColor: '#7da87b' },
-  { label: 'Total Assignments Earned', value: 32827.09, prefix: '$', decimals: 2, valueColor: '#7da87b' },
+  { label: 'Deals Closed', value: 9, valueColor: '#00E676' },
+  { label: 'Total Assignments Earned', value: 32827.09, prefix: '$', decimals: 2, valueColor: '#00E676' },
 ]
 
 const tools = [
   {
     label: 'Agent Finder',
-    icon: Compass,
+    image: '/tool-icons/agent-finder.png',
     description: 'Upload property lists and find listing agents instantly',
     to: '/agent-finder',
   },
   {
     label: 'FSBO Finder',
-    icon: Map,
+    image: '/tool-icons/fsbo.png',
     description: 'Find For Sale By Owner listings in any city',
     to: '/fsbo-finder',
   },
   {
     label: 'Lead Scrubbing',
-    icon: SauceBottle,
+    image: '/tool-icons/lead-scrubbing.png',
     description: 'Deal Sauce walkthrough for finding and scrubbing leads',
     to: '/lead-scrubbing',
   },
   {
     label: 'Free Underwriting',
-    icon: Hammer,
+    image: '/tool-icons/underwriting.png',
     description: 'Submit properties for free underwriting on cash or Sub2 deals',
     to: '/underwriting',
   },
   {
     label: 'LOI Generator',
-    icon: ScrollText,
+    image: '/tool-icons/loi-generator.png',
     description: 'Generate and send Letters of Intent in bulk',
     to: '/loi-generator',
   },
   {
-    label: 'Contact Generator',
-    icon: PenTool,
+    label: 'Contract Generator',
+    image: '/tool-icons/contract-generator.png',
     description: 'Build, sign, and send contracts in minutes',
     to: '/contract-generator',
   },
   {
     label: 'Direct Agent Process',
-    icon: Sword,
+    image: '/tool-icons/direct-agent.png',
     description: 'Learn our direct-to-agent outreach process',
     to: '/direct-agent',
-  },
-  {
-    label: 'Join Our Team',
-    icon: Users,
-    description: 'Cold calling opportunity for experienced closers',
-    to: '/join-team',
   },
 ]
 
@@ -207,7 +162,7 @@ export default function Dashboard() {
           {tools.map((tool, i) => (
             <ToolCard
               key={tool.to}
-              icon={tool.icon}
+              image={tool.image}
               label={tool.label}
               description={tool.description}
               to={tool.to}

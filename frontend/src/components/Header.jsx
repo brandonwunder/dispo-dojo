@@ -12,7 +12,6 @@ import {
   NinjaTraining,
   NinjaHawk,
   NinjaStrategy,
-  NinjaBanner,
   NinjaGuide,
   NinjaSensei,
 } from './icons/NinjaLogos'
@@ -28,7 +27,6 @@ const routeTitles = {
   '/scripts': 'Scripts & Objections',
   '/direct-agent': 'Direct to Agent',
   '/dispo-process': 'Dispo Process',
-  '/join-team': 'Join the Team',
   '/website-explainer': 'Website Explainer',
   '/admin': 'Admin Dashboard',
 }
@@ -44,7 +42,6 @@ const routeLogos = {
   '/scripts': NinjaTraining,
   '/direct-agent': NinjaHawk,
   '/dispo-process': NinjaStrategy,
-  '/join-team': NinjaBanner,
   '/website-explainer': NinjaGuide,
   '/admin': NinjaSensei,
 }
@@ -60,7 +57,6 @@ const routeKanji = {
   '/scripts': '修',
   '/direct-agent': '鷹',
   '/dispo-process': '略',
-  '/join-team': '募',
   '/website-explainer': '案',
   '/admin': '師',
 }
@@ -75,7 +71,6 @@ const routeSections = {
   '/scripts': 'Resources',
   '/direct-agent': 'Resources',
   '/dispo-process': 'Resources',
-  '/join-team': 'Resources',
   '/website-explainer': 'Resources',
   '/admin': 'Admin',
 }

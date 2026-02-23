@@ -11,7 +11,6 @@ import Underwriting from './pages/Underwriting'
 import LOIGenerator from './pages/LOIGenerator'
 import ContractGenerator from './pages/ContractGenerator'
 import DirectAgent from './pages/DirectAgent'
-import JoinTeam from './pages/JoinTeam'
 import Scripts from './pages/Scripts'
 import WebsiteExplainer from './pages/WebsiteExplainer'
 import DispoProcess from './pages/DispoProcess'
@@ -58,7 +57,6 @@ function App() {
             <Route path="scripts" element={<Scripts />} />
             <Route path="website-explainer" element={<WebsiteExplainer />} />
             <Route path="dispo-process" element={<DispoProcess />} />
-            <Route path="join-team" element={<JoinTeam />} />
           </Route>
         </Routes>
       </BrowserRouter>

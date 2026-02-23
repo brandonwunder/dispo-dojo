@@ -11,7 +11,6 @@ import {
   ScrollIcon,
   HawkIcon,
   WarFanIcon,
-  BannerIcon,
   MonomiEyeIcon,
   ToriiIcon,
 } from '../icons/index'
@@ -47,7 +46,6 @@ const navSections = [
       { to: '/scripts', icon: ScrollIcon, label: 'Scripts & Objections' },
       { to: '/direct-agent', icon: HawkIcon, label: 'Direct Agent Process' },
       { to: '/dispo-process', icon: WarFanIcon, label: 'Dispo Process' },
-      { to: '/join-team', icon: BannerIcon, label: 'Join Our Team' },
       { to: '/website-explainer', icon: ToriiIcon, label: 'Website Explainer' },
     ],
   },
