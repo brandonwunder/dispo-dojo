@@ -1,5 +1,5 @@
-import { NavLink } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { NavLink, useLocation } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   LanternIcon,
   CompassIcon,
@@ -16,6 +16,7 @@ import {
   ToriiIcon,
 } from '../icons/index'
 import { useAuth } from '../context/AuthContext'
+import { useEffect } from 'react'
 
 const navSections = [
   {
@@ -59,8 +60,9 @@ const adminSection = {
   ],
 }
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { isAdmin, user } = useAuth()
+  const location = useLocation()
 
   const sections = isAdmin
     ? [navSections[0], adminSection, ...navSections.slice(1)]
@@ -74,8 +76,13 @@ export default function Sidebar() {
     .slice(0, 2)
     .toUpperCase()
 
-  return (
-    <aside className="fixed left-0 top-0 bottom-0 w-[250px] lacquer-deep lacquer-shine sidebar-shadow z-40 flex flex-col border-r border-gold-dim/15">
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    if (onClose) onClose()
+  }, [location.pathname])
+
+  const sidebarContent = (
+    <>
       {/* Wordmark */}
       <div className="px-6 pt-8 pb-6 text-center">
         <h1 className="font-display text-3xl gold-shimmer-text tracking-wider">
@@ -143,6 +150,42 @@ export default function Sidebar() {
           {name}
         </span>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {/* Desktop sidebar — always visible */}
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[250px] lacquer-deep lacquer-shine sidebar-shadow z-40 flex-col border-r border-gold-dim/15">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile sidebar — slide-out drawer */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={onClose}
+            />
+            {/* Drawer */}
+            <motion.aside
+              className="fixed left-0 top-0 bottom-0 w-[280px] lacquer-deep lacquer-shine sidebar-shadow z-50 flex flex-col border-r border-gold-dim/15 lg:hidden"
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
+              {sidebarContent}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   )
 }

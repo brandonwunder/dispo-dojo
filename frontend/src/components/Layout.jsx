@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import MistLayer from './MistLayer';
@@ -6,17 +7,17 @@ import EmberField from './EmberField';
 import { CursorProvider } from './CustomCursor';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { Menu } from 'lucide-react';
 
 export default function Layout() {
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <CursorProvider>
       <div className="min-h-screen bg-bg ink-wash wall-texture">
         {/* === ATMOSPHERE STACK === */}
-        {/* Layer 1: Mist (lowest) */}
         <MistLayer />
-        {/* Layer 2: Torch light glows */}
         <TorchLight
           positions={[
             { top: '2%', left: '25%' },
@@ -24,12 +25,21 @@ export default function Layout() {
           ]}
           intensity={0.7}
         />
-        {/* Layer 3: Floating embers */}
         <EmberField density={35} />
 
         {/* === LAYOUT === */}
-        <Sidebar />
-        <main className="ml-[250px] min-h-screen relative z-10">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+        {/* Mobile hamburger button */}
+        <button
+          className="fixed top-3 left-3 z-50 lg:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-[#0d0d1a]/80 border border-gold-dim/20 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open menu"
+        >
+          <Menu size={20} className="text-gold" />
+        </button>
+
+        <main className="ml-0 lg:ml-[250px] min-h-screen relative z-10">
           <Header />
           <div className="p-6">
             <AnimatePresence mode="wait">

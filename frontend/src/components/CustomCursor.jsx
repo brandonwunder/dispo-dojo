@@ -4,13 +4,19 @@ import { AnimatePresence, motion } from 'framer-motion'
 const CursorContext = createContext({ setCursorVariant: () => {} })
 export const useCursor = () => useContext(CursorContext)
 
+function isTouchDevice() {
+  if (typeof window === 'undefined') return true
+  return window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window
+}
+
 export function CursorProvider({ children }) {
   const [cursorVariant, setCursorVariant] = useState('default')
+  const isTouch = typeof window !== 'undefined' && isTouchDevice()
 
   return (
     <CursorContext.Provider value={{ setCursorVariant }}>
       {children}
-      <CustomCursor variant={cursorVariant} />
+      {!isTouch && <CustomCursor variant={cursorVariant} />}
     </CursorContext.Provider>
   )
 }
