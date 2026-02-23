@@ -113,9 +113,9 @@ class ForSaleByOwnerScraper(FSBOBaseScraper):
             digits = re.sub(r"[^\d]", "", price_el.get_text())
             price = int(digits) if digits else None
 
-        if criteria.min_price and price is not None and price < criteria.min_price:
+        if criteria.min_price is not None and price is not None and price < criteria.min_price:
             return None
-        if criteria.max_price and price is not None and price > criteria.max_price:
+        if criteria.max_price is not None and price is not None and price > criteria.max_price:
             return None
 
         beds = baths = dom = None
@@ -129,11 +129,11 @@ class ForSaleByOwnerScraper(FSBOBaseScraper):
         if dom_match:
             dom = int(dom_match.group(1))
 
-        if criteria.min_beds and beds is not None and beds < criteria.min_beds:
+        if criteria.min_beds is not None and beds is not None and beds < criteria.min_beds:
             return None
-        if criteria.min_baths and baths is not None and baths < criteria.min_baths:
+        if criteria.min_baths is not None and baths is not None and baths < criteria.min_baths:
             return None
-        if criteria.max_days_on_market and dom is not None and dom > criteria.max_days_on_market:
+        if criteria.max_days_on_market is not None and dom is not None and dom > criteria.max_days_on_market:
             return None
 
         owner_name = phone = email = None
