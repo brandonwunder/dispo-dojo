@@ -7,8 +7,8 @@ import NinjaTransition from '../components/NinjaTransition'
 import { useAuth } from '../context/AuthContext'
 
 const inputClass = `
-  w-full px-4 py-3 bg-bg-card border border-gold-dim/20 rounded-sm
-  text-parchment font-body focus:border-gold/50 focus:outline-none
+  w-full px-4 py-3 bg-bg-card border border-[rgba(0,198,255,0.15)] rounded-sm
+  text-parchment font-body focus:border-[rgba(0,198,255,0.4)] focus:shadow-[0_0_8px_rgba(0,198,255,0.15)] focus:outline-none
   transition-colors placeholder:text-text-dim/50
 `
 
@@ -76,7 +76,7 @@ function SignUpModal({ onClose, onSuccess }) {
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 w-full max-w-md"
       >
-        <div className="wood-panel border border-gold-dim/20 rounded-sm relative overflow-hidden">
+        <div className="wood-panel border border-[rgba(0,198,255,0.15)] rounded-sm relative overflow-hidden">
           {/* Rope binding at top */}
           <div className="rope-top" />
 
@@ -96,9 +96,9 @@ function SignUpModal({ onClose, onSuccess }) {
           <div className="px-8 pt-8 pb-8">
             {/* Step indicator */}
             <div className="flex items-center justify-center gap-3 mb-6">
-              <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step >= 1 ? 'bg-gold shadow-[0_0_8px_rgba(212,168,83,0.4)]' : 'bg-border'}`} />
+              <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step >= 1 ? 'bg-[#00C6FF] shadow-[0_0_8px_rgba(0,198,255,0.4)]' : 'bg-border'}`} />
               <div className="w-8 katana-line" />
-              <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step >= 2 ? 'bg-gold shadow-[0_0_8px_rgba(212,168,83,0.4)]' : 'bg-border'}`} />
+              <div className={`w-3 h-3 rounded-full transition-all duration-300 ${step >= 2 ? 'bg-[#00C6FF] shadow-[0_0_8px_rgba(0,198,255,0.4)]' : 'bg-border'}`} />
             </div>
 
             <AnimatePresence mode="wait">
@@ -142,7 +142,7 @@ function SignUpModal({ onClose, onSuccess }) {
                       </label>
                       <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" className={inputClass} />
                     </div>
-                    <button type="submit" className="w-full py-3 mt-2 gold-shimmer text-ink font-heading font-bold tracking-widest uppercase rounded-sm hover:shadow-[0_0_20px_rgba(212,168,83,0.3)] transition-shadow">
+                    <button type="submit" className="w-full py-3 mt-2 text-white font-heading font-bold tracking-widest uppercase rounded-sm shadow-[0_0_16px_rgba(229,57,53,0.3)] hover:shadow-[0_0_24px_rgba(229,57,53,0.45)] transition-shadow" style={{ background: 'linear-gradient(135deg, #E53935, #B3261E)' }}>
                       <span className="flex items-center justify-center gap-2">Continue <ArrowRight size={16} /></span>
                     </button>
                   </form>
@@ -193,11 +193,11 @@ function SignUpModal({ onClose, onSuccess }) {
                       <button
                         type="button"
                         onClick={() => { setStep(1); setError('') }}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm border border-gold-dim/20 text-text-dim hover:border-gold hover:text-gold transition-all duration-200 text-sm"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm border border-[rgba(0,198,255,0.15)] text-text-dim hover:border-[#00C6FF] hover:text-[#00C6FF] transition-colors duration-200 text-sm"
                       >
                         <ArrowLeft size={16} /> Back
                       </button>
-                      <button type="submit" className="flex-1 py-3 gold-shimmer text-ink font-heading font-bold tracking-widest uppercase rounded-sm hover:shadow-[0_0_20px_rgba(212,168,83,0.3)] transition-shadow">
+                      <button type="submit" className="flex-1 py-3 text-white font-heading font-bold tracking-widest uppercase rounded-sm shadow-[0_0_16px_rgba(229,57,53,0.3)] hover:shadow-[0_0_24px_rgba(229,57,53,0.45)] transition-shadow" style={{ background: 'linear-gradient(135deg, #E53935, #B3261E)' }}>
                         Begin Training
                       </button>
                     </div>
@@ -260,7 +260,7 @@ export default function Login() {
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         {/* Login Panel */}
         <motion.div
-          className="w-full max-w-md wood-panel border border-gold-dim/20 rounded-sm relative overflow-hidden"
+          className="w-full max-w-md wood-panel border border-[rgba(0,198,255,0.15)] rounded-sm relative overflow-hidden"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5 }}
@@ -306,14 +306,14 @@ export default function Login() {
                 </label>
                 <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className={inputClass} />
               </div>
-              <button type="submit" className="w-full py-3 mt-4 gold-shimmer text-ink font-heading font-bold tracking-widest uppercase rounded-sm hover:shadow-[0_0_20px_rgba(212,168,83,0.3)] transition-shadow">
+              <button type="submit" className="w-full py-3 mt-4 text-white font-heading font-bold tracking-widest uppercase rounded-sm shadow-[0_0_16px_rgba(229,57,53,0.3)] hover:shadow-[0_0_24px_rgba(229,57,53,0.45)] transition-shadow" style={{ background: 'linear-gradient(135deg, #E53935, #B3261E)' }}>
                 Enter the Dojo
               </button>
             </form>
 
             <p className="text-center mt-4 text-text-dim text-sm">
               New to the dojo?{' '}
-              <button onClick={() => setShowSignUp(true)} className="text-gold ml-1 hover:text-gold-bright transition-colors">
+              <button onClick={() => setShowSignUp(true)} className="text-[#00C6FF] ml-1 hover:text-[#00C6FF]/80 transition-colors">
                 Begin Training
               </button>
             </p>
