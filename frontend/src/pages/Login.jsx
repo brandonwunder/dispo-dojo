@@ -112,7 +112,7 @@ function SignUpModal({ onClose, onSuccess }) {
                 >
                   <div className="text-center mb-8">
                     <h2 className="font-display text-2xl text-parchment mb-2 tracking-[0.06em]">
-                      Begin Training
+                      Make an Account
                     </h2>
                     <p className="text-sm text-text-dim font-heading tracking-wide">Tell us who you are</p>
                   </div>
@@ -159,7 +159,7 @@ function SignUpModal({ onClose, onSuccess }) {
                 >
                   <div className="text-center mb-8">
                     <h2 className="font-display text-2xl text-parchment mb-2 tracking-[0.06em]">
-                      Choose Your Weapons
+                      Set Your Logins
                     </h2>
                     <p className="text-sm text-text-dim font-heading tracking-wide">Set up your username & password</p>
                   </div>
@@ -198,7 +198,7 @@ function SignUpModal({ onClose, onSuccess }) {
                         <ArrowLeft size={16} /> Back
                       </button>
                       <button type="submit" className="flex-1 py-3 text-white font-heading font-bold tracking-widest uppercase rounded-sm shadow-[0_0_16px_rgba(229,57,53,0.3)] hover:shadow-[0_0_24px_rgba(229,57,53,0.45)] transition-shadow" style={{ background: 'linear-gradient(135deg, #E53935, #B3261E)' }}>
-                        Begin Training
+                        Enter the Dojo
                       </button>
                     </div>
                   </form>
