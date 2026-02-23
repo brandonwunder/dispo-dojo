@@ -253,14 +253,22 @@ export default function Login() {
       {/* 3D Background */}
       <DojoGateScene />
 
-      {/* Login background image */}
+      {/* Login background image — behind the 3D canvas */}
       <div
-        className="fixed inset-0 z-[1] bg-cover bg-center bg-no-repeat"
+        className="fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: 'url(/login-bg.png)' }}
       />
 
-      {/* Dark overlay for readability */}
-      <div className="fixed inset-0 z-[2] bg-gradient-to-t from-bg/90 via-bg/50 to-bg/30" />
+      {/* Faded overlay — same style as dashboard, sits above 3D canvas */}
+      <div
+        className="fixed inset-0 z-[1] pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(ellipse 80% 60% at 50% 25%, rgba(6,6,15,0.35) 0%, rgba(6,6,15,0.6) 50%, rgba(6,6,15,0.82) 100%),
+            linear-gradient(180deg, rgba(6,6,15,0.25) 0%, rgba(6,6,15,0.5) 40%, rgba(6,6,15,0.85) 100%)
+          `,
+        }}
+      />
 
       {/* Content */}
       <div className="relative z-[3] min-h-screen flex items-center justify-center p-4">
@@ -320,7 +328,7 @@ export default function Login() {
             <p className="text-center mt-4 text-text-dim text-sm">
               New to the dojo?{' '}
               <button onClick={() => setShowSignUp(true)} className="text-[#00C6FF] ml-1 hover:text-[#00C6FF]/80 transition-colors">
-                Begin Training
+                Make an Account for FREE
               </button>
             </p>
           </div>

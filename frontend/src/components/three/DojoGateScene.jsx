@@ -11,7 +11,7 @@ export default function DojoGateScene() {
     const container = containerRef.current;
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0x06060f, 1, 20);
-    scene.background = new THREE.Color(0x06060f);
+    // No scene.background — canvas stays transparent so bg image shows through
 
     const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
     camera.position.set(0, 2, 8);
