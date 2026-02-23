@@ -263,10 +263,15 @@ export default function AgentFinder() {
   const [columnMap, setColumnMap] = useState(null)   // user-selected column override
   const [tickerLog, setTickerLog] = useState([])     // rolling last-8 resolved addresses
   const [processingSpeed, setProcessingSpeed] = useState(null) // addr/min
+  const [cacheStats, setCacheStats] = useState(null)
 
-  // ── Load job history on mount ──
+  // ── Load job history + cache stats on mount ──
   useEffect(() => {
     loadJobs()
+    fetch(`${API_BASE}/api/cache/stats`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setCacheStats(d) })
+      .catch(() => {})
   }, [])
 
   // ── Cleanup SSE on unmount ──
@@ -1721,6 +1726,45 @@ export default function AgentFinder() {
 )}
         </AnimatePresence>
 
+        {/* ── Cache Stats Banner ── */}
+        {cacheStats && (
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginBottom: '24px', flexWrap: 'wrap' }}>
+            {[
+              {
+                label: 'Universal Cache',
+                value: (cacheStats.cached_results ?? 0).toLocaleString(),
+                sub: 'addresses stored platform-wide',
+                color: '#00C6FF',
+              },
+              {
+                label: 'Your Last Run',
+                value: (jobs[0]?.summary?.cached ?? 0).toLocaleString(),
+                sub: 'served instantly from cache',
+                color: '#F6C445',
+              },
+            ].map(stat => (
+              <div key={stat.label} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: '12px 24px', borderRadius: '12px',
+                background: 'rgba(17,27,36,0.7)', backdropFilter: 'blur(12px)',
+                border: `1px solid ${stat.color}22`,
+                boxShadow: `0 0 16px ${stat.color}18`,
+                minWidth: '180px',
+              }}>
+                <span style={{ fontSize: '22px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, color: stat.color, lineHeight: 1 }}>
+                  {stat.value}
+                </span>
+                <span style={{ fontSize: '10px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: stat.color, opacity: 0.7, marginTop: '2px' }}>
+                  {stat.label}
+                </span>
+                <span style={{ fontSize: '11px', fontFamily: 'DM Sans, sans-serif', color: '#C8D1DA', marginTop: '4px', textAlign: 'center' }}>
+                  {stat.sub}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {jobs.length > 0 && (
   <motion.div
     initial={{ opacity: 0 }}
@@ -1787,8 +1831,9 @@ export default function AgentFinder() {
                     className="text-xs font-heading tracking-wider uppercase"
                     style={{
                       color:
-                        job.status === 'complete' ? '#4a7c59' :
-                        job.status === 'processing' ? '#d4a853' :
+                        job.status === 'complete' ? '#22C55E' :
+                        job.status === 'processing' || job.status === 'running' ? '#d4a853' :
+                        job.status === 'interrupted' ? '#F6C445' :
                         job.status === 'cancelled' ? '#8A9AAA' :
                         '#EF5350',
                     }}
@@ -1813,7 +1858,6 @@ export default function AgentFinder() {
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00C6FF', display: 'inline-block', animation: 'pulse 1.5s ease-in-out infinite' }} />
                     Live
                   </span>
-                  {/* Monitor button */}
                   <button
                     onClick={() => resumeMonitoring(job)}
                     style={{
@@ -1829,6 +1873,17 @@ export default function AgentFinder() {
                     Monitor
                   </button>
                 </div>
+              )}
+              {/* Re-upload prompt for interrupted jobs */}
+              {job.status === 'interrupted' && (
+                <span style={{
+                  padding: '2px 10px', borderRadius: '10px',
+                  background: 'rgba(246,196,69,0.1)', border: '1px solid rgba(246,196,69,0.3)',
+                  color: '#F6C445', fontSize: '11px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700,
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                }}>
+                  Interrupted
+                </span>
               )}
               {/* Expand chevron button */}
               <button

@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import StreamingResponse
 
+from .cache import ScrapeCache
 from .input_handler import read_input, validate_input
 from .output_handler import export_results, export_results_zip, generate_summary
 from .pipeline import AgentFinderPipeline
@@ -62,13 +63,15 @@ def _load_jobs():
     try:
         saved = json.loads(JOBS_FILE.read_text(encoding="utf-8"))
         for jid, data in saved.items():
-            # Only restore completed or errored jobs (not stale running ones)
-            if data.get("status") in ("complete", "error", "cancelled"):
-                jobs[jid] = {
-                    **data,
-                    "progress": [],
-                    "preview_rows": None,
-                }
+            restored = {**data, "progress": [], "preview_rows": None}
+            if data.get("status") in ("running", "queued"):
+                # Job was interrupted by a server restart — show in history as interrupted
+                restored["status"] = "interrupted"
+                restored["error"] = (
+                    "This job was interrupted because the server restarted. "
+                    "Re-upload the file to run again."
+                )
+            jobs[jid] = restored
     except (json.JSONDecodeError, KeyError):
         pass
 
@@ -125,6 +128,8 @@ async def upload_file(file: UploadFile = File(...)):
         "filename": file.filename,
         "created_at": datetime.now().isoformat(),
     }
+
+    _save_jobs()  # persist queued state so restart sees it
 
     # Start processing in background and store the task reference
     task = asyncio.create_task(_run_pipeline(job_id, properties))
@@ -236,6 +241,35 @@ async def list_jobs():
     return history
 
 
+@app.get("/cache/stats")
+async def cache_stats():
+    """Return universal cache statistics."""
+    cache = ScrapeCache(db_path=str(UPLOAD_DIR / "web_cache.db"))
+    return await cache.stats()
+
+
+@app.get("/jobs/{job_id}/results")
+async def get_job_results(job_id: str):
+    """Return full results for a completed job as JSON (used for inline preview and export)."""
+    import zipfile
+    import csv
+    import io as _io
+    job = jobs.get(job_id)
+    if not job or job["status"] != "complete":
+        raise HTTPException(404, "Job not found or not complete")
+    result_path = job.get("result_path")
+    if not result_path or not Path(result_path).exists():
+        raise HTTPException(404, "Result file not found")
+    rows = []
+    with zipfile.ZipFile(result_path) as zf:
+        csv_name = next((n for n in zf.namelist() if n.endswith(".csv")), None)
+        if csv_name:
+            with zf.open(csv_name) as f:
+                reader = csv.DictReader(_io.TextIOWrapper(f, encoding="utf-8"))
+                rows = list(reader)
+    return {"results": rows}
+
+
 @app.post("/jobs/{job_id}/cancel")
 async def cancel_job(job_id: str):
     """Cancel a running job."""
@@ -263,8 +297,8 @@ async def resume_job(job_id: str):
     old_job = jobs.get(job_id)
     if not old_job:
         raise HTTPException(404, "Job not found.")
-    if old_job["status"] not in ("cancelled", "error"):
-        raise HTTPException(400, "Only cancelled or errored jobs can be resumed.")
+    if old_job["status"] not in ("cancelled", "error", "interrupted"):
+        raise HTTPException(400, "Only cancelled, errored, or interrupted jobs can be resumed.")
 
     # Verify upload file still exists
     upload_path = Path(old_job.get("upload_path", ""))
@@ -340,6 +374,7 @@ async def _run_pipeline(job_id: str, properties):
     """Background task to run the scraping pipeline."""
     job = jobs[job_id]
     job["status"] = "running"
+    _save_jobs()  # persist running state so restart marks it interrupted
 
     def on_progress(data: dict):
         data["type"] = "progress"
