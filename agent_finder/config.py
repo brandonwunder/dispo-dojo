@@ -73,3 +73,49 @@ REALTOR_BASE_URL = "https://www.realtor.com"
 
 # Google Custom Search
 GOOGLE_CSE_URL = "https://www.googleapis.com/customsearch/v1"
+
+# ── FSBO-specific source configs ──
+
+FSBO_COM = SourceConfig(
+    name="fsbo.com",
+    requests_per_second=0.5,
+    max_concurrent=2,
+    max_retries=2,
+    timeout_seconds=30.0,
+)
+
+FORSALEBYOWNER_COM = SourceConfig(
+    name="forsalebyowner.com",
+    requests_per_second=0.5,
+    max_concurrent=2,
+    max_retries=2,
+    timeout_seconds=30.0,
+)
+
+ZILLOW_FSBO = SourceConfig(
+    name="zillow",
+    requests_per_second=1.0,
+    max_concurrent=3,
+    max_retries=2,
+    timeout_seconds=30.0,
+)
+
+REALTOR_FSBO = SourceConfig(
+    name="realtor",
+    requests_per_second=0.5,
+    max_concurrent=2,
+    max_retries=2,
+    timeout_seconds=45.0,
+)
+
+CRAIGSLIST_FSBO = SourceConfig(
+    name="craigslist",
+    requests_per_second=1.0,
+    max_concurrent=3,
+    max_retries=2,
+    timeout_seconds=20.0,
+)
+
+# FSBO pipeline settings
+FSBO_CACHE_TTL_HOURS = 24
+FSBO_MAX_PAGES = 5  # max pages to scrape per source
