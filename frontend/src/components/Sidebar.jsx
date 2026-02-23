@@ -1,5 +1,6 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { LogOut } from 'lucide-react'
 import {
   LanternIcon,
   CompassIcon,
@@ -59,8 +60,9 @@ const adminSection = {
 }
 
 export default function Sidebar({ isOpen, onClose }) {
-  const { isAdmin, user } = useAuth()
+  const { isAdmin, user, logout } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const sections = isAdmin
     ? [navSections[0], adminSection, ...navSections.slice(1)]
@@ -141,12 +143,19 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* User info at bottom */}
       <div className="px-4 py-4 border-t border-[rgba(0,198,255,0.1)] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full hanko-seal flex items-center justify-center text-xs font-heading font-bold text-parchment">
+        <div className="w-8 h-8 rounded-full hanko-seal flex items-center justify-center text-xs font-heading font-bold text-parchment shrink-0">
           {initials}
         </div>
-        <span className="font-heading text-sm text-text-dim tracking-wide truncate">
+        <span className="font-heading text-sm text-text-dim tracking-wide truncate flex-1">
           {name}
         </span>
+        <button
+          onClick={() => { logout(); navigate('/login') }}
+          className="shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-[#8a8578] hover:text-[#ff6b6b] hover:bg-[rgba(255,107,107,0.1)] transition-colors duration-150"
+          title="Log out"
+        >
+          <LogOut size={15} />
+        </button>
       </div>
     </>
   )
