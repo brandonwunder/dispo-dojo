@@ -9,10 +9,7 @@ export default function KpiCard({ label, value, prefix = '', suffix = '', delta,
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <Card className="group relative overflow-hidden border-[rgba(212,168,83,0.12)] bg-[#0d0d1a] transition-transform transition-shadow duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(212,168,83,0.25)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
-        style={{
-          boxShadow: '0 1px 2px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2)',
-        }}
+      <Card className="relative overflow-hidden elevation-2 washi-texture border-[rgba(212,168,83,0.15)] bg-[#0d0d1a] transition-[transform,border-color] duration-200 ease-out hover:-translate-y-1 hover:border-[rgba(212,168,83,0.3)]"
       >
         <CardContent className="p-6">
           <p className="font-body text-[13px] uppercase tracking-wider text-[#8a8578] mb-3">

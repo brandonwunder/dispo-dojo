@@ -94,16 +94,16 @@ export default function Dashboard() {
 
       {/* ── Welcome Header ──────────────────────── */}
       <motion.section
-        className="mb-10"
+        className="mb-10 text-center"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
         <h1 className="font-display text-4xl gold-shimmer-text mb-1">
-          Welcome back, {firstName}-san
+          Welcome back<span style={{ fontFamily: 'Rajdhani, sans-serif' }}>,</span> {firstName}-san
         </h1>
         <p className="font-body text-sm text-[#8a8578] mb-6">{today}</p>
-        <div className="flex gap-3">
+        <div className="flex gap-3 justify-center">
           <Button
             className="font-heading tracking-wide bg-[#d4a853] text-[#06060f] hover:bg-[#f5d078] shadow-[0_0_16px_rgba(212,168,83,0.25)] hover:shadow-[0_0_24px_rgba(212,168,83,0.4)] transition-shadow duration-200"
           >
@@ -135,15 +135,21 @@ export default function Dashboard() {
       </section>
 
       {/* ── Tools to Succeed ────────────────────── */}
-      <section>
-        <div className="flex items-center gap-4 mb-6">
-          <div className="katana-line flex-1" />
-          <h2 className="font-display text-lg text-[rgba(212,168,83,0.6)] tracking-widest whitespace-nowrap">
+      <section className="relative">
+        <div
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{
+            background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212,168,83,0.05) 0%, transparent 70%)',
+          }}
+        />
+        <div className="flex items-center gap-4 mb-8">
+          <div className="katana-line flex-1" style={{ opacity: 0.7 }} />
+          <h2 className="font-display text-lg text-[rgba(212,168,83,0.8)] tracking-widest whitespace-nowrap">
             Tools to Succeed
           </h2>
-          <div className="katana-line flex-1" />
+          <div className="katana-line flex-1" style={{ opacity: 0.7 }} />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {tools.map((tool, i) => (
             <ToolCard
               key={tool.to}
@@ -151,7 +157,8 @@ export default function Dashboard() {
               label={tool.label}
               description={tool.description}
               to={tool.to}
-              delay={i * 0.05}
+              delay={i * 0.06}
+              index={i}
             />
           ))}
         </div>
