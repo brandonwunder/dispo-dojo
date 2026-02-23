@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ArrowRight, ArrowLeft } from 'lucide-react'
-import DojoGateScene from '../components/three/DojoGateScene'
+import RainEffect from '../components/RainEffect'
 import NinjaTransition from '../components/NinjaTransition'
 import { useAuth } from '../context/AuthContext'
 
@@ -221,6 +221,13 @@ export default function Login() {
   const { login, quickLogin } = useAuth()
   const navigate = useNavigate()
 
+  const [sceneReady, setSceneReady] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSceneReady(true), 100)
+    return () => clearTimeout(timer)
+  }, [])
+
   const handleNinjaComplete = useCallback(() => {
     navigate('/')
   }, [navigate])
@@ -249,88 +256,235 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* 3D Background */}
-      <DojoGateScene />
+    <div className="min-h-screen relative overflow-hidden bg-[#0B0F14]">
 
-      {/* Login background image — behind the 3D canvas */}
+      {/* Layer 0: Background photo with cinematic zoom */}
       <div
-        className="fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/login-bg.png)' }}
-      />
-
-      {/* Faded overlay — same style as dashboard, sits above 3D canvas */}
-      <div
-        className="fixed inset-0 z-[1] pointer-events-none"
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-[3500ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
         style={{
-          background: `
-            radial-gradient(ellipse 80% 60% at 50% 25%, rgba(6,6,15,0.35) 0%, rgba(6,6,15,0.6) 50%, rgba(6,6,15,0.82) 100%),
-            linear-gradient(180deg, rgba(6,6,15,0.25) 0%, rgba(6,6,15,0.5) 40%, rgba(6,6,15,0.85) 100%)
-          `,
+          backgroundImage: 'url(/login-bg.png)',
+          transform: sceneReady ? 'scale(1)' : 'scale(1.15)',
+          filter: sceneReady ? 'blur(0px)' : 'blur(4px)',
         }}
       />
 
-      {/* Content */}
-      <div className="relative z-[3] min-h-screen flex items-center justify-center p-4">
-        {/* Login Panel */}
+      {/* Layer 1: Vignette overlay */}
+      <div
+        className="fixed inset-0 z-[1] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 70% 60% at 50% 40%, transparent 0%, rgba(11,15,20,0.5) 50%, rgba(11,15,20,0.85) 100%)',
+        }}
+      />
+
+      {/* Layer 2: Rain (calmer, no lightning) */}
+      <div className="fixed inset-0 z-[2] pointer-events-none">
+        <RainEffect count={150} lightning={false} />
+      </div>
+
+      {/* Layer 3: Fog/mist blobs */}
+      <div className="fixed inset-0 z-[3] pointer-events-none overflow-hidden">
+        <div
+          className="absolute w-[600px] h-[400px] rounded-full transition-opacity duration-[3500ms]"
+          style={{
+            background: 'radial-gradient(ellipse, rgba(14,90,136,0.25) 0%, transparent 70%)',
+            top: '10%', left: '5%',
+            opacity: sceneReady ? 0.15 : 0.6,
+            animation: 'fogDrift1 40s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute w-[500px] h-[350px] rounded-full transition-opacity duration-[3500ms]"
+          style={{
+            background: 'radial-gradient(ellipse, rgba(0,198,255,0.15) 0%, transparent 70%)',
+            top: '30%', right: '0%',
+            opacity: sceneReady ? 0.12 : 0.5,
+            animation: 'fogDrift2 35s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute w-[700px] h-[300px] rounded-full transition-opacity duration-[3500ms]"
+          style={{
+            background: 'radial-gradient(ellipse, rgba(14,90,136,0.2) 0%, transparent 70%)',
+            bottom: '5%', left: '20%',
+            opacity: sceneReady ? 0.1 : 0.5,
+            animation: 'fogDrift3 45s ease-in-out infinite',
+          }}
+        />
+      </div>
+
+      {/* Layer 4: Lantern glow accents */}
+      <div className="fixed inset-0 z-[4] pointer-events-none">
+        <div
+          className="absolute w-[200px] h-[200px] rounded-full transition-opacity duration-[3500ms]"
+          style={{
+            background: 'radial-gradient(circle, rgba(255,154,60,0.18) 0%, transparent 70%)',
+            top: '35%', left: '22%',
+            opacity: sceneReady ? 1 : 0.3,
+            animation: 'lanternPulse 4s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute w-[180px] h-[180px] rounded-full transition-opacity duration-[3500ms]"
+          style={{
+            background: 'radial-gradient(circle, rgba(255,154,60,0.15) 0%, transparent 70%)',
+            top: '40%', right: '20%',
+            opacity: sceneReady ? 1 : 0.3,
+            animation: 'lanternPulse 4s ease-in-out infinite 1s',
+          }}
+        />
+        <div
+          className="absolute w-[160px] h-[160px] rounded-full transition-opacity duration-[3500ms]"
+          style={{
+            background: 'radial-gradient(circle, rgba(255,154,60,0.12) 0%, transparent 70%)',
+            bottom: '25%', left: '35%',
+            opacity: sceneReady ? 1 : 0.2,
+            animation: 'lanternPulse 4s ease-in-out infinite 2s',
+          }}
+        />
+      </div>
+
+      {/* Layer 10: Login card */}
+      <div className="relative z-[10] min-h-screen flex items-center justify-center p-4">
         <motion.div
-          className="w-full max-w-md wood-panel border border-[rgba(0,198,255,0.15)] rounded-sm relative overflow-hidden"
+          className="w-full max-w-[420px]"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.5 }}
+          transition={{ duration: 0.6, delay: 2, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          {/* Rope binding at top */}
-          <div className="rope-top" />
+          {/* Glassmorphism card */}
+          <div
+            className="relative rounded-xl overflow-hidden elevation-2"
+            style={{
+              background: 'rgba(17, 27, 36, 0.75)',
+              backdropFilter: 'blur(20px) saturate(1.2)',
+              WebkitBackdropFilter: 'blur(20px) saturate(1.2)',
+              border: '1px solid rgba(0, 198, 255, 0.12)',
+            }}
+          >
+            {/* Top accent line */}
+            <div
+              className="absolute top-0 left-0 right-0 h-px"
+              style={{
+                background: 'linear-gradient(90deg, transparent, #00C6FF, transparent)',
+                opacity: 0.3,
+              }}
+            />
 
-          {/* Metal brackets */}
-          <div className="metal-bracket top-left" />
-          <div className="metal-bracket top-right" />
-          <div className="metal-bracket bottom-left" />
-          <div className="metal-bracket bottom-right" />
-
-          {/* Logo */}
-          <div className="flex justify-center pt-8 pb-4">
-            <img src="/dispo-dojo-logo.png" alt="Dispo Dojo" className="w-48 h-auto object-contain" style={{ animation: 'logoFloat 6s ease-in-out infinite' }} />
-          </div>
-
-          <div className="px-8 pb-8">
-            <h1 className="font-display text-3xl text-center text-parchment mb-1">
-              Enter the Dojo
-            </h1>
-            <p className="text-text-dim text-center text-sm mb-6 font-heading tracking-wide">
-              Welcome back, warrior
-            </p>
-
-            {error && (
-              <div className="mb-4 p-3 rounded-sm bg-crimson/20 border border-crimson/30 text-crimson-bright text-sm">
-                {error}
+            <div className="px-9 pt-10 pb-9">
+              {/* Logo */}
+              <div className="flex justify-center mb-5">
+                <img
+                  src="/dispo-dojo-logo.png"
+                  alt="Dispo Dojo"
+                  className="h-16 w-auto object-contain"
+                  style={{
+                    filter: 'drop-shadow(0 0 12px rgba(246,196,69,0.3))',
+                    animation: 'logoFloat 6s ease-in-out infinite',
+                  }}
+                />
               </div>
-            )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label htmlFor="identifier" className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
-                  Email or Username
-                </label>
-                <input id="identifier" type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="you@company.com or username" className={inputClass} />
-              </div>
-              <div>
-                <label htmlFor="password" className="block text-xs font-heading font-semibold text-text-dim mb-1.5 tracking-[0.08em] uppercase">
-                  Password
-                </label>
-                <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className={inputClass} />
-              </div>
-              <button type="submit" className="w-full py-3 mt-4 text-white font-heading font-bold tracking-widest uppercase rounded-sm shadow-[0_0_16px_rgba(229,57,53,0.3)] hover:shadow-[0_0_24px_rgba(229,57,53,0.45)] transition-shadow" style={{ background: 'linear-gradient(135deg, #E53935, #B3261E)' }}>
+              {/* Heading */}
+              <h1 className="font-display text-3xl text-center mb-1 gold-shimmer-text tracking-[0.04em]">
                 Enter the Dojo
-              </button>
-            </form>
+              </h1>
+              <p className="text-[#C8D1DA] text-center text-sm mb-7 font-heading tracking-wide">
+                Welcome back, warrior
+              </p>
 
-            <p className="text-center mt-4 text-text-dim text-sm">
-              New to the dojo?{' '}
-              <button onClick={() => setShowSignUp(true)} className="text-[#00C6FF] ml-1 hover:text-[#00C6FF]/80 transition-colors">
-                Make an Account for FREE
-              </button>
-            </p>
+              {/* Error message */}
+              {error && (
+                <div className="mb-4 p-3 rounded-lg bg-[rgba(229,57,53,0.15)] border border-[rgba(229,57,53,0.3)] text-[#EF5350] text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label
+                    htmlFor="identifier"
+                    className="block text-[11px] font-heading font-semibold text-[#C8D1DA] mb-1.5 tracking-[0.08em] uppercase"
+                  >
+                    Email or Username
+                  </label>
+                  <input
+                    id="identifier"
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="you@company.com or username"
+                    className="w-full px-4 py-3.5 rounded-lg text-[#F4F7FA] font-body placeholder:text-[#C8D1DA]/40 focus:outline-none transition-all duration-200"
+                    style={{
+                      background: 'rgba(11, 15, 20, 0.6)',
+                      border: '1px solid rgba(0, 198, 255, 0.1)',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = 'rgba(0, 198, 255, 0.4)'
+                      e.target.style.boxShadow = '0 0 12px rgba(0, 198, 255, 0.15)'
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(0, 198, 255, 0.1)'
+                      e.target.style.boxShadow = 'none'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="block text-[11px] font-heading font-semibold text-[#C8D1DA] mb-1.5 tracking-[0.08em] uppercase"
+                  >
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-4 py-3.5 rounded-lg text-[#F4F7FA] font-body placeholder:text-[#C8D1DA]/40 focus:outline-none transition-all duration-200"
+                    style={{
+                      background: 'rgba(11, 15, 20, 0.6)',
+                      border: '1px solid rgba(0, 198, 255, 0.1)',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = 'rgba(0, 198, 255, 0.4)'
+                      e.target.style.boxShadow = '0 0 12px rgba(0, 198, 255, 0.15)'
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(0, 198, 255, 0.1)'
+                      e.target.style.boxShadow = 'none'
+                    }}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-3 mt-4 text-white font-heading font-bold tracking-widest uppercase rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
+                  style={{
+                    background: 'linear-gradient(135deg, #E53935, #B3261E)',
+                    boxShadow: '0 0 16px rgba(229, 57, 53, 0.3)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.boxShadow = '0 4px 20px rgba(229, 57, 53, 0.45)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.boxShadow = '0 0 16px rgba(229, 57, 53, 0.3)'
+                  }}
+                >
+                  Enter the Dojo
+                </button>
+              </form>
+
+              <p className="text-center mt-5 text-[#C8D1DA] text-sm">
+                New to the dojo?{' '}
+                <button
+                  onClick={() => setShowSignUp(true)}
+                  className="text-[#00C6FF] ml-1 hover:underline hover:shadow-[0_0_8px_rgba(0,198,255,0.3)] transition-all duration-200"
+                >
+                  Make an Account for FREE
+                </button>
+              </p>
+            </div>
           </div>
         </motion.div>
       </div>
