@@ -217,6 +217,8 @@ export default function AgentFinder() {
   const [hoveredCell, setHoveredCell] = useState(null)
   const [groupByAgent, setGroupByAgent] = useState(false)
   const [expandedAgents, setExpandedAgents] = useState(new Set())
+  const [exportMenuOpen, setExportMenuOpen] = useState(false)
+  const [bulkCopyToast, setBulkCopyToast] = useState(null)
 
   const fileInputRef = useRef(null)
   const sseRef = useRef(null)
@@ -281,6 +283,14 @@ export default function AgentFinder() {
       tickerRef.current.scrollTop = tickerRef.current.scrollHeight
     }
   }, [tickerLog])
+
+  // ── Close export menu on outside click ──
+  useEffect(() => {
+    if (!exportMenuOpen) return
+    const close = () => setExportMenuOpen(false)
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [exportMenuOpen])
 
   // ── API calls ──
 
@@ -456,6 +466,58 @@ export default function AgentFinder() {
     }).catch(() => {})
   }
 
+  function downloadFilteredCSV(statusFilter) {
+    const rows = statusFilter === 'all'
+      ? resultRows
+      : statusFilter === 'view'
+      ? filteredRows
+      : resultRows.filter(r => (r.status || 'not_found') === statusFilter)
+
+    const COLS = [
+      { header: 'Address',    get: r => r.address || '' },
+      { header: 'Agent',      get: r => r.agent || r.agent_name || '' },
+      { header: 'Brokerage',  get: r => r.brokerage || r.office || '' },
+      { header: 'Phone',      get: r => r.phone || '' },
+      { header: 'Email',      get: r => r.email || '' },
+      { header: 'Status',     get: r => r.status || '' },
+      { header: 'List Date',  get: r => r.list_date || '' },
+      { header: 'DOM',        get: r => r.dom || r.days_on_market || '' },
+      { header: 'Confidence', get: r => r.confidence != null ? (r.confidence > 1 ? r.confidence : Math.round(r.confidence * 100)) + '%' : '' },
+    ]
+    const escape = v => `"${String(v).replace(/"/g, '""')}"`
+    const header = COLS.map(c => c.header).join(',')
+    const body = rows.map(r => COLS.map(c => escape(c.get(r))).join(',')).join('\n')
+    const csv = header + '\n' + body
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `agent-finder-${statusFilter}-${jobId || 'results'}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    setExportMenuOpen(false)
+  }
+
+  function bulkCopyEmails() {
+    const emails = filteredRows.map(r => r.email).filter(e => e && e !== '--')
+    if (emails.length === 0) return
+    navigator.clipboard.writeText(emails.join('\n')).then(() => {
+      setBulkCopyToast(`${emails.length} email${emails.length !== 1 ? 's' : ''} copied`)
+      setTimeout(() => setBulkCopyToast(null), 2500)
+    }).catch(() => {})
+  }
+
+  function bulkCopyPhones() {
+    const phones = filteredRows.map(r => r.phone).filter(p => p && p !== '--')
+    if (phones.length === 0) return
+    navigator.clipboard.writeText(phones.join('\n')).then(() => {
+      setBulkCopyToast(`${phones.length} phone${phones.length !== 1 ? 's' : ''} copied`)
+      setTimeout(() => setBulkCopyToast(null), 2500)
+    }).catch(() => {})
+  }
+
   function toggleSort(column) {
     setSortConfig(prev => {
       if (!prev || prev.column !== column) return { column, direction: 'asc' }
@@ -481,6 +543,8 @@ export default function AgentFinder() {
     setSortConfig(null)
     setGroupByAgent(false)
     setExpandedAgents(new Set())
+    setExportMenuOpen(false)
+    setBulkCopyToast(null)
     prevProgressRef.current = { found: 0, partial: 0, cached: 0, not_found: 0 }
     prevAddressRef.current = ''
     tickerIdRef.current = 0
@@ -1128,21 +1192,49 @@ export default function AgentFinder() {
       {/* Action buttons */}
       <div className="flex items-center gap-3 mt-6">
         {jobId && (
-          <motion.a
-            href={`${API_BASE}/api/download/${jobId}`}
-            whileTap={{ scale: 0.97 }}
-            className="group relative inline-flex items-center justify-center font-heading tracking-widest uppercase font-semibold rounded-xl px-8 py-3 text-sm gold-shimmer text-bg shadow-[0_4px_20px_-4px_rgba(212,168,83,0.4)] hover:shadow-[0_4px_30px_-4px_rgba(212,168,83,0.6)] transition-all duration-300"
-          >
-            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:translate-x-full transition-transform duration-700 pointer-events-none rounded-xl" />
-            <span className="relative z-10 flex items-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              Download ZIP
-            </span>
-          </motion.a>
+          <div style={{ position: 'relative' }}>
+            <div style={{ display: 'flex' }}>
+              <a href={`${API_BASE}/api/download/${jobId}`} download
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px',
+                  background: 'linear-gradient(135deg, #F6C445, #C49A20)', color: '#0B0F14',
+                  borderRadius: '10px 0 0 10px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700,
+                  fontSize: '13px', letterSpacing: '0.08em', textTransform: 'uppercase',
+                  textDecoration: 'none', cursor: 'pointer', boxShadow: '0 0 16px rgba(246,196,69,0.3)' }}>
+                ↓ Download All
+              </a>
+              <button onClick={() => setExportMenuOpen(v => !v)}
+                style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #C49A20, #9A7A10)',
+                  color: '#0B0F14', border: 'none', borderLeft: '1px solid rgba(0,0,0,0.2)',
+                  borderRadius: '0 10px 10px 0', cursor: 'pointer', fontSize: '12px' }}>
+                ▾
+              </button>
+            </div>
+            {exportMenuOpen && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 50,
+                minWidth: '200px', background: 'rgba(17,27,36,0.98)',
+                border: '1px solid rgba(0,198,255,0.2)', borderRadius: '10px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.6)', overflow: 'hidden' }}>
+                {[
+                  { label: 'Download Found Only', filter: 'found' },
+                  { label: 'Download Partial Only', filter: 'partial' },
+                  { label: 'Download Cached Only', filter: 'cached' },
+                  { label: 'Download Not Found Only', filter: 'not_found' },
+                  { label: 'Download Current View', filter: 'view' },
+                ].map(opt => (
+                  <button key={opt.filter} onClick={() => downloadFilteredCSV(opt.filter)}
+                    style={{ display: 'block', width: '100%', padding: '10px 16px',
+                      background: 'transparent', border: 'none', textAlign: 'left',
+                      cursor: 'pointer', color: '#F4F7FA', fontSize: '13px',
+                      fontFamily: 'DM Sans, sans-serif',
+                      borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.1s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,198,255,0.08)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
         <motion.button
           onClick={handleReset}
@@ -1217,6 +1309,29 @@ export default function AgentFinder() {
 
         {/* Table toolbar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', marginBottom: '12px' }}>
+          {bulkCopyToast && (
+            <span style={{ fontSize: '12px', color: '#00C6FF', fontFamily: 'DM Sans, sans-serif', marginRight: 'auto' }}>
+              ✓ {bulkCopyToast}
+            </span>
+          )}
+          <button onClick={bulkCopyEmails} title="Copy all visible emails"
+            style={{ padding: '5px 12px', borderRadius: '8px', fontSize: '12px',
+              fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, letterSpacing: '0.08em',
+              textTransform: 'uppercase', cursor: 'pointer',
+              border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#C8D1DA', transition: 'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,198,255,0.4)'; e.currentTarget.style.color = '#00C6FF' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#C8D1DA' }}>
+            Copy Emails
+          </button>
+          <button onClick={bulkCopyPhones} title="Copy all visible phones"
+            style={{ padding: '5px 12px', borderRadius: '8px', fontSize: '12px',
+              fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, letterSpacing: '0.08em',
+              textTransform: 'uppercase', cursor: 'pointer',
+              border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#C8D1DA', transition: 'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,198,255,0.4)'; e.currentTarget.style.color = '#00C6FF' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#C8D1DA' }}>
+            Copy Phones
+          </button>
           <button
             onClick={() => { setGroupByAgent(v => !v); setExpandedAgents(new Set()) }}
             style={{
