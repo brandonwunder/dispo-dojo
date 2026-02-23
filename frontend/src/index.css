@@ -720,6 +720,28 @@ body {
   50% { transform: translateY(-4px); }
 }
 
+/* Fog drift animations for login scene */
+@keyframes fogDrift1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, -20px); }
+}
+
+@keyframes fogDrift2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-25px, 15px); }
+}
+
+@keyframes fogDrift3 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(20px, -10px); }
+}
+
+/* Lantern glow pulse for login scene */
+@keyframes lanternPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
 /* Tool card icon glow pulse */
 @keyframes glowPulse {
   0%, 100% { box-shadow: var(--glow-base); }
