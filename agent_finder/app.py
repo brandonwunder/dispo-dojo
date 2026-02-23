@@ -3,7 +3,6 @@
 import asyncio
 import json
 import os
-import tempfile
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -31,7 +30,7 @@ jobs: dict[str, dict] = {}
 _tasks: dict[str, asyncio.Task] = {}
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
-UPLOAD_DIR = Path(tempfile.gettempdir()) / "agent_finder_uploads"
+UPLOAD_DIR = Path(__file__).parent / "data"
 UPLOAD_DIR.mkdir(exist_ok=True)
 JOBS_FILE = UPLOAD_DIR / "jobs.json"
 

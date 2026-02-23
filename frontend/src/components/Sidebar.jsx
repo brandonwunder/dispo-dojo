@@ -28,7 +28,7 @@ const navSections = [
   {
     title: 'Lead Generation',
     items: [
-      { to: '/agent-finder', icon: CompassIcon, label: 'Agent Finder' },
+      { to: '/agent-finder', icon: CompassIcon, label: 'Listing Agent Finder' },
       { to: '/fsbo-finder', icon: MapIcon, label: 'FSBO Finder' },
       { to: '/lead-scrubbing', icon: ForgeHammerIcon, label: 'Lead Scrubbing' },
     ],

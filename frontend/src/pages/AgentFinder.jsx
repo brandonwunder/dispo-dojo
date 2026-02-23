@@ -889,21 +889,13 @@ export default function AgentFinder() {
                   '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
               }}
             >
-              Agent Finder
+              Listing Agent Finder
             </h1>
           </div>
-          <p
-            className="font-heading text-xs uppercase"
-            style={{
-              color: '#00C6FF',
-              letterSpacing: '0.14em',
-              textShadow: '0 0 20px rgba(0,198,255,0.4)',
-            }}
-          >
-            Scout Tower — Agent Dispatch
-          </p>
-          <p className="text-sm mt-2" style={{ color: '#C8D1DA' }}>
-            Upload a property list and find listing agents for every address.
+          <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6 }}>
+            Upload a list of on-market properties to retrieve listing agent contact data.
+            With recent MLS crackdowns on agent data access, this tool reliably scrapes
+            agent names, phones, and emails for your entire list — no MLS access required.
           </p>
         </div>
 
