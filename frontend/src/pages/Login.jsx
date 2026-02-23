@@ -276,7 +276,7 @@ export default function Login() {
 
           {/* Logo */}
           <div className="flex justify-center pt-8 pb-4">
-            <img src="/logo.png" alt="Dispo Dojo" className="w-24 h-24 object-contain" style={{ animation: 'logoFloat 6s ease-in-out infinite' }} />
+            <img src="/dispo-dojo-logo.png" alt="Dispo Dojo" className="w-48 h-auto object-contain" style={{ animation: 'logoFloat 6s ease-in-out infinite' }} />
           </div>
 
           <div className="px-8 pb-8">
