@@ -119,7 +119,23 @@ export default function Dashboard() {
   })
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-8">
+    <div className="relative min-h-screen">
+      {/* ── Dojo Background ──────────────────────── */}
+      <div
+        className="fixed inset-0 -z-20 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/dojo-bg.png)' }}
+      />
+      <div
+        className="fixed inset-0 -z-10"
+        style={{
+          background: `
+            radial-gradient(ellipse 70% 50% at 50% 30%, rgba(6,6,15,0.72) 0%, rgba(6,6,15,0.88) 60%, rgba(6,6,15,0.95) 100%),
+            linear-gradient(180deg, rgba(6,6,15,0.7) 0%, rgba(6,6,15,0.82) 40%, rgba(6,6,15,0.94) 100%)
+          `,
+        }}
+      />
+
+      <div className="mx-auto max-w-[1200px] px-6 py-8">
 
       {/* ── Welcome Header ──────────────────────── */}
       <motion.section
@@ -192,6 +208,7 @@ export default function Dashboard() {
           ))}
         </div>
       </section>
+      </div>
     </div>
   )
 }
