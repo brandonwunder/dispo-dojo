@@ -210,6 +210,8 @@ export default function AgentFinder() {
   const [jobs, setJobs] = useState([])
   const [error, setError] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [activeStatusFilter, setActiveStatusFilter] = useState('all')
+  const [tableSearch, setTableSearch] = useState('')
 
   const fileInputRef = useRef(null)
   const sseRef = useRef(null)
@@ -453,6 +455,8 @@ export default function AgentFinder() {
     setColumnMap(null)
     setTickerLog([])
     setProcessingSpeed(null)
+    setActiveStatusFilter('all')
+    setTableSearch('')
     prevProgressRef.current = { found: 0, partial: 0, cached: 0, not_found: 0 }
     prevAddressRef.current = ''
     tickerIdRef.current = 0
@@ -508,6 +512,25 @@ export default function AgentFinder() {
   const resultCached = results?.cached ?? progress.cached
   const resultNotFound = results?.not_found ?? progress.not_found
   const resultTotal = results?.total ?? progress.total
+
+  const filteredRows = useMemo(() => {
+    let rows = resultRows
+
+    if (activeStatusFilter !== 'all') {
+      rows = rows.filter(r => (r.status || 'not_found') === activeStatusFilter)
+    }
+
+    if (tableSearch.trim()) {
+      const q = tableSearch.toLowerCase()
+      rows = rows.filter(r => {
+        const agent = (r.agent || r.agent_name || '').toLowerCase()
+        const brokerage = (r.brokerage || r.office || '').toLowerCase()
+        return agent.includes(q) || brokerage.includes(q)
+      })
+    }
+
+    return rows
+  }, [resultRows, activeStatusFilter, tableSearch])
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -1068,6 +1091,50 @@ export default function AgentFinder() {
           Results ({resultRows.length} addresses)
         </h2>
 
+        {/* Filter Bar */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {[
+              { key: 'all', label: 'All', count: resultRows.length },
+              { key: 'found', label: 'Found', count: resultRows.filter(r => r.status === 'found').length },
+              { key: 'partial', label: 'Partial', count: resultRows.filter(r => r.status === 'partial').length },
+              { key: 'cached', label: 'Cached', count: resultRows.filter(r => r.status === 'cached').length },
+              { key: 'not_found', label: 'Not Found', count: resultRows.filter(r => (r.status || 'not_found') === 'not_found').length },
+            ].map(pill => (
+              <button
+                key={pill.key}
+                onClick={() => setActiveStatusFilter(pill.key)}
+                style={{
+                  padding: '4px 12px', borderRadius: '20px', fontSize: '12px',
+                  fontFamily: 'Rajdhani, sans-serif', fontWeight: 600,
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                  cursor: 'pointer', transition: 'all 0.15s ease',
+                  border: activeStatusFilter === pill.key ? '1px solid rgba(0,198,255,0.6)' : '1px solid rgba(255,255,255,0.1)',
+                  background: activeStatusFilter === pill.key ? 'rgba(0,198,255,0.15)' : 'transparent',
+                  color: activeStatusFilter === pill.key ? '#00C6FF' : '#C8D1DA',
+                  boxShadow: activeStatusFilter === pill.key ? '0 0 8px rgba(0,198,255,0.2)' : 'none',
+                }}
+              >
+                {pill.label} <span style={{ opacity: 0.7 }}>({pill.count})</span>
+              </button>
+            ))}
+          </div>
+          <input
+            type="text"
+            placeholder="Search agent or brokerage..."
+            value={tableSearch}
+            onChange={e => setTableSearch(e.target.value)}
+            style={{
+              flex: 1, minWidth: '200px', padding: '6px 12px',
+              background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px', color: '#F4F7FA', fontSize: '13px',
+              fontFamily: 'DM Sans, sans-serif', outline: 'none',
+            }}
+            onFocus={e => { e.target.style.borderColor = 'rgba(0,198,255,0.4)' }}
+            onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }}
+          />
+        </div>
+
         <div className="overflow-x-auto" style={{ margin: '0 -24px' }}>
           <table className="w-full min-w-[900px]" style={{ padding: '0 24px' }}>
             <thead>
@@ -1084,7 +1151,7 @@ export default function AgentFinder() {
               </tr>
             </thead>
             <tbody>
-              {resultRows.map((row, i) => (
+              {filteredRows.map((row, i) => (
                 <tr
                   key={i}
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
@@ -1105,6 +1172,15 @@ export default function AgentFinder() {
             </tbody>
           </table>
         </div>
+        {filteredRows.length === 0 && resultRows.length > 0 && (
+          <div style={{ textAlign: 'center', padding: '32px', color: '#C8D1DA', fontSize: '14px', fontFamily: 'DM Sans, sans-serif' }}>
+            No results match the current filter.{' '}
+            <button onClick={() => { setActiveStatusFilter('all'); setTableSearch('') }}
+              style={{ color: '#00C6FF', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', textDecoration: 'underline' }}>
+              Clear filters
+            </button>
+          </div>
+        )}
       </GlassCard>
     )}
   </motion.div>
