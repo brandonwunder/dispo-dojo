@@ -733,7 +733,140 @@ export default function AgentFinder() {
     </GlassCard>
   </motion.div>
 )}
-          {/* COMPLETE — Task 5 */}
+          {phase === 'complete' && (
+  <motion.div
+    key="complete"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.3 }}
+  >
+    {/* Summary card — 680px */}
+    <GlassCard>
+      <h2
+        className="font-heading text-xs uppercase mb-5"
+        style={{ color: '#00C6FF', letterSpacing: '0.14em' }}
+      >
+        Results Summary
+      </h2>
+
+      <div className="flex flex-col md:flex-row items-center gap-8">
+        <DonutRing
+          found={resultFound}
+          partial={resultPartial}
+          cached={resultCached}
+          notFound={resultNotFound}
+          total={resultTotal}
+        />
+        <div className="grid grid-cols-2 gap-x-8 gap-y-3 flex-1">
+          {[
+            { label: 'Found', value: resultFound, color: '#4a7c59' },
+            { label: 'Partial', value: resultPartial, color: '#d4a853' },
+            { label: 'Cached', value: resultCached, color: '#4a6fa5' },
+            { label: 'Not Found', value: resultNotFound, color: '#EF5350' },
+          ].map((s) => (
+            <div key={s.label} className="flex items-center gap-3">
+              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+              <div>
+                <span className="font-heading text-lg font-bold" style={{ color: '#F4F7FA' }}>{s.value}</span>
+                <span className="text-sm ml-2" style={{ color: '#C8D1DA' }}>{s.label}</span>
+              </div>
+            </div>
+          ))}
+          <div className="col-span-2 pt-2" style={{ borderTop: '1px solid rgba(246,196,69,0.1)' }}>
+            <span className="font-heading text-lg font-bold" style={{ color: '#F4F7FA' }}>{resultTotal}</span>
+            <span className="text-sm ml-2" style={{ color: '#C8D1DA' }}>Total Addresses</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex items-center gap-3 mt-6">
+        {jobId && (
+          <motion.a
+            href={`${API_BASE}/api/download/${jobId}`}
+            whileTap={{ scale: 0.97 }}
+            className="group relative inline-flex items-center justify-center font-heading tracking-widest uppercase font-semibold rounded-xl px-8 py-3 text-sm gold-shimmer text-bg shadow-[0_4px_20px_-4px_rgba(212,168,83,0.4)] hover:shadow-[0_4px_30px_-4px_rgba(212,168,83,0.6)] transition-all duration-300"
+          >
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:translate-x-full transition-transform duration-700 pointer-events-none rounded-xl" />
+            <span className="relative z-10 flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Download ZIP
+            </span>
+          </motion.a>
+        )}
+        <motion.button
+          onClick={handleReset}
+          whileTap={{ scale: 0.97 }}
+          className="inline-flex items-center justify-center font-heading tracking-widest uppercase font-semibold rounded-xl px-6 py-3 text-sm transition-all"
+          style={{
+            background: 'rgba(0,198,255,0.06)',
+            border: '1px solid rgba(0,198,255,0.15)',
+            color: '#00C6FF',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,198,255,0.12)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,198,255,0.06)'}
+        >
+          Process Another File
+        </motion.button>
+      </div>
+    </GlassCard>
+
+    {/* Results table — wider at 1024px */}
+    {resultRows.length > 0 && (
+      <GlassCard maxWidth="1024px">
+        <h2
+          className="font-heading text-xs uppercase mb-5"
+          style={{ color: '#00C6FF', letterSpacing: '0.14em' }}
+        >
+          Results ({resultRows.length} addresses)
+        </h2>
+
+        <div className="overflow-x-auto" style={{ margin: '0 -24px' }}>
+          <table className="w-full min-w-[900px]" style={{ padding: '0 24px' }}>
+            <thead>
+              <tr style={{ background: 'rgba(0,198,255,0.06)' }}>
+                {['Address','Agent','Brokerage','Phone','Email','Status','List Date','DOM','Confidence'].map(col => (
+                  <th
+                    key={col}
+                    className="px-4 py-3 text-left font-heading text-xs uppercase whitespace-nowrap"
+                    style={{ color: '#F6C445', letterSpacing: '0.1em' }}
+                  >
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {resultRows.map((row, i) => (
+                <tr
+                  key={i}
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(246,196,69,0.02)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <td className="px-4 py-3 text-sm max-w-[200px] truncate" style={{ color: '#F4F7FA' }}>{row.address || '--'}</td>
+                  <td className="px-4 py-3 text-sm" style={{ color: '#F4F7FA' }}>{row.agent || row.agent_name || '--'}</td>
+                  <td className="px-4 py-3 text-sm" style={{ color: '#C8D1DA' }}>{row.brokerage || row.office || '--'}</td>
+                  <td className="px-4 py-3 text-sm font-mono" style={{ color: '#C8D1DA' }}>{row.phone || '--'}</td>
+                  <td className="px-4 py-3 text-sm" style={{ color: '#C8D1DA' }}>{row.email || '--'}</td>
+                  <td className="px-4 py-3 text-center"><StatusBadge status={row.status || 'not_found'} /></td>
+                  <td className="px-4 py-3 text-sm" style={{ color: '#C8D1DA' }}>{row.list_date || '--'}</td>
+                  <td className="px-4 py-3 text-sm text-right font-mono" style={{ color: '#C8D1DA' }}>{row.dom ?? row.days_on_market ?? '--'}</td>
+                  <td className="px-4 py-3"><ConfidenceBar value={row.confidence} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </GlassCard>
+    )}
+  </motion.div>
+)}
           {/* ERROR — Task 6 */}
         </AnimatePresence>
 
