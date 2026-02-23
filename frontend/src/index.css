@@ -312,19 +312,26 @@ body {
 
 .neon-shimmer-text {
   background: linear-gradient(
-    120deg,
-    #7F00FF 0%,
-    #C8275E 25%,
-    #ffffff 50%,
-    #00C6FF 75%,
-    #7F00FF 100%
+    105deg,
+    #e9d5ff 0%,
+    #f9a8d4 16%,
+    #ffffff 30%,
+    #a5f3fc 44%,
+    #e9d5ff 60%,
+    #f9a8d4 76%,
+    #ffffff 100%
   );
-  background-size: 200% 100%;
-  animation: shimmer 4s linear infinite;
+  background-size: 300% 100%;
+  animation: neon-shimmer 2.8s linear infinite;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+}
+
+@keyframes neon-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -100% 0; }
 }
 
 @keyframes shimmer {
