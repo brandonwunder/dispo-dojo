@@ -322,7 +322,7 @@ body {
     #ffffff 100%
   );
   background-size: 300% 100%;
-  animation: neon-shimmer 2.8s linear infinite;
+  animation: neon-shimmer-slow 8s ease-in-out infinite;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -330,6 +330,11 @@ body {
 }
 
 @keyframes neon-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@keyframes neon-shimmer-slow {
   0%   { background-position: 200% 0; }
   100% { background-position: -100% 0; }
 }
