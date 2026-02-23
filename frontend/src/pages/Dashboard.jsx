@@ -3,13 +3,34 @@ import { useAuth } from '../context/AuthContext'
 import {
   Compass,
   Map,
-  Bird,
   Hammer,
   ScrollText,
   PenTool,
   Sword,
   Users,
 } from 'lucide-react'
+
+function SauceBottle({ className, style, ...props }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={style}
+      {...props}
+    >
+      <path d="M10 2h4v3h-4z" />
+      <path d="M9 5h6l1 4H8l1-4z" />
+      <path d="M8 9h8v2a2 2 0 0 1-.5 1.3L14 14v6a2 2 0 0 1-2 2h0a2 2 0 0 1-2-2v-6l-1.5-1.7A2 2 0 0 1 8 11V9z" />
+      <path d="M11 14h2" />
+    </svg>
+  )
+}
 import { Button } from '@/components/ui/button'
 import KpiCard from '../components/KpiCard'
 import ToolCard from '../components/ToolCard'
@@ -37,7 +58,7 @@ const tools = [
   },
   {
     label: 'Lead Scrubbing',
-    icon: Bird,
+    icon: SauceBottle,
     description: 'Deal Sauce walkthrough for finding and scrubbing leads',
     to: '/lead-scrubbing',
   },
@@ -100,7 +121,7 @@ export default function Dashboard() {
         transition={{ duration: 0.6 }}
       >
         <h1 className="font-display text-4xl gold-shimmer-text mb-1">
-          Welcome back<span style={{ fontFamily: 'Rajdhani, sans-serif' }}>,</span> {firstName}-san
+          Welcome back<span style={{ fontFamily: 'Rajdhani, sans-serif' }}>,</span> {firstName}
         </h1>
         <p className="font-body text-sm text-[#8a8578] mb-6">{today}</p>
         <div className="flex gap-3 justify-center">
