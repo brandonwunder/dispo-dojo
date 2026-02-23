@@ -17,9 +17,26 @@ function saveUsers(users) {
   localStorage.setItem('dispo_users', JSON.stringify(users))
 }
 
+function loadUser() {
+  try {
+    const stored = localStorage.getItem('dispo_user')
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(loadUser)
   const [users, setUsers] = useState(loadUsers)
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('dispo_user', JSON.stringify(user))
+    } else {
+      localStorage.removeItem('dispo_user')
+    }
+  }, [user])
 
   useEffect(() => {
     saveUsers(users)
