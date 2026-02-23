@@ -53,8 +53,8 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
               <img
                 src={image}
                 alt={label}
-                className="absolute h-[156px] w-[156px] object-contain pointer-events-none"
-                style={{ filter: `drop-shadow(0 0 10px ${accent}50)` }}
+                className="absolute object-contain pointer-events-none"
+                style={{ width: 156, height: 156, filter: `drop-shadow(0 0 10px ${accent}50)` }}
               />
             ) : (
               <Icon
