@@ -217,6 +217,7 @@ export default function AgentFinder() {
   const prevProgressRef = useRef({ found: 0, partial: 0, cached: 0, not_found: 0 })
   const prevAddressRef = useRef('')
   const tickerRef = useRef(null) // DOM ref for auto-scroll
+  const tickerIdRef = useRef(0)  // monotonic counter for ticker entry keys
   const [eta, setEta] = useState(null)
   const [csvPreview, setCsvPreview] = useState(null) // { rowCount, detectedColumn, allColumns }
   const [columnMap, setColumnMap] = useState(null)   // user-selected column override
@@ -292,6 +293,7 @@ export default function AgentFinder() {
     if (!file) return
     setUploading(true)
     setError(null)
+    setProcessingSpeed(null)
 
     const formData = new FormData()
     formData.append('file', file)
@@ -343,6 +345,9 @@ export default function AgentFinder() {
           // Determine the status of the address that just finished
           let finishedStatus = null
           if (prevAddr) {
+            // Note: if multiple counters jump in one event (batch flush), only the first
+            // matching status is captured. The remaining addresses are not shown in the
+            // ticker — this is an inherent limitation of delta-based status inference.
             if ((data.found || 0) > prev.found) finishedStatus = 'found'
             else if ((data.partial || 0) > prev.partial) finishedStatus = 'partial'
             else if ((data.cached || 0) > prev.cached) finishedStatus = 'cached'
@@ -352,7 +357,7 @@ export default function AgentFinder() {
           if (finishedStatus && prevAddr) {
             setTickerLog(current => [
               ...current,
-              { address: prevAddr, status: finishedStatus, id: Date.now() }
+              { address: prevAddr, status: finishedStatus, id: ++tickerIdRef.current }
             ].slice(-8))
           }
 
@@ -422,6 +427,7 @@ export default function AgentFinder() {
     setProcessingSpeed(null)
     prevProgressRef.current = { found: 0, partial: 0, cached: 0, not_found: 0 }
     prevAddressRef.current = ''
+    tickerIdRef.current = 0
     setFile(null)
     loadJobs()
   }
@@ -449,6 +455,7 @@ export default function AgentFinder() {
     setProcessingSpeed(null)
     prevProgressRef.current = { found: 0, partial: 0, cached: 0, not_found: 0 }
     prevAddressRef.current = ''
+    tickerIdRef.current = 0
     startTimeRef.current = null
   }
 
