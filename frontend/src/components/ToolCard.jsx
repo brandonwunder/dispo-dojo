@@ -2,16 +2,20 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 
-const ACCENTS = [
-  '#0E5A88', // ninja blue
-  '#E53935', // headband red
-  '#00C6FF', // electric cyan
-  '#F6C445', // gold glow
+// Neon gradient pairs: [primary, secondary] per card
+const NEON_PAIRS = [
+  ['#9B30FF', '#FF2D78'], // purple → pink
+  ['#FF2D78', '#FF3131'], // pink → red
+  ['#3D5BFF', '#00C6FF'], // blue → cyan
+  ['#FF3131', '#FF2D78'], // red → pink
+  ['#00C6FF', '#3D5BFF'], // cyan → blue
+  ['#BF40FF', '#00C6FF'], // purple → cyan
+  ['#FF2D78', '#9B30FF'], // pink → purple
 ]
 
 export default function ToolCard({ icon: Icon, image, label, description, to, delay = 0, index = 0 }) {
   const navigate = useNavigate()
-  const accent = ACCENTS[index % ACCENTS.length]
+  const [c1, c2] = NEON_PAIRS[index % NEON_PAIRS.length]
 
   return (
     <motion.div
@@ -22,18 +26,18 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
       <motion.div
         whileHover={{
           y: -4,
-          boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,198,255,0.2), 0 0 32px -8px ${accent}44`,
+          boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px ${c1}30, 0 0 32px -8px ${c1}55`,
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
         onClick={() => navigate(to)}
-        className="group relative cursor-pointer rounded-xl border border-[rgba(0,198,255,0.13)] bg-[#0d0d1a] elevation-2 washi-texture overflow-visible"
+        className="group relative cursor-pointer rounded-xl border border-[rgba(255,255,255,0.07)] bg-[#0d0d1a] elevation-2 washi-texture overflow-visible"
       >
-        {/* Left accent bar */}
+        {/* Left accent bar — gradient c1→c2 */}
         <div
-          className="absolute left-0 top-0 bottom-0 w-[3px]"
+          className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl"
           style={{
-            background: `linear-gradient(180deg, transparent 0%, ${accent} 30%, ${accent} 70%, transparent 100%)`,
-            opacity: 0.7,
+            background: `linear-gradient(180deg, transparent 0%, ${c1} 30%, ${c2} 70%, transparent 100%)`,
+            opacity: 0.85,
           }}
         />
 
@@ -44,24 +48,24 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
             style={{
               width: 60,
               height: 60,
-              background: `linear-gradient(135deg, ${accent}18 0%, ${accent}08 100%)`,
-              border: `1px solid ${accent}35`,
-              boxShadow: `0 0 0 1px ${accent}10 inset, 0 0 20px ${accent}20, 0 4px 12px rgba(0,0,0,0.4)`,
+              background: `linear-gradient(135deg, ${c1}1A 0%, ${c2}0D 100%)`,
+              border: `1px solid ${c1}40`,
+              boxShadow: `0 0 16px ${c1}25, 0 0 32px ${c2}15, 0 4px 12px rgba(0,0,0,0.4)`,
             }}
           >
-            {/* Inner highlight */}
+            {/* Inner diagonal highlight */}
             <div
               className="absolute inset-0 rounded-2xl pointer-events-none"
               style={{
-                background: `linear-gradient(135deg, ${accent}15 0%, transparent 60%)`,
+                background: `linear-gradient(135deg, ${c1}18 0%, ${c2}10 50%, transparent 100%)`,
               }}
             />
             <Icon
               style={{
                 width: 28,
                 height: 28,
-                color: accent,
-                filter: `drop-shadow(0 0 8px ${accent}) drop-shadow(0 0 16px ${accent}80)`,
+                color: '#ffffff',
+                filter: `drop-shadow(0 0 6px ${c1}) drop-shadow(0 0 12px ${c2}) drop-shadow(0 0 20px ${c1}99)`,
                 strokeWidth: 1.75,
               }}
             />
@@ -95,7 +99,7 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
         <div
           className="absolute bottom-0 left-4 right-4 h-px"
           style={{
-            background: `linear-gradient(90deg, transparent, ${accent}66, #00C6FF88, transparent)`,
+            background: `linear-gradient(90deg, transparent, ${c1}66, ${c2}88, transparent)`,
           }}
         />
       </motion.div>

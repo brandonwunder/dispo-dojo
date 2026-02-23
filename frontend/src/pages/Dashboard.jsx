@@ -77,7 +77,7 @@ export default function Dashboard() {
   })
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen flex flex-col justify-center">
       {/* ── Dojo Background ──────────────────────── */}
       <div
         className="fixed inset-0 -z-20 bg-center bg-no-repeat"
@@ -107,7 +107,7 @@ export default function Dashboard() {
         transition={{ duration: 0.6 }}
       >
         <h1 className="font-display text-4xl gold-shimmer-text mb-1">
-          Welcome back<span style={{ fontFamily: 'Rajdhani, sans-serif' }}>,</span> {firstName}
+          Welcome Back<span style={{ fontFamily: 'Rajdhani, sans-serif' }}>,</span> {firstName}
         </h1>
         <p className="font-body text-sm text-[#C8D1DA] mb-4">{today}</p>
         <div className="flex gap-3 justify-center">
@@ -155,7 +155,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-4 mb-5">
           <div className="katana-line flex-1" style={{ opacity: 0.7 }} />
           <h2 className="font-display text-lg text-[rgba(0,198,255,0.8)] tracking-widest whitespace-nowrap">
-            Tools to Succeed
+            Tools to Crush Wholesaling
           </h2>
           <div className="katana-line flex-1" style={{ opacity: 0.7 }} />
         </div>
