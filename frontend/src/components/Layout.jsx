@@ -40,8 +40,8 @@ export default function Layout() {
           <Menu size={20} className="text-gold" />
         </button>
 
-        <main className="ml-0 lg:ml-[250px] min-h-screen relative z-10">
-          <div className="p-6">
+        <main className="ml-0 lg:ml-[250px] min-h-screen relative">
+          <div className="p-6 relative z-20">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

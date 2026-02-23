@@ -118,8 +118,8 @@ export default function RainEffect() {
       // Lightning
       const t = Date.now()
       if (!ltActive && t >= ltNext) {
-        ltBolts = bolt(w * (0.15 + Math.random() * 0.7), -10)
-        if (Math.random() < 0.35) ltBolts.push(...bolt(w * (0.1 + Math.random() * 0.8), -10))
+        ltBolts = bolt(w * (0.05 + Math.random() * 0.9), -30 + Math.random() * 25)
+        if (Math.random() < 0.35) ltBolts.push(...bolt(w * (0.05 + Math.random() * 0.9), -30 + Math.random() * 25))
         ltActive = true
         ltFlash = 0.3 + Math.random() * 0.25
         ltFadeStart = t + 180
