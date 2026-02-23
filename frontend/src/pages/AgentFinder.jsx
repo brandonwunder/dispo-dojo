@@ -251,10 +251,6 @@ export default function AgentFinder() {
   const [expandedJobs, setExpandedJobs] = useState(new Set())
   const [jobResults, setJobResults] = useState({}) // jobId -> rows array
   const [jobResultsLoading, setJobResultsLoading] = useState(new Set())
-  const [notifPermission, setNotifPermission] = useState(
-    typeof Notification !== 'undefined' ? Notification.permission : 'denied'
-  )
-
   const fileInputRef = useRef(null)
   const sseRef = useRef(null)
   const startTimeRef = useRef(null)
@@ -505,13 +501,15 @@ export default function AgentFinder() {
   }
 
   async function expandJob(jobId) {
+    let willExpand
     setExpandedJobs(prev => {
       const next = new Set(prev)
-      next.has(jobId) ? next.delete(jobId) : next.add(jobId)
+      if (next.has(jobId)) { next.delete(jobId); willExpand = false }
+      else { next.add(jobId); willExpand = true }
       return next
     })
 
-    if (jobResults[jobId] !== undefined) return // already loaded
+    if (!willExpand || jobResults[jobId] !== undefined) return // collapse or already loaded
 
     setJobResultsLoading(prev => new Set([...prev, jobId]))
     try {
@@ -573,8 +571,7 @@ export default function AgentFinder() {
   async function requestNotificationPermission() {
     if (typeof Notification === 'undefined') return
     if (Notification.permission !== 'default') return
-    const result = await Notification.requestPermission()
-    setNotifPermission(result)
+    await Notification.requestPermission()
   }
 
   function fireCompletionNotification(data) {
@@ -662,6 +659,10 @@ export default function AgentFinder() {
   }
 
   const handleReset = () => {
+    if (sseRef.current) {
+      sseRef.current.close()
+      sseRef.current = null
+    }
     setFile(null)
     setPhase('upload')
     setJobId(null)
