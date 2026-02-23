@@ -93,15 +93,15 @@ FORSALEBYOWNER_COM = SourceConfig(
 )
 
 ZILLOW_FSBO = SourceConfig(
-    name="zillow",
-    requests_per_second=1.0,
-    max_concurrent=3,
+    name="zillow_fsbo",
+    requests_per_second=0.5,
+    max_concurrent=2,
     max_retries=2,
     timeout_seconds=30.0,
 )
 
 REALTOR_FSBO = SourceConfig(
-    name="realtor",
+    name="realtor_fsbo",
     requests_per_second=0.5,
     max_concurrent=2,
     max_retries=2,
