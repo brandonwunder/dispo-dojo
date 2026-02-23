@@ -691,6 +691,12 @@ body {
   50% { transform: translateY(-4px); }
 }
 
+/* Tool card icon glow pulse */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: var(--glow-base); }
+  50% { box-shadow: var(--glow-peak); }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

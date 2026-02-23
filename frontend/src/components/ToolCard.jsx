@@ -3,14 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 
 const ACCENTS = [
-  '#d4a853', // gold
-  '#4a6fa5', // steel
-  '#4a7c59', // bamboo
-  '#8b0000', // crimson
-  '#d4a853', // gold
-  '#4a6fa5', // steel
-  '#e8652e', // ember
-  '#4a7c59', // bamboo
+  '#0E5A88', // ninja blue
+  '#E53935', // headband red
+  '#00C6FF', // electric cyan
+  '#F6C445', // gold glow
 ]
 
 export default function ToolCard({ icon: Icon, label, description, to, delay = 0, index = 0 }) {
@@ -26,18 +22,18 @@ export default function ToolCard({ icon: Icon, label, description, to, delay = 0
       <motion.div
         whileHover={{
           y: -4,
-          boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,168,83,0.22), 0 0 28px -8px ${accent}33`,
+          boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,198,255,0.2), 0 0 32px -8px ${accent}44`,
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
         onClick={() => navigate(to)}
-        className="group relative cursor-pointer overflow-hidden rounded-xl border border-[rgba(212,168,83,0.13)] bg-[#0d0d1a] elevation-2 washi-texture"
+        className="group relative cursor-pointer overflow-hidden rounded-xl border border-[rgba(0,198,255,0.13)] bg-[#0d0d1a] elevation-2 washi-texture"
       >
         {/* Left accent bar */}
         <div
-          className="absolute left-0 top-0 bottom-0 w-[2px]"
+          className="absolute left-0 top-0 bottom-0 w-[3px]"
           style={{
             background: `linear-gradient(180deg, transparent 0%, ${accent} 30%, ${accent} 70%, transparent 100%)`,
-            opacity: 0.5,
+            opacity: 0.7,
           }}
         />
 
@@ -48,7 +44,9 @@ export default function ToolCard({ icon: Icon, label, description, to, delay = 0
             style={{
               background: `radial-gradient(circle at 30% 30%, ${accent}22 0%, ${accent}0d 60%, transparent 100%)`,
               border: `1px solid ${accent}26`,
-              boxShadow: `inset 0 1px 0 ${accent}1a, 0 0 12px -4px ${accent}40`,
+              '--glow-base': `inset 0 1px 0 ${accent}1a, 0 0 8px ${accent}40`,
+              '--glow-peak': `inset 0 1px 0 ${accent}1a, 0 0 16px ${accent}60`,
+              animation: 'glowPulse 2.5s ease-in-out infinite',
             }}
           >
             <Icon
@@ -71,7 +69,7 @@ export default function ToolCard({ icon: Icon, label, description, to, delay = 0
           <Button
             variant="ghost"
             size="sm"
-            className="shrink-0 text-[#d4a853] hover:text-[#f5d078] hover:bg-[rgba(212,168,83,0.08)] font-heading text-[13px] tracking-wide transition-[color,background-color] duration-150"
+            className="shrink-0 text-[#00C6FF] hover:text-[#FFD97A] hover:bg-[rgba(0,198,255,0.08)] font-heading text-[13px] tracking-wide transition-[color,background-color] duration-150"
             onClick={(e) => {
               e.stopPropagation()
               navigate(to)
@@ -81,11 +79,11 @@ export default function ToolCard({ icon: Icon, label, description, to, delay = 0
           </Button>
         </div>
 
-        {/* Bottom katana micro-line */}
+        {/* Bottom accent micro-line */}
         <div
           className="absolute bottom-0 left-4 right-4 h-px"
           style={{
-            background: `linear-gradient(90deg, transparent, ${accent}33, transparent)`,
+            background: `linear-gradient(90deg, transparent, ${accent}66, #00C6FF88, transparent)`,
           }}
         />
       </motion.div>
