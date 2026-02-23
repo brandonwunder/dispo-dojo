@@ -1,16 +1,16 @@
 /**
- * EmberField — canvas-based floating ember particles drifting upward.
+ * EmberField — canvas-based floating particles drifting upward.
  * Checks prefersReducedMotion and renders nothing if enabled.
  */
 
 import { useRef, useEffect } from 'react'
 import { prefersReducedMotion } from '../lib/animation/reducedMotion'
 
-// Color palette for varied embers
+// Color palette for cool-toned particles
 const EMBER_COLORS = [
-  { r: 235, g: 160, b: 60 },   // warm amber
-  { r: 232, g: 101, b: 46 },   // ember orange
-  { r: 245, g: 208, b: 120 },  // bright gold (hot sparks)
+  { r: 0, g: 198, b: 255 },    // electric cyan
+  { r: 14, g: 90, b: 136 },    // ninja blue
+  { r: 127, g: 0, b: 255 },    // purple glow
 ]
 
 export default function EmberField({

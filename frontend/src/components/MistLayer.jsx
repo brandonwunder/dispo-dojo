@@ -1,53 +1,53 @@
 /**
- * MistLayer — 4 warm-toned mist patches with organic drift animations.
- * Visible warm gold/amber mist creating atmospheric depth.
+ * MistLayer — 4 cool-toned mist patches with organic drift animations.
+ * Visible cyan/blue mist creating atmospheric depth.
  */
 
 const patches = [
   {
-    // Large gold — upper left drift
+    // Ninja blue — upper left drift
     width: 900,
     height: 700,
     top: '5%',
     left: '-8%',
     opacity: 0.18,
-    color: 'rgba(212, 168, 83, 0.3)',
+    color: 'rgba(14, 90, 136, 0.2)',
     animation: 'mistDrift1',
     duration: '38s',
     delay: '0s',
   },
   {
-    // Amber — right side
+    // Cyan — right side
     width: 750,
     height: 600,
     top: '60%',
     left: '65%',
     opacity: 0.14,
-    color: 'rgba(232, 160, 60, 0.25)',
+    color: 'rgba(0, 198, 255, 0.12)',
     animation: 'mistDrift2',
     duration: '44s',
     delay: '3s',
   },
   {
-    // Warm brown — center
+    // Steel blue — center
     width: 800,
     height: 650,
     top: '35%',
     left: '20%',
     opacity: 0.12,
-    color: 'rgba(180, 130, 80, 0.2)',
+    color: 'rgba(28, 59, 77, 0.15)',
     animation: 'mistDrift3',
     duration: '50s',
     delay: '7s',
   },
   {
-    // Deep gold — bottom left
+    // Purple glow — bottom left
     width: 700,
     height: 600,
     top: '75%',
     left: '-5%',
     opacity: 0.16,
-    color: 'rgba(200, 155, 60, 0.25)',
+    color: 'rgba(127, 0, 255, 0.08)',
     animation: 'mistDrift4',
     duration: '35s',
     delay: '12s',

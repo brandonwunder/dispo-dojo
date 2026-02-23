@@ -1,5 +1,5 @@
 /**
- * TorchLight — fixed-position radial warm glows simulating torch/lantern light.
+ * TorchLight — fixed-position radial cool glows simulating ambient light.
  * Uses the .torch-glow CSS class (torchFlicker animation) from our theme.
  */
 
@@ -11,7 +11,7 @@ const defaultPositions = [
 export default function TorchLight({
   positions = defaultPositions,
   intensity = 0.7,
-  color = 'rgba(255, 154, 60, ',
+  color = 'rgba(0, 198, 255, ',
 }) {
   return (
     <div className="pointer-events-none fixed inset-0 z-0">
