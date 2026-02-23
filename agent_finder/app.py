@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, APIRouter, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import StreamingResponse
@@ -19,6 +19,7 @@ from .output_handler import export_results, export_results_zip, generate_summary
 from .pipeline import AgentFinderPipeline
 
 app = FastAPI(title="Agent Finder")
+api = APIRouter(prefix="/api")
 
 # Serve static files (logo, etc.)
 STATIC_DIR = Path(__file__).parent / "static"
@@ -81,14 +82,14 @@ async def startup():
     _load_jobs()
 
 
-@app.get("/legacy-agent-finder", response_class=HTMLResponse)
+@api.get("/legacy-agent-finder", response_class=HTMLResponse)
 async def legacy_agent_finder():
     """Serve the legacy Agent Finder page (used inside iframe)."""
     html_path = TEMPLATES_DIR / "index.html"
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 
-@app.post("/upload")
+@api.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     """Upload a CSV/Excel file and start processing."""
     # Validate file extension
@@ -138,7 +139,7 @@ async def upload_file(file: UploadFile = File(...)):
     return {"job_id": job_id, "total": len(properties)}
 
 
-@app.get("/progress/{job_id}")
+@api.get("/progress/{job_id}")
 async def progress_stream(job_id: str):
     """Server-Sent Events stream for job progress."""
     if job_id not in jobs:
@@ -195,7 +196,7 @@ async def progress_stream(job_id: str):
     )
 
 
-@app.get("/download/{job_id}")
+@api.get("/download/{job_id}")
 async def download_result(job_id: str):
     """Download the result ZIP file."""
     job = jobs.get(job_id)
@@ -217,7 +218,7 @@ async def download_result(job_id: str):
 
 # ── History & management endpoints ──
 
-@app.get("/jobs")
+@api.get("/jobs")
 async def list_jobs():
     """Return all jobs (active + past) for the UI."""
     history = []
@@ -241,14 +242,14 @@ async def list_jobs():
     return history
 
 
-@app.get("/cache/stats")
+@api.get("/cache/stats")
 async def cache_stats():
     """Return universal cache statistics."""
     cache = ScrapeCache(db_path=str(UPLOAD_DIR / "web_cache.db"))
     return await cache.stats()
 
 
-@app.get("/jobs/{job_id}/results")
+@api.get("/jobs/{job_id}/results")
 async def get_job_results(job_id: str):
     """Return full results for a completed job as JSON (used for inline preview and export)."""
     import zipfile
@@ -270,7 +271,7 @@ async def get_job_results(job_id: str):
     return {"results": rows}
 
 
-@app.post("/jobs/{job_id}/cancel")
+@api.post("/jobs/{job_id}/cancel")
 async def cancel_job(job_id: str):
     """Cancel a running job."""
     job = jobs.get(job_id)
@@ -291,7 +292,7 @@ async def cancel_job(job_id: str):
     return {"ok": True}
 
 
-@app.post("/jobs/{job_id}/resume")
+@api.post("/jobs/{job_id}/resume")
 async def resume_job(job_id: str):
     """Resume a cancelled or errored job by re-processing with cache."""
     old_job = jobs.get(job_id)
@@ -336,7 +337,7 @@ async def resume_job(job_id: str):
     return {"job_id": new_job_id, "total": len(properties)}
 
 
-@app.delete("/jobs/{job_id}")
+@api.delete("/jobs/{job_id}")
 async def delete_job(job_id: str):
     """Delete a past job and its associated files."""
     job = jobs.get(job_id)
@@ -444,6 +445,9 @@ async def _run_pipeline(job_id: str, properties):
     finally:
         _tasks.pop(job_id, None)
 
+
+# ── Register API router ──
+app.include_router(api)
 
 # ── Serve React frontend ──
 
