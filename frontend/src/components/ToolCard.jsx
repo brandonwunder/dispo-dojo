@@ -2,20 +2,14 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 
-// Neon gradient pairs: [primary, secondary] per card
-const NEON_PAIRS = [
-  ['#9B30FF', '#FF2D78'], // purple → pink
-  ['#FF2D78', '#FF3131'], // pink → red
-  ['#3D5BFF', '#00C6FF'], // blue → cyan
-  ['#FF3131', '#FF2D78'], // red → pink
-  ['#00C6FF', '#3D5BFF'], // cyan → blue
-  ['#BF40FF', '#00C6FF'], // purple → cyan
-  ['#FF2D78', '#9B30FF'], // pink → purple
-]
+// Brand glow gradient — consistent across all cards
+const C1 = '#7F00FF' // purple
+const C2 = '#00C6FF' // electric cyan
 
 export default function ToolCard({ icon: Icon, image, label, description, to, delay = 0, index = 0 }) {
   const navigate = useNavigate()
-  const [c1, c2] = NEON_PAIRS[index % NEON_PAIRS.length]
+  // Alternate direction per card for subtle variety without clashing
+  const [c1, c2] = index % 2 === 0 ? [C1, C2] : [C2, C1]
 
   return (
     <motion.div
