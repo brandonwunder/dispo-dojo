@@ -410,27 +410,31 @@ export default function AgentFinder() {
 
       {/* ── Background layers ───────────────────────────────────────── */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        {/* Layer 0: Photo — shifted right so ninja appears beside the card */}
-        <img
-          src="/agent-finder-bg.png"
-          alt=""
-          className="w-full h-full object-cover"
-          style={{ transform: 'scale(1.05)', objectPosition: '72% center' }}
-        />
-        {/* Layer 1: Dark wash — heavy on left/center, fades toward right where ninja is */}
+        {/* Layer 0: Photo — div-based for precise backgroundPosition control */}
         <div
           className="absolute inset-0"
           style={{
-            background:
-              'linear-gradient(to right, rgba(11,15,20,0.92) 0%, rgba(11,15,20,0.72) 45%, rgba(11,15,20,0.35) 75%, rgba(11,15,20,0.15) 100%)',
+            backgroundImage: 'url(/agent-finder-bg.png)',
+            backgroundSize: '120%',
+            backgroundPosition: '82% 30%',
+            backgroundRepeat: 'no-repeat',
           }}
         />
-        {/* Layer 2: Radial vignette for depth */}
+        {/* Layer 1: Dashboard-style atmospheric fade — moderate, not heavy */}
         <div
           className="absolute inset-0"
           style={{
-            background:
-              'radial-gradient(ellipse at 50% 50%, transparent 25%, rgba(11,15,20,0.55) 100%)',
+            background: `
+              radial-gradient(ellipse 80% 60% at 65% 30%, rgba(11,15,20,0.3) 0%, rgba(11,15,20,0.62) 55%, rgba(11,15,20,0.88) 100%),
+              linear-gradient(180deg, rgba(11,15,20,0.28) 0%, rgba(11,15,20,0.52) 40%, rgba(11,15,20,0.85) 100%)
+            `,
+          }}
+        />
+        {/* Layer 2: Subtle left darkening for card readability */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(to right, rgba(11,15,20,0.5) 0%, rgba(11,15,20,0.18) 40%, transparent 68%)',
           }}
         />
         {/* Layer 3: Bottom fade to page bg */}
