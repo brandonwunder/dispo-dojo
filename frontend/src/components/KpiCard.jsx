@@ -10,15 +10,23 @@ export default function KpiCard({ label, value, prefix = '', suffix = '', decima
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <Card className="relative overflow-hidden h-full elevation-2 washi-texture border-[rgba(212,168,83,0.15)] bg-[#0d0d1a] transition-[transform,border-color] duration-200 ease-out hover:-translate-y-1 hover:border-[rgba(212,168,83,0.3)]"
+      <Card className="relative overflow-hidden h-full elevation-2 washi-texture border-[rgba(0,198,255,0.12)] bg-[#0d0d1a] transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-1.5 hover:border-[rgba(0,198,255,0.35)] hover:shadow-[0_0_24px_rgba(0,198,255,0.12),0_8px_32px_rgba(0,0,0,0.5)]"
       >
+        {/* Top-edge neon glow line */}
+        <div
+          className="absolute top-0 left-0 w-full h-px pointer-events-none"
+          style={{
+            background: 'linear-gradient(90deg, transparent, #00C6FF, transparent)',
+            opacity: 0.3,
+          }}
+        />
         <CardContent className="p-6 text-center">
-          <p className="font-body text-[13px] uppercase tracking-wider text-[#8a8578] mb-3">
+          <p className="font-body text-[13px] uppercase tracking-wider text-[#C8D1DA] mb-3">
             {label}
           </p>
           <p
             className="font-heading text-2xl lg:text-3xl font-bold tracking-tight"
-            style={{ color: valueColor || '#ede9e3' }}
+            style={{ color: valueColor || '#00C6FF' }}
           >
             {prefix}
             <CountUp
