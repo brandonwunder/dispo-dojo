@@ -17,17 +17,25 @@ function SauceBottle({ className, style, ...props }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
       style={style}
       {...props}
     >
-      <path d="M10 2h4v3h-4z" />
-      <path d="M9 5h6l1 4H8l1-4z" />
-      <path d="M8 9h8v2a2 2 0 0 1-.5 1.3L14 14v6a2 2 0 0 1-2 2h0a2 2 0 0 1-2-2v-6l-1.5-1.7A2 2 0 0 1 8 11V9z" />
-      <path d="M11 14h2" />
+      {/* Nozzle tip */}
+      <path d="M11.5 1.5 L12 3.5 L12.5 1.5" />
+      {/* Cap */}
+      <rect x="10.5" y="3.5" width="3" height="2.5" rx="0.5" />
+      {/* Neck ring */}
+      <path d="M9.5 6h5" />
+      {/* Body */}
+      <path d="M9.5 6 L8 9 L8 19.5 a2 2 0 0 0 2 2 h4 a2 2 0 0 0 2-2 L16 9 L14.5 6" />
+      {/* Label area */}
+      <rect x="9" y="12" width="6" height="5" rx="0.5" />
+      {/* Sauce drip */}
+      <path d="M12 3.5 Q14 4.5 13.5 6" strokeWidth={1.25} />
     </svg>
   )
 }

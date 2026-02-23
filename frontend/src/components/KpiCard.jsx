@@ -11,7 +11,7 @@ export default function KpiCard({ label, value, prefix = '', suffix = '', delta,
     >
       <Card className="relative overflow-hidden elevation-2 washi-texture border-[rgba(212,168,83,0.15)] bg-[#0d0d1a] transition-[transform,border-color] duration-200 ease-out hover:-translate-y-1 hover:border-[rgba(212,168,83,0.3)]"
       >
-        <CardContent className="p-6">
+        <CardContent className="p-6 text-center">
           <p className="font-body text-[13px] uppercase tracking-wider text-[#8a8578] mb-3">
             {label}
           </p>
