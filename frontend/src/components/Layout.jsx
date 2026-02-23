@@ -5,6 +5,7 @@ import MistLayer from './MistLayer';
 import TorchLight from './TorchLight';
 import EmberField from './EmberField';
 import { CursorProvider } from './CustomCursor';
+import RainEffect from './RainEffect';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { Menu } from 'lucide-react';
@@ -26,6 +27,7 @@ export default function Layout() {
           intensity={0.7}
         />
         <EmberField density={35} />
+        <RainEffect />
 
         {/* === LAYOUT === */}
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
