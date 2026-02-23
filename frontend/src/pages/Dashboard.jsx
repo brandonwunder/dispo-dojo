@@ -122,15 +122,19 @@ export default function Dashboard() {
     <div className="relative min-h-screen">
       {/* ── Dojo Background ──────────────────────── */}
       <div
-        className="fixed inset-0 -z-20 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/dojo-bg.png)' }}
+        className="fixed inset-0 -z-20 bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/dojo-bg.png)',
+          backgroundSize: '120%',
+          backgroundPosition: 'center 30%',
+        }}
       />
       <div
         className="fixed inset-0 -z-10"
         style={{
           background: `
-            radial-gradient(ellipse 70% 50% at 50% 30%, rgba(6,6,15,0.72) 0%, rgba(6,6,15,0.88) 60%, rgba(6,6,15,0.95) 100%),
-            linear-gradient(180deg, rgba(6,6,15,0.7) 0%, rgba(6,6,15,0.82) 40%, rgba(6,6,15,0.94) 100%)
+            radial-gradient(ellipse 80% 60% at 50% 25%, rgba(6,6,15,0.45) 0%, rgba(6,6,15,0.65) 50%, rgba(6,6,15,0.85) 100%),
+            linear-gradient(180deg, rgba(6,6,15,0.35) 0%, rgba(6,6,15,0.55) 40%, rgba(6,6,15,0.82) 100%)
           `,
         }}
       />
