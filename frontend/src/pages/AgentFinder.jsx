@@ -608,7 +608,131 @@ export default function AgentFinder() {
     </GlassCard>
   </motion.div>
 )}
-          {/* PROCESSING — Task 4 */}
+          {phase === 'processing' && (
+  <motion.div
+    key="processing"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.3 }}
+  >
+    <GlassCard>
+      <div className="flex items-center justify-between mb-4">
+        <h2
+          className="font-heading text-xs uppercase"
+          style={{ color: '#00C6FF', letterSpacing: '0.14em' }}
+        >
+          Processing Addresses
+        </h2>
+        <span className="font-mono text-sm" style={{ color: '#8A9AAA' }}>
+          {progress.completed} / {progress.total}
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div
+        className="relative h-5 rounded-full overflow-hidden mb-6"
+        style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(246,196,69,0.1)',
+        }}
+      >
+        <motion.div
+          className="absolute inset-y-0 left-0 rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width: `${progressPct}%` }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          style={{
+            background:
+              'linear-gradient(110deg, #a67c2e 0%, #d4a853 20%, #fce8a8 40%, #d4a853 60%, #a67c2e 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'progressShimmer 2s linear infinite',
+            boxShadow: '0 0 12px rgba(246,196,69,0.3)',
+          }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span
+            className="text-xs font-heading font-bold tracking-wider"
+            style={{
+              color: progressPct > 50 ? '#0B0F14' : '#d4a853',
+              textShadow: progressPct > 50 ? 'none' : '0 0 4px rgba(0,0,0,0.5)',
+            }}
+          >
+            {progressPct}%
+          </span>
+        </div>
+      </div>
+
+      {/* Stat chips — 3 columns */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {[
+          { label: 'Found', value: progress.found, color: '#4a7c59' },
+          { label: 'Partial', value: progress.partial, color: '#d4a853' },
+          { label: 'Cached', value: progress.cached, color: '#4a6fa5' },
+          { label: 'Not Found', value: progress.not_found, color: '#EF5350' },
+          { label: 'Total', value: progress.total, color: '#F4F7FA' },
+          { label: 'Remaining', value: remaining, color: '#8A9AAA' },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-xl p-3 text-center"
+            style={{
+              background: 'rgba(0,198,255,0.04)',
+              border: '1px solid rgba(0,198,255,0.08)',
+            }}
+          >
+            <p
+              className="font-heading text-2xl font-bold"
+              style={{ color: stat.color }}
+            >
+              {stat.value}
+            </p>
+            <p
+              className="text-xs font-heading uppercase mt-1"
+              style={{ color: '#8A9AAA', letterSpacing: '0.1em' }}
+            >
+              {stat.label}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Current address + ETA */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
+        {progress.current_address && (
+          <div className="flex items-center gap-2 min-w-0">
+            <ShurikenLoader size={16} />
+            <span className="text-sm truncate" style={{ color: '#C8D1DA' }}>
+              <span style={{ color: '#C49A20' }}>Scanning:</span>{' '}
+              {progress.current_address}
+            </span>
+          </div>
+        )}
+        {eta !== null && (
+          <span className="text-sm font-mono whitespace-nowrap" style={{ color: '#8A9AAA' }}>
+            ETA: {formatETA(eta)}
+          </span>
+        )}
+      </div>
+
+      {/* Cancel button */}
+      <motion.button
+        onClick={handleCancel}
+        whileTap={{ scale: 0.97 }}
+        className="w-full inline-flex items-center justify-center font-heading tracking-widest uppercase font-semibold rounded-xl py-2.5 text-sm transition-all"
+        style={{
+          background: 'rgba(229,57,53,0.12)',
+          border: '1px solid rgba(229,57,53,0.28)',
+          color: '#EF5350',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(229,57,53,0.22)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(229,57,53,0.12)'}
+      >
+        Cancel
+      </motion.button>
+    </GlassCard>
+  </motion.div>
+)}
           {/* COMPLETE — Task 5 */}
           {/* ERROR — Task 6 */}
         </AnimatePresence>
