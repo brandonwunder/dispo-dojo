@@ -95,7 +95,7 @@ export default function Sidebar({ isOpen, onClose }) {
       <nav className="flex-1 overflow-y-auto px-3 pb-4">
         {sections.map((section) => (
           <div key={section.title} className="mb-4">
-            <div className="px-3 py-2 text-[10px] font-heading tracking-[0.2em] uppercase text-gold-dim/60">
+            <div className="px-3 py-2 text-[10px] font-heading tracking-[0.2em] uppercase text-[#C8D1DA]/40">
               {section.title}
             </div>
             <div className="mx-3 katana-line mb-2" />
@@ -106,8 +106,8 @@ export default function Sidebar({ isOpen, onClose }) {
                   <motion.div
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-sm mb-0.5 transition-colors relative ${
                       isActive
-                        ? 'bg-gold/10'
-                        : 'hover:bg-gold/5'
+                        ? 'bg-[rgba(0,198,255,0.08)]'
+                        : 'hover:bg-[rgba(0,198,255,0.05)]'
                     }`}
                     whileHover={{ x: 6 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
@@ -117,18 +117,18 @@ export default function Sidebar({ isOpen, onClose }) {
                       <div
                         className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full"
                         style={{
-                          background: 'linear-gradient(180deg, #d4a853, #f5d078, #d4a853)',
-                          boxShadow: '0 0 14px rgba(212,168,83,0.5), 0 0 28px rgba(212,168,83,0.2)',
+                          background: 'linear-gradient(180deg, #00C6FF, #0E5A88, #00C6FF)',
+                          boxShadow: '0 0 14px rgba(0,198,255,0.5), 0 0 28px rgba(0,198,255,0.2)',
                         }}
                       />
                     )}
                     <item.icon
                       size={20}
-                      className={isActive ? 'text-gold' : 'text-text-dim'}
+                      className={isActive ? 'text-[#00C6FF]' : 'text-text-dim'}
                     />
                     <span
                       className={`font-heading text-sm tracking-wide ${
-                        isActive ? 'text-gold' : 'text-text-dim'
+                        isActive ? 'text-[#00C6FF]' : 'text-text-dim'
                       }`}
                     >
                       {item.label}
@@ -142,7 +142,7 @@ export default function Sidebar({ isOpen, onClose }) {
       </nav>
 
       {/* User info at bottom */}
-      <div className="px-4 py-4 border-t border-gold-dim/10 flex items-center gap-3">
+      <div className="px-4 py-4 border-t border-[rgba(0,198,255,0.1)] flex items-center gap-3">
         <div className="w-8 h-8 rounded-full hanko-seal flex items-center justify-center text-xs font-heading font-bold text-parchment">
           {initials}
         </div>
@@ -156,7 +156,7 @@ export default function Sidebar({ isOpen, onClose }) {
   return (
     <>
       {/* Desktop sidebar — always visible */}
-      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[250px] lacquer-deep lacquer-shine sidebar-shadow z-40 flex-col border-r border-gold-dim/15">
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[250px] lacquer-deep lacquer-shine sidebar-shadow z-40 flex-col border-r border-[rgba(0,198,255,0.12)]">
         {sidebarContent}
       </aside>
 
@@ -175,7 +175,7 @@ export default function Sidebar({ isOpen, onClose }) {
             />
             {/* Drawer */}
             <motion.aside
-              className="fixed left-0 top-0 bottom-0 w-[280px] lacquer-deep lacquer-shine sidebar-shadow z-50 flex flex-col border-r border-gold-dim/15 lg:hidden"
+              className="fixed left-0 top-0 bottom-0 w-[280px] lacquer-deep lacquer-shine sidebar-shadow z-50 flex flex-col border-r border-[rgba(0,198,255,0.12)] lg:hidden"
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
