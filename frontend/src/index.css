@@ -595,7 +595,6 @@ body {
     #0a0806 70%,
     #0c0a07 100%
   );
-  position: relative;
 }
 
 .lacquer-deep::before {
@@ -609,9 +608,6 @@ body {
 }
 
 /* Lacquer highlight stripe — polished surface reflection */
-.lacquer-shine {
-  position: relative;
-}
 
 .lacquer-shine::after {
   content: '';
