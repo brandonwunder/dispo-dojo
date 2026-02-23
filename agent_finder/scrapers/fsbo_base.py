@@ -22,6 +22,8 @@ logger = logging.getLogger("agent_finder.scrapers.fsbo_base")
 class FSBOBaseScraper(ABC):
     """Abstract base for all FSBO area scrapers."""
 
+    _CIRCUIT_THRESHOLD: int = 10
+
     def __init__(self, config: SourceConfig, client: httpx.AsyncClient):
         self.config = config
         self.client = client
@@ -32,7 +34,6 @@ class FSBOBaseScraper(ABC):
         self._block_count = 0
         self._circuit_open = False
         self._consecutive_failures = 0
-        self._CIRCUIT_THRESHOLD = 10
 
     @property
     def name(self) -> str:
@@ -41,6 +42,16 @@ class FSBOBaseScraper(ABC):
     @property
     def is_circuit_open(self) -> bool:
         return self._circuit_open
+
+    @property
+    def stats(self) -> dict:
+        return {
+            "requests": self._request_count,
+            "successes": self._success_count,
+            "blocks": self._block_count,
+            "circuit_open": self._circuit_open,
+            "consecutive_failures": self._consecutive_failures,
+        }
 
     @abstractmethod
     async def search_area(self, criteria: FSBOSearchCriteria) -> List[FSBOListing]:
