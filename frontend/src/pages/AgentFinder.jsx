@@ -214,9 +214,14 @@ export default function AgentFinder() {
   const fileInputRef = useRef(null)
   const sseRef = useRef(null)
   const startTimeRef = useRef(null)
+  const prevProgressRef = useRef({ found: 0, partial: 0, cached: 0, not_found: 0 })
+  const prevAddressRef = useRef('')
+  const tickerRef = useRef(null) // DOM ref for auto-scroll
   const [eta, setEta] = useState(null)
   const [csvPreview, setCsvPreview] = useState(null) // { rowCount, detectedColumn, allColumns }
   const [columnMap, setColumnMap] = useState(null)   // user-selected column override
+  const [tickerLog, setTickerLog] = useState([])     // rolling last-8 resolved addresses
+  const [processingSpeed, setProcessingSpeed] = useState(null) // addr/min
 
   // ── Load job history on mount ──
   useEffect(() => {
@@ -241,6 +246,11 @@ export default function AgentFinder() {
     if (progress.completed > 0) {
       const perItem = elapsed / progress.completed
       setEta(perItem * remaining)
+      // Speed metric — only show after 10+ seconds to avoid wild early estimates
+      const elapsedMin = elapsed / 60
+      if (elapsed > 10) {
+        setProcessingSpeed(Math.round(progress.completed / elapsedMin))
+      }
     }
   }, [progress.completed, progress.total, phase])
 
@@ -256,6 +266,13 @@ export default function AgentFinder() {
       setColumnMap(null) // reset any prior manual selection
     })
   }, [file])
+
+  // ── Auto-scroll ticker to bottom on new entries ──
+  useEffect(() => {
+    if (tickerRef.current) {
+      tickerRef.current.scrollTop = tickerRef.current.scrollHeight
+    }
+  }, [tickerLog])
 
   // ── API calls ──
 
@@ -320,6 +337,33 @@ export default function AgentFinder() {
         const data = JSON.parse(e.data)
 
         if (data.type === 'progress') {
+          const prev = prevProgressRef.current
+          const prevAddr = prevAddressRef.current
+
+          // Determine the status of the address that just finished
+          let finishedStatus = null
+          if (prevAddr) {
+            if ((data.found || 0) > prev.found) finishedStatus = 'found'
+            else if ((data.partial || 0) > prev.partial) finishedStatus = 'partial'
+            else if ((data.cached || 0) > prev.cached) finishedStatus = 'cached'
+            else if ((data.not_found || 0) > prev.not_found) finishedStatus = 'not_found'
+          }
+
+          if (finishedStatus && prevAddr) {
+            setTickerLog(current => [
+              ...current,
+              { address: prevAddr, status: finishedStatus, id: Date.now() }
+            ].slice(-8))
+          }
+
+          prevProgressRef.current = {
+            found: data.found || 0,
+            partial: data.partial || 0,
+            cached: data.cached || 0,
+            not_found: data.not_found || 0,
+          }
+          prevAddressRef.current = data.current_address || ''
+
           setProgress({
             completed: data.completed || 0,
             total: data.total || 0,
@@ -374,6 +418,10 @@ export default function AgentFinder() {
     setPhase('upload')
     setJobId(null)
     setProgress({ completed: 0, total: 0, found: 0, partial: 0, cached: 0, not_found: 0, current_address: '' })
+    setTickerLog([])
+    setProcessingSpeed(null)
+    prevProgressRef.current = { found: 0, partial: 0, cached: 0, not_found: 0 }
+    prevAddressRef.current = ''
     setFile(null)
     loadJobs()
   }
@@ -397,6 +445,10 @@ export default function AgentFinder() {
     setEta(null)
     setCsvPreview(null)
     setColumnMap(null)
+    setTickerLog([])
+    setProcessingSpeed(null)
+    prevProgressRef.current = { found: 0, partial: 0, cached: 0, not_found: 0 }
+    prevAddressRef.current = ''
     startTimeRef.current = null
   }
 
@@ -818,21 +870,83 @@ export default function AgentFinder() {
         ))}
       </div>
 
-      {/* Current address + ETA */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
-        {progress.current_address && (
-          <div className="flex items-center gap-2 min-w-0">
-            <ShurikenLoader size={16} />
-            <span className="text-sm truncate" style={{ color: '#C8D1DA' }}>
-              <span style={{ color: '#C49A20' }}>Scanning:</span>{' '}
-              {progress.current_address}
-            </span>
-          </div>
-        )}
-        {eta !== null && (
-          <span className="text-sm font-mono whitespace-nowrap" style={{ color: '#8A9AAA' }}>
-            ETA: {formatETA(eta)}
+      {/* Live Address Ticker */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <span style={{ color: '#00C6FF', fontSize: '11px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+            Live Feed
           </span>
+          <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: '#C8D1DA', fontFamily: 'DM Sans, sans-serif' }}>
+            {processingSpeed != null && (
+              <span>{processingSpeed} addr/min</span>
+            )}
+            {eta != null && (
+              <span>ETA {formatETA(eta)}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Scrolling log */}
+        <div
+          ref={tickerRef}
+          style={{
+            height: '160px',
+            overflowY: 'auto',
+            background: 'rgba(0,0,0,0.3)',
+            border: '1px solid rgba(0,198,255,0.08)',
+            borderRadius: '8px',
+            padding: '8px',
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(0,198,255,0.2) transparent',
+          }}
+        >
+          {tickerLog.map(entry => (
+            <div
+              key={entry.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '3px 4px',
+                fontSize: '12px',
+                fontFamily: 'DM Sans, sans-serif',
+                color: '#C8D1DA',
+                opacity: 0.85,
+              }}
+            >
+              <StatusBadge status={entry.status} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {entry.address}
+              </span>
+            </div>
+          ))}
+          {/* Active address row */}
+          {progress.current_address && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '3px 4px',
+              fontSize: '12px',
+              fontFamily: 'DM Sans, sans-serif',
+              color: '#F4F7FA',
+            }}>
+              <ShurikenLoader size={14} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {progress.current_address}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Cache savings */}
+        {progress.cached > 0 && (
+          <p style={{ marginTop: '6px', fontSize: '11px', color: '#C8D1DA', textAlign: 'right', fontFamily: 'DM Sans, sans-serif' }}>
+            {progress.cached.toLocaleString()} from cache
+            {processingSpeed && processingSpeed > 0
+              ? ` — saved ~${formatETA(progress.cached / processingSpeed * 60)}`
+              : ''}
+          </p>
         )}
       </div>
 
