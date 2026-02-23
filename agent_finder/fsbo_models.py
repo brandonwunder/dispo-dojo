@@ -47,10 +47,10 @@ class FSBOListing:
         has_email = bool(self.email and self.email.strip())
         if has_name and has_phone and has_email:
             return "complete"
-        if has_phone and not has_email:
-            return "phone_only"
         if has_name and (has_phone or has_email):
             return "partial"
+        if has_phone and not has_email:
+            return "phone_only"
         return "none"
 
     def merge(self, other: "FSBOListing") -> "FSBOListing":
