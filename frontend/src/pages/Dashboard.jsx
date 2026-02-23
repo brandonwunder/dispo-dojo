@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { Button } from '@/components/ui/button'
 import KpiCard from '../components/KpiCard'
 import ToolCard from '../components/ToolCard'
+import { ScanSearch, MapPinned, Sparkles, TrendingUp, Send, FileCheck2, Crosshair } from 'lucide-react'
 
 /* ── Seed data ─────────────────────────────────── */
 
@@ -17,43 +18,43 @@ const kpis = [
 const tools = [
   {
     label: 'Agent Finder',
-    image: '/tool-icons/agent-finder.png',
+    icon: ScanSearch,
     description: 'Upload property lists and find listing agents instantly',
     to: '/agent-finder',
   },
   {
     label: 'FSBO Finder',
-    image: '/tool-icons/fsbo.png',
+    icon: MapPinned,
     description: 'Find For Sale By Owner listings in any city',
     to: '/fsbo-finder',
   },
   {
     label: 'Lead Scrubbing',
-    image: '/tool-icons/lead-scrubbing.png',
+    icon: Sparkles,
     description: 'Deal Sauce walkthrough for finding and scrubbing leads',
     to: '/lead-scrubbing',
   },
   {
     label: 'Free Underwriting',
-    image: '/tool-icons/underwriting.png',
+    icon: TrendingUp,
     description: 'Submit properties for free underwriting on cash or Sub2 deals',
     to: '/underwriting',
   },
   {
     label: 'LOI Generator',
-    image: '/tool-icons/loi-generator.png',
+    icon: Send,
     description: 'Generate and send Letters of Intent in bulk',
     to: '/loi-generator',
   },
   {
     label: 'Contract Generator',
-    image: '/tool-icons/contract-generator.png',
+    icon: FileCheck2,
     description: 'Build, sign, and send contracts in minutes',
     to: '/contract-generator',
   },
   {
     label: 'Direct Agent Process',
-    image: '/tool-icons/direct-agent.png',
+    icon: Crosshair,
     description: 'Learn our direct-to-agent outreach process',
     to: '/direct-agent',
   },
@@ -162,7 +163,7 @@ export default function Dashboard() {
           {tools.map((tool, i) => (
             <ToolCard
               key={tool.to}
-              image={tool.image}
+              icon={tool.icon}
               label={tool.label}
               description={tool.description}
               to={tool.to}

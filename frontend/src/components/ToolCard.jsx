@@ -40,28 +40,31 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
         <div className="flex items-center gap-4 p-5">
           {/* Icon container */}
           <div
-            className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl"
+            className="relative flex shrink-0 items-center justify-center rounded-2xl"
             style={{
-              background: image ? 'transparent' : `radial-gradient(circle at 30% 30%, ${accent}22 0%, ${accent}0d 60%, transparent 100%)`,
-              border: image ? 'none' : `1px solid ${accent}26`,
-              '--glow-base': `inset 0 1px 0 ${accent}1a, 0 0 8px ${accent}40`,
-              '--glow-peak': `inset 0 1px 0 ${accent}1a, 0 0 16px ${accent}60`,
-              animation: image ? 'none' : 'glowPulse 2.5s ease-in-out infinite',
+              width: 60,
+              height: 60,
+              background: `linear-gradient(135deg, ${accent}18 0%, ${accent}08 100%)`,
+              border: `1px solid ${accent}35`,
+              boxShadow: `0 0 0 1px ${accent}10 inset, 0 0 20px ${accent}20, 0 4px 12px rgba(0,0,0,0.4)`,
             }}
           >
-            {image ? (
-              <img
-                src={image}
-                alt={label}
-                className="absolute object-contain pointer-events-none"
-                style={{ width: 156, height: 156, filter: `drop-shadow(0 0 10px ${accent}50)` }}
-              />
-            ) : (
-              <Icon
-                className="h-6 w-6"
-                style={{ color: accent, filter: `drop-shadow(0 0 6px ${accent}60)` }}
-              />
-            )}
+            {/* Inner highlight */}
+            <div
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{
+                background: `linear-gradient(135deg, ${accent}15 0%, transparent 60%)`,
+              }}
+            />
+            <Icon
+              style={{
+                width: 28,
+                height: 28,
+                color: accent,
+                filter: `drop-shadow(0 0 8px ${accent}) drop-shadow(0 0 16px ${accent}80)`,
+                strokeWidth: 1.75,
+              }}
+            />
           </div>
 
           {/* Text */}
