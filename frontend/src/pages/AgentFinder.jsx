@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ShurikenLoader from '../components/ShurikenLoader'
 import { CompassIcon } from '../components/icons/index'
@@ -730,7 +730,10 @@ export default function AgentFinder() {
   const progressPct = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0
   const remaining = progress.total - progress.completed
 
-  const resultRows = results?.results || results?.rows || []
+  const resultRows = useMemo(
+    () => results?.results || results?.rows || [],
+    [results]
+  )
   const resultFound = results?.found ?? progress.found
   const resultPartial = results?.partial ?? progress.partial
   const resultCached = results?.cached ?? progress.cached
@@ -1522,9 +1525,8 @@ export default function AgentFinder() {
               </thead>
               <tbody>
                 {groupedRows.map(group => (
-                  <>
+                  <Fragment key={group.agentKey}>
                     <tr
-                      key={group.agentKey}
                       onClick={() => setExpandedAgents(prev => { const n = new Set(prev); n.has(group.agentKey) ? n.delete(group.agentKey) : n.add(group.agentKey); return n })}
                       style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', background: expandedAgents.has(group.agentKey) ? 'rgba(246,196,69,0.05)' : 'transparent', transition: 'background 0.15s' }}
                     >
@@ -1551,7 +1553,7 @@ export default function AgentFinder() {
                         <td colSpan={2} style={{ padding: '8px 12px', fontSize: '12px', fontFamily: 'monospace', color: '#C8D1DA', textAlign: 'right' }}>DOM: {prop.dom || prop.days_on_market || '--'}</td>
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
