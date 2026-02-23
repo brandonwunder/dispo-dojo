@@ -49,8 +49,8 @@ const kpis = [
   { label: 'Deals in Underwriting', value: 4 },
   { label: 'Contracts with Dispo', value: 2 },
   { label: 'Pipeline Value', value: 24837.98, prefix: '$', decimals: 2 },
-  { label: 'Deals Closed', value: 9 },
-  { label: 'Total Assignments Earned', value: 32827.09, prefix: '$', decimals: 2 },
+  { label: 'Deals Closed', value: 9, valueColor: '#7da87b' },
+  { label: 'Total Assignments Earned', value: 32827.09, prefix: '$', decimals: 2, valueColor: '#7da87b' },
 ]
 
 const tools = [
@@ -179,6 +179,7 @@ export default function Dashboard() {
               value={kpi.value}
               prefix={kpi.prefix || ''}
               decimals={kpi.decimals || 0}
+              valueColor={kpi.valueColor}
               delta={kpi.delta}
               delay={i * 0.1}
             />
