@@ -253,11 +253,17 @@ export default function Login() {
       {/* 3D Background */}
       <DojoGateScene />
 
+      {/* Login background image */}
+      <div
+        className="fixed inset-0 z-[1] bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/login-bg.png)' }}
+      />
+
       {/* Dark overlay for readability */}
-      <div className="fixed inset-0 z-[1] bg-gradient-to-t from-bg/90 via-bg/40 to-transparent" />
+      <div className="fixed inset-0 z-[2] bg-gradient-to-t from-bg/90 via-bg/50 to-bg/30" />
 
       {/* Content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+      <div className="relative z-[3] min-h-screen flex items-center justify-center p-4">
         {/* Login Panel */}
         <motion.div
           className="w-full max-w-md wood-panel border border-[rgba(0,198,255,0.15)] rounded-sm relative overflow-hidden"
