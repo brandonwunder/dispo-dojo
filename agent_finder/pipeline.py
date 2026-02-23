@@ -102,8 +102,26 @@ class AgentFinderPipeline:
                 pending_props.append(prop)
                 results.append(None)  # placeholder
 
+        # Fire one "cache loaded" event so the frontend fills in cached rows
+        # immediately and shows the correct denominator (pending only)
+        if self.progress_callback:
+            self.progress_callback({
+                "completed": 0,
+                "total": len(pending_props),
+                "cached": self._cached,
+                "found": 0,
+                "partial": 0,
+                "not_found": 0,
+                "errors": 0,
+                "current_address": "",
+                "current_status": "cached",
+            })
+
+        # Total now reflects only non-cached work so progress math is correct
+        self._total = len(pending_props)
+
         if not pending_props:
-            console.print(f"[green]All {self._total} addresses found in cache.[/green]")
+            console.print(f"[green]All {self._cached} addresses found in cache.[/green]")
             return [r for r in results if r is not None]
 
         console.print(
@@ -451,9 +469,10 @@ class AgentFinderPipeline:
 
     def _print_summary(self):
         """Print a summary of pipeline results."""
+        grand_total = self._cached + self._found + self._partial + self._not_found + self._errors
         console.print()
         console.print("[bold]Pipeline Summary[/bold]")
-        console.print(f"  Total addresses:    {self._total}")
+        console.print(f"  Total addresses:    {grand_total}")
         console.print(f"  [green]Found (complete):   {self._found}[/green]")
         console.print(f"  [yellow]Found (partial):    {self._partial}[/yellow]")
         console.print(f"  [blue]From cache:         {self._cached}[/blue]")
@@ -461,8 +480,8 @@ class AgentFinderPipeline:
         console.print(f"  [red]Errors:             {self._errors}[/red]")
 
         total_found = self._found + self._partial + self._cached
-        if self._total > 0:
-            rate = (total_found / self._total) * 100
+        if grand_total > 0:
+            rate = (total_found / grand_total) * 100
             console.print(f"  [bold]Success rate:       {rate:.1f}%[/bold]")
 
         # Log circuit breaker state
