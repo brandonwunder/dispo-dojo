@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button'
 
 // Brand glow gradient — consistent across all cards
 const C1 = '#7F00FF' // purple
-const C2 = '#00C6FF' // electric cyan
+const C2 = '#FF2D6B' // pinkish red
+const C3 = '#00C6FF' // electric cyan
 
 export default function ToolCard({ icon: Icon, image, label, description, to, delay = 0, index = 0 }) {
   const navigate = useNavigate()
   // Alternate direction per card for subtle variety without clashing
-  const [c1, c2] = index % 2 === 0 ? [C1, C2] : [C2, C1]
+  const [c1, c2, c3] = index % 2 === 0 ? [C1, C2, C3] : [C3, C2, C1]
 
   return (
     <motion.div
@@ -26,11 +27,11 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
         onClick={() => navigate(to)}
         className="group relative cursor-pointer rounded-xl border border-[rgba(255,255,255,0.07)] bg-[#0d0d1a] elevation-2 washi-texture overflow-visible"
       >
-        {/* Left accent bar — gradient c1→c2 */}
+        {/* Left accent bar — gradient c1→c2→c3 */}
         <div
           className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl"
           style={{
-            background: `linear-gradient(180deg, transparent 0%, ${c1} 30%, ${c2} 70%, transparent 100%)`,
+            background: `linear-gradient(180deg, transparent 0%, ${c1} 20%, ${c2} 50%, ${c3} 80%, transparent 100%)`,
             opacity: 0.85,
           }}
         />
@@ -42,16 +43,16 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
             style={{
               width: 60,
               height: 60,
-              background: `linear-gradient(135deg, ${c1}1A 0%, ${c2}0D 100%)`,
+              background: `linear-gradient(135deg, ${c1}1A 0%, ${c2}12 50%, ${c3}0D 100%)`,
               border: `1px solid ${c1}40`,
-              boxShadow: `0 0 16px ${c1}25, 0 0 32px ${c2}15, 0 4px 12px rgba(0,0,0,0.4)`,
+              boxShadow: `0 0 16px ${c1}25, 0 0 24px ${c2}20, 0 0 32px ${c3}15, 0 4px 12px rgba(0,0,0,0.4)`,
             }}
           >
             {/* Inner diagonal highlight */}
             <div
               className="absolute inset-0 rounded-2xl pointer-events-none"
               style={{
-                background: `linear-gradient(135deg, ${c1}18 0%, ${c2}10 50%, transparent 100%)`,
+                background: `linear-gradient(135deg, ${c1}18 0%, ${c2}12 50%, transparent 100%)`,
               }}
             />
             <Icon
@@ -59,7 +60,7 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
                 width: 28,
                 height: 28,
                 color: '#ffffff',
-                filter: `drop-shadow(0 0 6px ${c1}) drop-shadow(0 0 12px ${c2}) drop-shadow(0 0 20px ${c1}99)`,
+                filter: `drop-shadow(0 0 6px ${c1}) drop-shadow(0 0 10px ${c2}) drop-shadow(0 0 18px ${c3}99)`,
                 strokeWidth: 1.75,
               }}
             />
@@ -93,7 +94,7 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
         <div
           className="absolute bottom-0 left-4 right-4 h-px"
           style={{
-            background: `linear-gradient(90deg, transparent, ${c1}66, ${c2}88, transparent)`,
+            background: `linear-gradient(90deg, transparent, ${c1}66, ${c2}77, ${c3}88, transparent)`,
           }}
         />
       </motion.div>
