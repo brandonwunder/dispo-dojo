@@ -410,22 +410,30 @@ export default function AgentFinder() {
 
       {/* ── Background layers ───────────────────────────────────────── */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        {/* Layer 0: Photo */}
+        {/* Layer 0: Photo — shifted right so ninja appears beside the card */}
         <img
           src="/agent-finder-bg.png"
           alt=""
-          className="w-full h-full object-cover object-center"
-          style={{ transform: 'scale(1.05)' }}
+          className="w-full h-full object-cover"
+          style={{ transform: 'scale(1.05)', objectPosition: '72% center' }}
         />
-        {/* Layer 1: Vignette */}
+        {/* Layer 1: Dark wash — heavy on left/center, fades toward right where ninja is */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(ellipse at 60% 40%, transparent 30%, rgba(11,15,20,0.68) 100%)',
+              'linear-gradient(to right, rgba(11,15,20,0.92) 0%, rgba(11,15,20,0.72) 45%, rgba(11,15,20,0.35) 75%, rgba(11,15,20,0.15) 100%)',
           }}
         />
-        {/* Layer 2: Bottom fade to page bg */}
+        {/* Layer 2: Radial vignette for depth */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 50%, transparent 25%, rgba(11,15,20,0.55) 100%)',
+          }}
+        />
+        {/* Layer 3: Bottom fade to page bg */}
         <div
           className="absolute inset-x-0 bottom-0 h-48"
           style={{ background: 'linear-gradient(to bottom, transparent, #0B0F14)' }}
