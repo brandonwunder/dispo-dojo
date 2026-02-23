@@ -266,6 +266,7 @@ export default function AgentFinder() {
   const [tickerLog, setTickerLog] = useState([])     // rolling last-8 resolved addresses
   const [processingSpeed, setProcessingSpeed] = useState(null) // addr/min
   const [cacheStats, setCacheStats] = useState(null)
+  const [howItWorksOpen, setHowItWorksOpen] = useState(false)
 
   // ── Load job history + cache stats on mount ──
   useEffect(() => {
@@ -933,7 +934,163 @@ export default function AgentFinder() {
             With recent MLS crackdowns on agent data access, this tool reliably scrapes
             agent names, phones, and emails for your entire list — no MLS access required.
           </p>
+          <button
+            onClick={() => setHowItWorksOpen(true)}
+            style={{
+              marginTop: '14px',
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '6px 16px', borderRadius: '20px', fontSize: '12px',
+              fontFamily: 'Rajdhani, sans-serif', fontWeight: 600,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              background: 'rgba(0,198,255,0.08)',
+              border: '1px solid rgba(0,198,255,0.25)',
+              color: '#00C6FF', cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,198,255,0.16)'; e.currentTarget.style.borderColor = 'rgba(0,198,255,0.45)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,198,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,198,255,0.25)' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            How This Tool Works
+          </button>
         </div>
+
+        {/* How This Tool Works modal */}
+        <AnimatePresence>
+          {howItWorksOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 100,
+                background: 'rgba(5,8,12,0.82)', backdropFilter: 'blur(8px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '24px',
+              }}
+              onClick={() => setHowItWorksOpen(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 12 }}
+                transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  width: '100%', maxWidth: '560px',
+                  background: 'rgba(11,15,20,0.97)',
+                  border: '1px solid rgba(0,198,255,0.18)',
+                  borderRadius: '18px',
+                  boxShadow: '0 32px 64px -12px rgba(0,0,0,0.9), 0 0 0 1px rgba(0,198,255,0.08)',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Modal header */}
+                <div style={{
+                  padding: '20px 24px 16px',
+                  borderBottom: '1px solid rgba(0,198,255,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.03), transparent)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <CompassIcon size={20} style={{ color: '#00C6FF' }} />
+                    <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '16px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#F4F7FA', margin: 0 }}>
+                      How This Tool Works
+                    </h2>
+                  </div>
+                  <button onClick={() => setHowItWorksOpen(false)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A9AAA', fontSize: '20px', lineHeight: 1, padding: '2px 6px' }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#F4F7FA' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = '#8A9AAA' }}>
+                    ×
+                  </button>
+                </div>
+
+                {/* Modal body */}
+                <div style={{ padding: '24px', overflowY: 'auto', maxHeight: '70vh' }}>
+                  {[
+                    {
+                      step: '1',
+                      color: '#00C6FF',
+                      title: 'Prepare Your Property List',
+                      body: 'Create a spreadsheet (CSV or Excel) with one property address per row. The file just needs a column with addresses — the tool auto-detects it. You can export directly from your CRM, PropStream, BatchLeads, or any list service.',
+                    },
+                    {
+                      step: '2',
+                      color: '#F6C445',
+                      title: 'Upload & Run',
+                      body: 'Drag your file into the upload area and hit the button. The tool processes each property one by one — visiting Zillow, Realtor.com, and other sources to find the listing agent\'s name, brokerage, phone, and email. A live feed shows you exactly what\'s happening in real time.',
+                    },
+                    {
+                      step: '3',
+                      color: '#22C55E',
+                      title: 'Review Your Results',
+                      body: 'Once complete, every property shows a status:\n• Found — full agent contact info retrieved\n• Partial — some info found (name/brokerage but no phone/email)\n• Cached — instantly pulled from a previous run (no re-scraping needed)\n• Not Found — no listing agent data available publicly',
+                    },
+                    {
+                      step: '4',
+                      color: '#7F00FF',
+                      title: 'Download & Dial',
+                      body: 'Click "Download ▾" to export as CSV or XLSX. The data includes agent name, brokerage, phone, email, list date, and days on market. Filter by status (Found Only, Partial Only, etc.) before exporting so you only download exactly what you need.',
+                    },
+                    {
+                      step: '✦',
+                      color: '#C8D1DA',
+                      title: 'Smart Cache — Runs Get Faster Over Time',
+                      body: 'Every property that\'s successfully looked up gets saved to a shared cache. If the same address comes up in a future run, it\'s returned instantly without re-scraping. The more you use it, the faster it gets.',
+                    },
+                  ].map((item, i) => (
+                    <div key={i} style={{
+                      display: 'flex', gap: '16px', marginBottom: i < 4 ? '20px' : 0,
+                      paddingBottom: i < 4 ? '20px' : 0,
+                      borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                    }}>
+                      <div style={{
+                        flexShrink: 0, width: '28px', height: '28px', borderRadius: '50%',
+                        background: `rgba(${item.color === '#00C6FF' ? '0,198,255' : item.color === '#F6C445' ? '246,196,69' : item.color === '#22C55E' ? '34,197,94' : item.color === '#7F00FF' ? '127,0,255' : '200,209,218'},0.15)`,
+                        border: `1px solid ${item.color}40`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '13px',
+                        color: item.color, marginTop: '1px',
+                      }}>
+                        {item.step}
+                      </div>
+                      <div>
+                        <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '14px', letterSpacing: '0.06em', color: '#F4F7FA', marginBottom: '6px' }}>
+                          {item.title}
+                        </div>
+                        <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: '#C8D1DA', lineHeight: 1.65, whiteSpace: 'pre-line' }}>
+                          {item.body}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Modal footer */}
+                <div style={{
+                  padding: '14px 24px',
+                  borderTop: '1px solid rgba(0,198,255,0.08)',
+                  background: 'rgba(0,198,255,0.02)',
+                  textAlign: 'center',
+                }}>
+                  <button onClick={() => setHowItWorksOpen(false)}
+                    style={{
+                      padding: '8px 28px', borderRadius: '8px', fontSize: '13px',
+                      fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                      background: 'linear-gradient(135deg, #0E5A88, #00C6FF)', color: '#0B0F14',
+                      border: 'none', cursor: 'pointer',
+                    }}>
+                    Got It
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Phase panels */}
         <AnimatePresence mode="wait">
