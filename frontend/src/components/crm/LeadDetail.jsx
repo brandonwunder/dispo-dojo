@@ -525,7 +525,7 @@ function DealTab({ lead, onUpdate }) {
           <span className="text-gold">&minus;</span>
           <span className="font-mono bg-bg/60 px-2 py-1 rounded text-text-dim">{formatCurrency(wholesaleFee)}</span>
         </div>
-        <div className="text-2xl font-display font-bold gold-shimmer-text">
+        <div className="text-2xl font-display font-bold text-gold-bright">
           {formatCurrency(mao)}
         </div>
       </div>

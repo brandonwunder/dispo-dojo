@@ -175,7 +175,7 @@ export default function DirectAgent() {
         >
           <motion.h1
             variants={fadeUp}
-            className="font-display text-4xl gold-shimmer-text tracking-[0.06em] mb-3"
+            className="font-display text-4xl text-gold tracking-[0.06em] mb-3"
           >
             The Messenger Hawk Post
           </motion.h1>
@@ -247,7 +247,7 @@ export default function DirectAgent() {
         >
           <motion.h2
             variants={fadeUp}
-            className="font-display text-2xl gold-shimmer-text tracking-[0.06em] mb-6 text-center"
+            className="font-display text-2xl text-gold tracking-[0.06em] mb-6 text-center"
           >
             Everything You Need, Built In
           </motion.h2>

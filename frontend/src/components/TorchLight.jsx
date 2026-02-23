@@ -22,10 +22,10 @@ export default function TorchLight({
           style={{
             position: 'absolute',
             ...pos,
-            width: 400,
-            height: 400,
+            width: 600,
+            height: 600,
             borderRadius: '50%',
-            background: `radial-gradient(circle, ${color}${intensity * 0.08}) 0%, ${color}${intensity * 0.02}) 40%, transparent 70%)`,
+            background: `radial-gradient(circle, ${color}${(intensity * 0.35).toFixed(2)}) 0%, ${color}${(intensity * 0.12).toFixed(2)}) 40%, transparent 70%)`,
             animationDelay: `${i * 1.3}s`,
           }}
         />

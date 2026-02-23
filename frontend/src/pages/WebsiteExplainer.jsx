@@ -46,7 +46,7 @@ export default function WebsiteExplainer() {
     >
       {/* Header */}
       <div className="mb-8">
-        <h1 className="font-display text-4xl gold-shimmer-text mb-3">
+        <h1 className="font-display text-4xl text-gold mb-3">
           The Grand Tour
         </h1>
         <p className="text-text-dim text-base max-w-2xl">

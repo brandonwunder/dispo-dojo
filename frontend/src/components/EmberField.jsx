@@ -6,10 +6,16 @@
 import { useRef, useEffect } from 'react'
 import { prefersReducedMotion } from '../lib/animation/reducedMotion'
 
+// Color palette for varied embers
+const EMBER_COLORS = [
+  { r: 235, g: 160, b: 60 },   // warm amber
+  { r: 232, g: 101, b: 46 },   // ember orange
+  { r: 245, g: 208, b: 120 },  // bright gold (hot sparks)
+]
+
 export default function EmberField({
   density = 30,
   className = '',
-  color = { r: 235, g: 160, b: 60 },
 }) {
   const canvasRef = useRef(null)
 
@@ -28,16 +34,20 @@ export default function EmberField({
     resize()
     window.addEventListener('resize', resize)
 
-    // Create particles
-    const particles = Array.from({ length: density }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      size: Math.random() * 2 + 1.5, // 1.5 - 3.5px
-      speedY: -(Math.random() * 0.5 + 0.3), // -0.3 to -0.8 (upward)
-      speedX: (Math.random() - 0.5) * 0.3, // -0.15 to 0.15
-      opacity: Math.random() * 0.7 + 0.3, // 0.3 - 1.0
-      opacityDir: Math.random() > 0.5 ? 1 : -1,
-    }))
+    // Create particles with varied colors
+    const particles = Array.from({ length: density }, () => {
+      const c = EMBER_COLORS[Math.floor(Math.random() * EMBER_COLORS.length)]
+      return {
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 3 + 2, // 2 - 5px
+        speedY: -(Math.random() * 0.5 + 0.3),
+        speedX: (Math.random() - 0.5) * 0.3,
+        opacity: Math.random() * 0.7 + 0.3,
+        opacityDir: Math.random() > 0.5 ? 1 : -1,
+        color: c,
+      }
+    })
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -61,14 +71,17 @@ export default function EmberField({
         if (p.y < -10) {
           p.y = canvas.height + 10
           p.x = Math.random() * canvas.width
+          p.color = EMBER_COLORS[Math.floor(Math.random() * EMBER_COLORS.length)]
         }
+
+        const { r, g, b } = p.color
 
         // Draw ember with glow
         ctx.save()
         ctx.globalAlpha = p.opacity
-        ctx.shadowBlur = 8
-        ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${p.opacity})`
-        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${p.opacity})`
+        ctx.shadowBlur = 14
+        ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${p.opacity})`
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${p.opacity})`
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
         ctx.fill()
@@ -84,7 +97,7 @@ export default function EmberField({
       cancelAnimationFrame(animationId)
       window.removeEventListener('resize', resize)
     }
-  }, [density, color])
+  }, [density])
 
   if (prefersReducedMotion()) return null
 

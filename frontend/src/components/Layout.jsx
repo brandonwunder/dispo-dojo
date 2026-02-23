@@ -22,10 +22,10 @@ export default function Layout() {
             { top: '2%', left: '25%' },
             { top: '2%', right: '5%' },
           ]}
-          intensity={0.5}
+          intensity={0.7}
         />
         {/* Layer 3: Floating embers */}
-        <EmberField density={20} />
+        <EmberField density={35} />
 
         {/* === LAYOUT === */}
         <Sidebar />

@@ -75,7 +75,7 @@ export default function Sidebar() {
     .toUpperCase()
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-[250px] lacquer-deep lacquer-shine z-40 flex flex-col border-r border-gold-dim/15">
+    <aside className="fixed left-0 top-0 bottom-0 w-[250px] lacquer-deep lacquer-shine sidebar-shadow z-40 flex flex-col border-r border-gold-dim/15">
       {/* Wordmark */}
       <div className="px-6 pt-8 pb-6 text-center">
         <h1 className="font-display text-3xl gold-shimmer-text tracking-wider">
@@ -111,7 +111,7 @@ export default function Sidebar() {
                         className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full"
                         style={{
                           background: 'linear-gradient(180deg, #d4a853, #f5d078, #d4a853)',
-                          boxShadow: '0 0 8px rgba(212,168,83,0.5), 0 0 16px rgba(212,168,83,0.2)',
+                          boxShadow: '0 0 14px rgba(212,168,83,0.5), 0 0 28px rgba(212,168,83,0.2)',
                         }}
                       />
                     )}

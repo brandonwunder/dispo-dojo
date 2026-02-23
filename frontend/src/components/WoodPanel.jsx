@@ -13,8 +13,8 @@ export default function WoodPanel({
 
   return (
     <motion.div
-      className={`relative overflow-hidden rounded-sm border border-gold-dim/20 ${variantClasses[variant]} ${glow ? 'shadow-[0_0_20px_rgba(212,168,83,0.15)]' : ''} ${className}`}
-      whileHover={hover ? { y: -4, boxShadow: '0 8px 32px rgba(212,168,83,0.15)' } : undefined}
+      className={`relative overflow-hidden rounded-sm border border-gold-dim/20 elevation-1 inner-glow-warm glow-on-hover ${variantClasses[variant]} ${glow ? 'shadow-[0_0_20px_rgba(212,168,83,0.15)]' : ''} ${className}`}
+      whileHover={hover ? { y: -4, boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4), 0 0 20px rgba(212,168,83,0.15)' } : undefined}
       whileTap={hover ? { scale: 0.98 } : undefined}
       onClick={onClick}
       {...rest}

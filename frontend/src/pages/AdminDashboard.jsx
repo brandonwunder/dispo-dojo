@@ -49,7 +49,7 @@ export default function AdminDashboard() {
           <div className="hanko-seal w-10 h-10 rounded-full flex items-center justify-center">
             <Shield size={20} className="text-white" />
           </div>
-          <h1 className="font-display text-4xl gold-shimmer-text">
+          <h1 className="font-display text-4xl text-gold">
             The Sensei's Quarters
           </h1>
         </div>
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
                 </p>
 
                 {/* Value */}
-                <p className="font-heading text-3xl gold-shimmer-text tracking-wide relative z-10">
+                <p className="font-heading text-3xl text-gold-bright tracking-wide relative z-10">
                   <CountUp end={typeof statValues[i] === 'number' ? statValues[i] : 0} duration={1.5} separator="," />
                 </p>
               </WoodPanel>

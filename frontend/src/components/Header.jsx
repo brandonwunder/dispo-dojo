@@ -97,10 +97,10 @@ export default function Header() {
     .toUpperCase()
 
   return (
-    <header className="lacquer-bar px-6 py-3 flex items-center justify-between relative overflow-hidden lacquer-shine">
+    <header className="lacquer-bar header-shadow px-6 py-3 flex items-center justify-between relative overflow-hidden lacquer-shine">
       {/* Kanji watermark behind title */}
       {kanji && (
-        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[80px] font-display text-gold/[0.04] pointer-events-none select-none">
+        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[80px] font-display text-gold/[0.07] pointer-events-none select-none">
           {kanji}
         </span>
       )}
@@ -141,8 +141,8 @@ export default function Header() {
         <ChevronDown size={14} className="text-text-dim" />
       </div>
 
-      {/* Bottom divider — thinner gold shimmer */}
-      <div className="absolute bottom-0 left-0 right-0 h-[1px] gold-shimmer opacity-70" />
+      {/* Bottom divider — static gold gradient line */}
+      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
     </header>
   )
 }

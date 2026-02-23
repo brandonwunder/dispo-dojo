@@ -37,7 +37,7 @@ export default function StatCard({
         </p>
 
         {/* Value */}
-        <p className="gold-shimmer-text font-heading text-3xl font-bold tracking-wide">
+        <p className="text-gold-bright font-heading text-3xl font-bold tracking-wide">
           {prefix}
           <CountUp end={typeof value === 'number' ? value : 0} duration={1.5} separator="," />
           {suffix}

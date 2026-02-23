@@ -131,7 +131,7 @@ export default function DispoProcess() {
         <div className="mb-10 text-center">
           <div className="flex items-center justify-center gap-3 mb-3">
             <Rocket size={28} className="text-gold" />
-            <h1 className="font-display text-4xl gold-shimmer-text tracking-[0.06em]">
+            <h1 className="font-display text-4xl text-gold tracking-[0.06em]">
               The Strategy Board
             </h1>
           </div>
@@ -178,7 +178,7 @@ export default function DispoProcess() {
 
         {/* Platforms section */}
         <div className="mb-10">
-          <h2 className="font-display text-2xl gold-shimmer-text tracking-[0.06em] mb-1 text-center">
+          <h2 className="font-display text-2xl text-gold tracking-[0.06em] mb-1 text-center">
             Our Disposition Platforms
           </h2>
           <p className="font-heading text-[11px] font-semibold tracking-[0.18em] uppercase text-gold-dim mt-3 mb-5 text-center">
@@ -220,7 +220,7 @@ export default function DispoProcess() {
 
         {/* Buyer types section */}
         <div className="mb-10">
-          <h2 className="font-display text-2xl gold-shimmer-text tracking-[0.06em] mb-1 text-center">
+          <h2 className="font-display text-2xl text-gold tracking-[0.06em] mb-1 text-center">
             Who We Sell To
           </h2>
           <p className="font-heading text-[11px] font-semibold tracking-[0.18em] uppercase text-gold-dim mt-3 mb-5 text-center">
@@ -318,7 +318,7 @@ export default function DispoProcess() {
           transition={{ delay: 0.7 }}
         >
           <WoodPanel glow className="text-center">
-            <h3 className="font-display text-2xl gold-shimmer-text tracking-[0.06em] mb-2">
+            <h3 className="font-display text-2xl text-gold tracking-[0.06em] mb-2">
               Bigger Buyer Pool = Faster Sales = More Money
             </h3>
             <p className="text-sm text-text-dim max-w-lg mx-auto mb-5">

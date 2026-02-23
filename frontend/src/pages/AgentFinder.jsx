@@ -108,7 +108,7 @@ function DonutRing({ found, partial, cached, notFound, total }) {
         })}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="gold-shimmer-text font-heading text-2xl font-bold">{successRate}%</span>
+        <span className="text-gold-bright font-heading text-2xl font-bold">{successRate}%</span>
         <span className="text-text-dim text-xs font-heading tracking-wider uppercase">Success</span>
       </div>
     </div>

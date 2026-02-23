@@ -89,7 +89,7 @@ export default function LeadCard({ lead, onClick, onDragStart }) {
       {lead.deal?.offerAmount && (
         <div className="mt-2 flex items-center gap-1">
           <span className="text-xs text-text-muted font-heading tracking-wide">Offer:</span>
-          <span className="text-xs font-mono font-semibold gold-shimmer-text">
+          <span className="text-xs font-mono font-semibold text-gold">
             {formatCurrency(lead.deal.offerAmount)}
           </span>
         </div>

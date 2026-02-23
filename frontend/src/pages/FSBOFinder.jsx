@@ -571,7 +571,7 @@ export default function FSBOFinder() {
 
                         {/* Price + Source badge row */}
                         <div className="flex items-center gap-3 mb-3">
-                          <span className="gold-shimmer-text font-heading text-xl font-bold tracking-wide">
+                          <span className="text-gold-bright font-heading text-xl font-bold tracking-wide">
                             {formatPrice(row.price)}
                           </span>
                           <span

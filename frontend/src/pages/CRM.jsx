@@ -72,7 +72,7 @@ export default function CRM() {
             <span className="font-heading font-semibold tracking-wide text-gold">{totalLeads}</span>
             <span className="text-sm text-text-dim">leads</span>
             <span className="text-gold-dim/40">&middot;</span>
-            <span className="font-mono text-gold gold-shimmer-text">{formatCurrency(totalValue)}</span>
+            <span className="font-mono text-gold">{formatCurrency(totalValue)}</span>
             <span className="text-sm text-text-dim">in offers</span>
           </div>
         </div>

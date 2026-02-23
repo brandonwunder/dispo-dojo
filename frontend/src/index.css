@@ -30,6 +30,7 @@
   --color-parchment: #f5f0e6;
   --color-text-primary: #ede9e3;
   --color-text-dim: #8a8578;
+  --color-text-muted: #6b6560;
   --color-text-gold: #d4a853;
   --color-status-success: #4a7c59;
   --color-status-warning: #d4a853;
@@ -97,12 +98,12 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E");
   background-repeat: repeat;
   border-radius: inherit;
   pointer-events: none;
   z-index: 1;
-  mix-blend-mode: overlay;
+  mix-blend-mode: soft-light;
 }
 
 /* Calligraphy focus for inputs */
@@ -122,7 +123,8 @@ body {
 .katana-line {
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, var(--color-gold-dim) 15%, var(--color-gold) 50%, var(--color-gold-dim) 85%, transparent 100%);
-  opacity: 0.3;
+  opacity: 0.5;
+  box-shadow: 0 0 8px rgba(212, 168, 83, 0.15);
 }
 
 /* ═══════════════════════════════════════════
@@ -132,19 +134,19 @@ body {
 /* Wood panel textures — procedural SVG turbulence */
 .wood-panel {
   background-color: #1a1510;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='wood'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.003' numOctaves='5' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wood)' opacity='0.12'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='wood'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.003' numOctaves='5' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wood)' opacity='0.35'/%3E%3C/svg%3E");
   background-repeat: repeat;
 }
 
 .wood-panel-dark {
   background-color: #110e0a;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='wood-dark'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.003' numOctaves='5' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wood-dark)' opacity='0.1'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='wood-dark'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.003' numOctaves='5' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wood-dark)' opacity='0.30'/%3E%3C/svg%3E");
   background-repeat: repeat;
 }
 
 .wood-panel-light {
   background-color: #2a2118;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='wood-light'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.003' numOctaves='5' seed='13' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wood-light)' opacity='0.14'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='wood-light'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.003' numOctaves='5' seed='13' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wood-light)' opacity='0.40'/%3E%3C/svg%3E");
   background-repeat: repeat;
 }
 
@@ -159,8 +161,8 @@ body {
   z-index: 0;
   background: radial-gradient(
     ellipse 600px 400px at 50% 0%,
-    rgba(212, 168, 83, 0.06) 0%,
-    rgba(232, 101, 46, 0.03) 40%,
+    rgba(212, 168, 83, 0.14) 0%,
+    rgba(232, 101, 46, 0.07) 40%,
     transparent 70%
   );
   animation: torchFlicker 4s ease-in-out infinite;
@@ -168,20 +170,21 @@ body {
 
 @keyframes torchFlicker {
   0%, 100% { opacity: 1; }
-  25% { opacity: 0.92; }
-  50% { opacity: 0.97; }
-  75% { opacity: 0.88; }
+  25% { opacity: 0.82; }
+  50% { opacity: 0.95; }
+  75% { opacity: 0.75; }
 }
 
 /* Metal bracket — corner decorative borders */
 .metal-bracket {
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-color: var(--color-gold-dim);
   border-style: solid;
   border-width: 0;
   pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(212, 168, 83, 0.2));
 }
 
 .metal-bracket.top-left {
@@ -210,6 +213,85 @@ body {
   right: 0;
   border-bottom-width: 2px;
   border-right-width: 2px;
+}
+
+/* ═══════════════════════════════════════════
+   Elevation System — physical depth layers
+   ═══════════════════════════════════════════ */
+
+/* Level 1: Slight lift — cards at rest */
+.elevation-1 {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Level 2: Medium lift — active cards, panels */
+.elevation-2 {
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 1px rgba(212, 168, 83, 0.1);
+}
+
+/* Level 3: High lift — sidebar, modals, hover state */
+.elevation-3 {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 0 1px rgba(212, 168, 83, 0.15);
+}
+
+/* Level 4: Floating — dialogs, dropdowns */
+.elevation-4 {
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.7),
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    0 0 1px rgba(212, 168, 83, 0.2);
+}
+
+/* Sidebar shadow — cast rightward onto content */
+.sidebar-shadow {
+  box-shadow:
+    8px 0 32px rgba(0, 0, 0, 0.6),
+    4px 0 12px rgba(0, 0, 0, 0.4),
+    1px 0 0 rgba(212, 168, 83, 0.08);
+}
+
+/* Header shadow — cast downward onto content */
+.header-shadow {
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(212, 168, 83, 0.1);
+}
+
+/* Inner warm glow — subtle rim lighting from torch sources */
+.inner-glow-warm {
+  box-shadow:
+    inset 0 1px 0 rgba(212, 168, 83, 0.08),
+    inset 0 0 20px rgba(212, 168, 83, 0.03);
+}
+
+/* Interactive warm-glow on hover */
+.glow-on-hover {
+  position: relative;
+}
+
+.glow-on-hover::after {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(ellipse at center, rgba(212, 168, 83, 0.08) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: -1;
+  border-radius: inherit;
+}
+
+.glow-on-hover:hover::after {
+  opacity: 1;
 }
 
 /* Gold shimmer — animated metallic gradient */
@@ -305,11 +387,11 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='ink'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.015' numOctaves='3' seed='42' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23ink)' opacity='0.05'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='ink'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.015' numOctaves='3' seed='42' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23ink)' opacity='0.18'/%3E%3C/svg%3E");
   background-repeat: repeat;
   pointer-events: none;
   z-index: 1;
-  mix-blend-mode: overlay;
+  mix-blend-mode: soft-light;
   border-radius: inherit;
 }
 
@@ -322,11 +404,11 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='stone'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.08' numOctaves='6' seed='99' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23stone)' opacity='0.08'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='stone'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.08' numOctaves='6' seed='99' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23stone)' opacity='0.25'/%3E%3C/svg%3E");
   background-repeat: repeat;
   pointer-events: none;
   z-index: 1;
-  mix-blend-mode: overlay;
+  mix-blend-mode: soft-light;
   border-radius: inherit;
 }
 
@@ -509,8 +591,8 @@ body {
   inset: 0;
   background: radial-gradient(
     ellipse at center,
-    rgba(255, 154, 60, 0.06) 0%,
-    rgba(212, 168, 83, 0.03) 40%,
+    rgba(255, 154, 60, 0.12) 0%,
+    rgba(212, 168, 83, 0.06) 40%,
     transparent 70%
   );
   pointer-events: none;
@@ -544,10 +626,10 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02 0.004' numOctaves='5' seed='19' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.08'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='0.08'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02 0.004' numOctaves='5' seed='19' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.08'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='0.22'/%3E%3C/svg%3E");
   background-repeat: repeat;
   pointer-events: none;
-  mix-blend-mode: overlay;
+  mix-blend-mode: soft-light;
 }
 
 /* Lacquer highlight stripe — polished surface reflection */
@@ -585,11 +667,11 @@ body {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='wall'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.05' numOctaves='5' seed='77' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.02'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wall)' opacity='0.04'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='wall'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.05' numOctaves='5' seed='77' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.02'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wall)' opacity='0.15'/%3E%3C/svg%3E");
   background-repeat: repeat;
   pointer-events: none;
   z-index: 0;
-  mix-blend-mode: overlay;
+  mix-blend-mode: soft-light;
 }
 
 /* Section reveal animation */
