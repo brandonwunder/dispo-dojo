@@ -96,11 +96,11 @@ export default function Dashboard() {
         }}
       />
 
-      <div className="mx-auto max-w-[1200px] px-6 py-8">
+      <div className="mx-auto max-w-[1200px] px-6 py-5">
 
       {/* ── Welcome Header ──────────────────────── */}
       <motion.section
-        className="mb-10 text-center"
+        className="mb-6 text-center"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -108,7 +108,7 @@ export default function Dashboard() {
         <h1 className="font-display text-4xl gold-shimmer-text mb-1">
           Welcome back<span style={{ fontFamily: 'Rajdhani, sans-serif' }}>,</span> {firstName}
         </h1>
-        <p className="font-body text-sm text-[#C8D1DA] mb-6">{today}</p>
+        <p className="font-body text-sm text-[#C8D1DA] mb-4">{today}</p>
         <div className="flex gap-3 justify-center">
           <Button
             className="font-heading tracking-wide text-white shadow-[0_0_16px_rgba(229,57,53,0.3)] hover:shadow-[0_0_24px_rgba(229,57,53,0.5)] transition-shadow duration-200"
@@ -126,8 +126,8 @@ export default function Dashboard() {
       </motion.section>
 
       {/* ── KPI Row ─────────────────────────────── */}
-      <section className="mb-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <section className="mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {kpis.map((kpi, i) => (
             <KpiCard
               key={kpi.label}
@@ -151,14 +151,14 @@ export default function Dashboard() {
             background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,198,255,0.04) 0%, transparent 70%)',
           }}
         />
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-5">
           <div className="katana-line flex-1" style={{ opacity: 0.7 }} />
           <h2 className="font-display text-lg text-[rgba(0,198,255,0.8)] tracking-widest whitespace-nowrap">
             Tools to Succeed
           </h2>
           <div className="katana-line flex-1" style={{ opacity: 0.7 }} />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {tools.map((tool, i) => (
             <ToolCard
               key={tool.to}

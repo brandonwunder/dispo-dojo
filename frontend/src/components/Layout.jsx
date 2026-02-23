@@ -41,7 +41,7 @@ export default function Layout() {
 
         <main className="ml-0 lg:ml-[250px] min-h-screen relative z-10">
           <RainEffect />
-          <div className="p-6">
+          <div>
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

@@ -20,12 +20,12 @@ export default function KpiCard({ label, value, prefix = '', suffix = '', decima
             opacity: 0.3,
           }}
         />
-        <CardContent className="p-6 text-center">
-          <p className="font-body text-[13px] uppercase tracking-wider text-[#C8D1DA] mb-3">
+        <CardContent className="px-4 py-4 text-center">
+          <p className="font-body text-[12px] uppercase tracking-wider text-[#C8D1DA] mb-2">
             {label}
           </p>
           <p
-            className="font-heading text-2xl lg:text-3xl font-bold tracking-tight"
+            className="font-heading text-xl lg:text-2xl font-bold tracking-tight"
             style={{ color: valueColor || '#00C6FF' }}
           >
             {prefix}
