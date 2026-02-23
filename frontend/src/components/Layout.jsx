@@ -7,7 +7,6 @@ import EmberField from './EmberField';
 import { CursorProvider } from './CustomCursor';
 import RainEffect from './RainEffect';
 import Sidebar from './Sidebar';
-import Header from './Header';
 import { Menu } from 'lucide-react';
 
 export default function Layout() {
@@ -42,7 +41,6 @@ export default function Layout() {
         </button>
 
         <main className="ml-0 lg:ml-[250px] min-h-screen relative z-10">
-          <Header />
           <div className="p-6">
             <AnimatePresence mode="wait">
               <motion.div
