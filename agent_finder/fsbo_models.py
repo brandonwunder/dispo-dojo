@@ -61,15 +61,15 @@ class FSBOListing:
             self.phone = other.phone
         if not self.email and other.email:
             self.email = other.email
-        if not self.price and other.price:
+        if self.price is None and other.price is not None:
             self.price = other.price
-        if not self.beds and other.beds:
+        if self.beds is None and other.beds is not None:
             self.beds = other.beds
-        if not self.baths and other.baths:
+        if self.baths is None and other.baths is not None:
             self.baths = other.baths
-        if not self.sqft and other.sqft:
+        if self.sqft is None and other.sqft is not None:
             self.sqft = other.sqft
-        if not self.days_on_market and other.days_on_market:
+        if self.days_on_market is None and other.days_on_market is not None:
             self.days_on_market = other.days_on_market
         self.contact_status = self.compute_contact_status()
         return self
