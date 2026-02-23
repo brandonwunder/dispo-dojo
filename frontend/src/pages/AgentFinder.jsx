@@ -241,6 +241,9 @@ export default function AgentFinder() {
     }
   })
   const [colMenuOpen, setColMenuOpen] = useState(false)
+  const [notifPermission, setNotifPermission] = useState(
+    typeof Notification !== 'undefined' ? Notification.permission : 'denied'
+  )
 
   const fileInputRef = useRef(null)
   const sseRef = useRef(null)
@@ -342,6 +345,8 @@ export default function AgentFinder() {
     setError(null)
     setProcessingSpeed(null)
 
+    await requestNotificationPermission()
+
     const formData = new FormData()
     formData.append('file', file)
     if (columnMap) {
@@ -427,6 +432,7 @@ export default function AgentFinder() {
           })
         } else if (data.type === 'complete') {
           setResults(data)
+          fireCompletionNotification(data)
           setPhase('complete')
           source.close()
           sseRef.current = null
@@ -494,6 +500,28 @@ export default function AgentFinder() {
       setCopiedCell(key)
       setTimeout(() => setCopiedCell(null), 1500)
     }).catch(() => {})
+  }
+
+  async function requestNotificationPermission() {
+    if (typeof Notification === 'undefined') return
+    if (Notification.permission !== 'default') return
+    const result = await Notification.requestPermission()
+    setNotifPermission(result)
+  }
+
+  function fireCompletionNotification(data) {
+    if (typeof Notification === 'undefined') return
+    if (Notification.permission !== 'granted') return
+    if (document.visibilityState !== 'hidden') return
+    const total = data.total || 0
+    const found = (data.found || 0) + (data.partial || 0) + (data.cached || 0)
+    const pct = total > 0 ? Math.round(found / total * 100) : 0
+    try {
+      new Notification('Agent Finder — Run Complete', {
+        body: `${total.toLocaleString()} addresses processed · ${found.toLocaleString()} agents found (${pct}%)`,
+        icon: '/favicon.ico',
+      })
+    } catch {}
   }
 
   function toggleColumn(key) {
