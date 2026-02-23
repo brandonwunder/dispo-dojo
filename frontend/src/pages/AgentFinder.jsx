@@ -626,7 +626,7 @@ export default function AgentFinder() {
       </div>
 
       {/* CSV Preview Panel */}
-      {file && csvPreview && (
+      {file && csvPreview && (csvPreview.rowCount != null || csvPreview.allColumns.length > 0) && (
         <div style={{
           marginTop: '12px',
           padding: '12px 16px',
