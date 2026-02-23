@@ -26,7 +26,7 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
         onClick={() => navigate(to)}
-        className="group relative cursor-pointer overflow-hidden rounded-xl border border-[rgba(0,198,255,0.13)] bg-[#0d0d1a] elevation-2 washi-texture"
+        className="group relative cursor-pointer rounded-xl border border-[rgba(0,198,255,0.13)] bg-[#0d0d1a] elevation-2 washi-texture overflow-visible"
       >
         {/* Left accent bar */}
         <div
@@ -40,7 +40,7 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
         <div className="flex items-center gap-4 p-5">
           {/* Icon container */}
           <div
-            className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl"
+            className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl"
             style={{
               background: image ? 'transparent' : `radial-gradient(circle at 30% 30%, ${accent}22 0%, ${accent}0d 60%, transparent 100%)`,
               border: image ? 'none' : `1px solid ${accent}26`,
@@ -53,8 +53,8 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
               <img
                 src={image}
                 alt={label}
-                className="h-[52px] w-[52px] object-contain"
-                style={{ filter: `drop-shadow(0 0 8px ${accent}50)` }}
+                className="absolute h-[156px] w-[156px] object-contain pointer-events-none"
+                style={{ filter: `drop-shadow(0 0 10px ${accent}50)` }}
               />
             ) : (
               <Icon
