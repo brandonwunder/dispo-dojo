@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 
 // Brand glow gradient — consistent across all cards
 const C1 = '#7F00FF' // purple
-const C2 = '#FF2D6B' // pinkish red
+const C2 = '#C8275E' // pinkish red (muted so cyan can breathe)
 const C3 = '#00C6FF' // electric cyan
 
 export default function ToolCard({ icon: Icon, image, label, description, to, delay = 0, index = 0 }) {
@@ -45,7 +45,7 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
               height: 60,
               background: `linear-gradient(135deg, ${c1}1A 0%, ${c2}12 50%, ${c3}0D 100%)`,
               border: `1px solid ${c1}40`,
-              boxShadow: `0 0 16px ${c1}25, 0 0 24px ${c2}20, 0 0 32px ${c3}15, 0 4px 12px rgba(0,0,0,0.4)`,
+              boxShadow: `0 0 16px ${c1}30, 0 0 20px ${c2}18, 0 0 32px ${c3}28, 0 4px 12px rgba(0,0,0,0.4)`,
             }}
           >
             {/* Inner diagonal highlight */}
@@ -60,7 +60,7 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
                 width: 28,
                 height: 28,
                 color: '#ffffff',
-                filter: `drop-shadow(0 0 6px ${c1}) drop-shadow(0 0 10px ${c2}) drop-shadow(0 0 18px ${c3}99)`,
+                filter: `drop-shadow(0 0 5px ${c1}) drop-shadow(0 0 8px ${c2}CC) drop-shadow(0 0 16px ${c3})`,
                 strokeWidth: 1.75,
               }}
             />
