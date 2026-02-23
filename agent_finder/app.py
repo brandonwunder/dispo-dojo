@@ -17,6 +17,9 @@ from .cache import ScrapeCache
 from .input_handler import read_input, validate_input
 from .output_handler import export_results, export_results_zip, generate_summary
 from .pipeline import AgentFinderPipeline
+from pydantic import BaseModel
+from .fsbo_models import FSBOSearchCriteria
+from .fsbo_pipeline import FSBOPipeline
 
 app = FastAPI(title="Agent Finder")
 api = APIRouter(prefix="/api")
@@ -30,6 +33,22 @@ if STATIC_DIR.exists():
 jobs: dict[str, dict] = {}
 # Track asyncio tasks so we can cancel them
 _tasks: dict[str, asyncio.Task] = {}
+
+# -- FSBO search store --
+fsbo_searches: dict[str, dict] = {}
+_fsbo_tasks: dict[str, asyncio.Task] = {}
+
+
+class FSBOSearchRequest(BaseModel):
+    location: str
+    location_type: str = "zip"
+    radius_miles: int = 25
+    min_price: Optional[int] = None
+    max_price: Optional[int] = None
+    min_beds: Optional[int] = None
+    min_baths: Optional[float] = None
+    property_type: Optional[str] = None
+    max_days_on_market: Optional[int] = None
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 UPLOAD_DIR = Path(__file__).parent / "data"
@@ -415,6 +434,7 @@ async def _run_pipeline(job_id: str, properties):
                 "source": _clean(r.agent_info.source) if r.agent_info else "",
                 "list_date": _clean(r.agent_info.list_date) if r.agent_info else "",
                 "days_on_market": _clean(r.agent_info.days_on_market) if r.agent_info else "",
+                "listing_price": _clean(r.agent_info.listing_price) if r.agent_info else "",
                 "confidence": f"{r.confidence:.0%}",
                 "verified": r.verified,
             })
@@ -445,6 +465,189 @@ async def _run_pipeline(job_id: str, properties):
     finally:
         _tasks.pop(job_id, None)
 
+
+# ── FSBO endpoints ──
+
+
+@api.post("/fsbo/search")
+async def fsbo_search(req: FSBOSearchRequest):
+    """Start a new FSBO search job. Returns search_id."""
+    search_id = str(uuid.uuid4())[:8]
+    criteria = FSBOSearchCriteria(
+        location=req.location,
+        location_type=req.location_type,
+        radius_miles=req.radius_miles,
+        min_price=req.min_price,
+        max_price=req.max_price,
+        min_beds=req.min_beds,
+        min_baths=req.min_baths,
+        property_type=req.property_type,
+        max_days_on_market=req.max_days_on_market,
+    )
+    fsbo_searches[search_id] = {
+        "status": "running",
+        "criteria": req.dict(),
+        "progress": [],
+        "results": None,
+        "total_listings": 0,
+        "error": None,
+        "created_at": datetime.now().isoformat(),
+    }
+    task = asyncio.create_task(_run_fsbo_pipeline(search_id, criteria))
+    _fsbo_tasks[search_id] = task
+    return {"search_id": search_id}
+
+@api.get("/fsbo/progress/{search_id}")
+async def fsbo_progress_stream(search_id: str):
+    """SSE stream of scraping progress for a FSBO search job."""
+    if search_id not in fsbo_searches:
+        raise HTTPException(404, "Search not found.")
+
+    async def event_generator():
+        last_idx = 0
+        while True:
+            search = fsbo_searches.get(search_id)
+            if not search:
+                break
+            progress_list = search["progress"]
+            while last_idx < len(progress_list):
+                data = json.dumps(progress_list[last_idx])
+                yield "data: " + data + "\n\n"
+                last_idx += 1
+            if search["status"] == "complete":
+                done = json.dumps({"type": "complete", "total_listings": search["total_listings"]})
+                yield "data: " + done + "\n\n"
+                break
+            elif search["status"] == "error":
+                err_payload = json.dumps({"type": "error", "message": search["error"]})
+                yield "data: " + err_payload + "\n\n"
+                break
+            await asyncio.sleep(0.3)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+    )
+
+
+@api.get("/fsbo/results/{search_id}")
+async def fsbo_results(search_id: str, page: int = 1, per_page: int = 20):
+    """Return paginated results for a completed FSBO search."""
+    search = fsbo_searches.get(search_id)
+    if not search:
+        raise HTTPException(404, "Search not found.")
+    results = search.get("results") or []
+    start = (page - 1) * per_page
+    end = start + per_page
+    return {
+        "search_id": search_id,
+        "total": len(results),
+        "page": page,
+        "per_page": per_page,
+        "results": results[start:end],
+    }
+
+
+@api.get("/fsbo/download/{search_id}")
+async def fsbo_download(search_id: str, fmt: str = "csv"):
+    """Download results as CSV."""
+    import csv
+    import io as _io
+    search = fsbo_searches.get(search_id)
+    if not search or search["status"] != "complete":
+        raise HTTPException(404, "Search not ready.")
+    results = search.get("results") or []
+    if not results:
+        raise HTTPException(404, "No results to download.")
+    columns = ["address", "city", "state", "zip_code", "price", "beds", "baths",
+               "sqft", "property_type", "days_on_market", "owner_name", "phone",
+               "email", "source", "contact_status", "listing_url"]
+    if fmt == "csv":
+        output = _io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=columns, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(results)
+        csv_bytes = output.getvalue().encode("utf-8")
+        return StreamingResponse(
+            _io.BytesIO(csv_bytes),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=fsbo_" + search_id + ".csv"},
+        )
+    raise HTTPException(400, "Only fmt=csv supported currently.")
+
+
+@api.get("/fsbo/searches")
+async def fsbo_list_searches():
+    """List all past FSBO searches."""
+    result = []
+    for sid, s in fsbo_searches.items():
+        result.append({
+            "search_id": sid,
+            "status": s["status"],
+            "criteria": s.get("criteria", {}),
+            "total_listings": s.get("total_listings", 0),
+            "created_at": s.get("created_at", ""),
+        })
+    result.sort(key=lambda x: x["created_at"], reverse=True)
+    return result
+
+
+@api.delete("/fsbo/searches/{search_id}")
+async def fsbo_delete_search(search_id: str):
+    """Delete a FSBO search job."""
+    if search_id not in fsbo_searches:
+        raise HTTPException(404, "Search not found.")
+    task = _fsbo_tasks.get(search_id)
+    if task and not task.done():
+        task.cancel()
+    del fsbo_searches[search_id]
+    _fsbo_tasks.pop(search_id, None)
+    return {"ok": True}
+
+
+async def _run_fsbo_pipeline(search_id: str, criteria: FSBOSearchCriteria):
+    """Background task that runs the FSBO pipeline and stores results."""
+    search = fsbo_searches[search_id]
+
+    async def progress_callback(event: dict):
+        search["progress"].append(event)
+
+    try:
+        pipeline = FSBOPipeline(progress_callback=progress_callback)
+        listings = await pipeline.run(criteria)
+        results = []
+        for listing in listings:
+            results.append({
+                "address": listing.address,
+                "city": listing.city,
+                "state": listing.state,
+                "zip_code": listing.zip_code,
+                "price": listing.price,
+                "beds": listing.beds,
+                "baths": listing.baths,
+                "sqft": listing.sqft,
+                "property_type": listing.property_type,
+                "days_on_market": listing.days_on_market,
+                "owner_name": listing.owner_name,
+                "phone": listing.phone,
+                "email": listing.email,
+                "listing_url": listing.listing_url,
+                "source": listing.source,
+                "contact_status": listing.contact_status,
+            })
+        search["results"] = results
+        search["total_listings"] = len(results)
+        search["status"] = "complete"
+    except asyncio.CancelledError:
+        search["status"] = "cancelled"
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        search["status"] = "error"
+        search["error"] = str(e)
+    finally:
+        _fsbo_tasks.pop(search_id, None)
 
 # ── Register API router ──
 app.include_router(api)
