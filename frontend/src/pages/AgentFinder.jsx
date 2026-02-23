@@ -215,6 +215,8 @@ export default function AgentFinder() {
   const [sortConfig, setSortConfig] = useState(null) // { column: string, direction: 'asc'|'desc' }
   const [copiedCell, setCopiedCell] = useState(null) // "rowIndex-field"
   const [hoveredCell, setHoveredCell] = useState(null)
+  const [groupByAgent, setGroupByAgent] = useState(false)
+  const [expandedAgents, setExpandedAgents] = useState(new Set())
 
   const fileInputRef = useRef(null)
   const sseRef = useRef(null)
@@ -477,6 +479,8 @@ export default function AgentFinder() {
     setActiveStatusFilter('all')
     setTableSearch('')
     setSortConfig(null)
+    setGroupByAgent(false)
+    setExpandedAgents(new Set())
     prevProgressRef.current = { found: 0, partial: 0, cached: 0, not_found: 0 }
     prevAddressRef.current = ''
     tickerIdRef.current = 0
@@ -586,6 +590,27 @@ export default function AgentFinder() {
 
     return rows
   }, [resultRows, activeStatusFilter, tableSearch, sortConfig])
+
+  const groupedRows = useMemo(() => {
+    if (!groupByAgent) return null
+    const agentMap = new Map()
+    filteredRows.forEach(row => {
+      const key = (row.agent || row.agent_name || '').trim() || 'Unknown Agent'
+      if (!agentMap.has(key)) {
+        agentMap.set(key, {
+          agentKey: key,
+          brokerage: row.brokerage || row.office || '--',
+          phone: row.phone || '--',
+          email: row.email || '--',
+          confidence: row.confidence,
+          properties: [],
+        })
+      }
+      agentMap.get(key).properties.push(row)
+    })
+    return Array.from(agentMap.values())
+      .sort((a, b) => b.properties.length - a.properties.length)
+  }, [filteredRows, groupByAgent])
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -1190,6 +1215,70 @@ export default function AgentFinder() {
           />
         </div>
 
+        {/* Table toolbar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', marginBottom: '12px' }}>
+          <button
+            onClick={() => { setGroupByAgent(v => !v); setExpandedAgents(new Set()) }}
+            style={{
+              padding: '5px 14px', borderRadius: '8px', fontSize: '12px',
+              fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, letterSpacing: '0.1em',
+              textTransform: 'uppercase', cursor: 'pointer',
+              border: groupByAgent ? '1px solid rgba(246,196,69,0.6)' : '1px solid rgba(255,255,255,0.15)',
+              background: groupByAgent ? 'rgba(246,196,69,0.12)' : 'transparent',
+              color: groupByAgent ? '#F6C445' : '#C8D1DA', transition: 'all 0.15s ease',
+            }}
+          >
+            {groupByAgent ? '⊞ View by Property' : '⊟ View by Agent'}
+          </button>
+        </div>
+
+        {groupByAgent && groupedRows ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(246,196,69,0.2)', background: 'rgba(246,196,69,0.05)' }}>
+                  {['Agent','Brokerage','Phone','Email','Listings',''].map(h => (
+                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#F6C445' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {groupedRows.map(group => (
+                  <>
+                    <tr
+                      key={group.agentKey}
+                      onClick={() => setExpandedAgents(prev => { const n = new Set(prev); n.has(group.agentKey) ? n.delete(group.agentKey) : n.add(group.agentKey); return n })}
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', background: expandedAgents.has(group.agentKey) ? 'rgba(246,196,69,0.05)' : 'transparent', transition: 'background 0.15s' }}
+                    >
+                      <td style={{ padding: '10px 12px', fontSize: '13px', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, color: '#F4F7FA' }}>{group.agentKey}</td>
+                      <td style={{ padding: '10px 12px', fontSize: '13px', fontFamily: 'DM Sans, sans-serif', color: '#C8D1DA' }}>{group.brokerage}</td>
+                      <td style={{ padding: '10px 12px', fontSize: '13px', fontFamily: 'monospace', color: '#F4F7FA', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); copyToClipboard(group.phone, `group-${group.agentKey}-phone`) }}>
+                        {copiedCell === `group-${group.agentKey}-phone` ? <span style={{ color: '#00C6FF' }}>✓ Copied</span> : group.phone}
+                      </td>
+                      <td style={{ padding: '10px 12px', fontSize: '13px', fontFamily: 'DM Sans, sans-serif', color: '#C8D1DA', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); copyToClipboard(group.email, `group-${group.agentKey}-email`) }}>
+                        {copiedCell === `group-${group.agentKey}-email` ? <span style={{ color: '#00C6FF' }}>✓ Copied</span> : group.email}
+                      </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                        <span style={{ padding: '2px 10px', borderRadius: '12px', background: 'rgba(0,198,255,0.12)', border: '1px solid rgba(0,198,255,0.25)', color: '#00C6FF', fontSize: '12px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700 }}>{group.properties.length}</span>
+                      </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'center', color: '#C8D1DA', fontSize: '12px' }}>
+                        {expandedAgents.has(group.agentKey) ? '▼' : '▶'}
+                      </td>
+                    </tr>
+                    {expandedAgents.has(group.agentKey) && group.properties.map((prop, pi) => (
+                      <tr key={`${group.agentKey}-${pi}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: 'rgba(0,0,0,0.2)' }}>
+                        <td colSpan={2} style={{ padding: '8px 12px 8px 28px', fontSize: '12px', fontFamily: 'DM Sans, sans-serif', color: '#C8D1DA' }}>↳ {prop.address || '--'}</td>
+                        <td style={{ padding: '8px 12px', fontSize: '12px' }}><StatusBadge status={prop.status} /></td>
+                        <td style={{ padding: '8px 12px', fontSize: '12px', color: '#C8D1DA', fontFamily: 'DM Sans, sans-serif' }}>{prop.list_date || '--'}</td>
+                        <td colSpan={2} style={{ padding: '8px 12px', fontSize: '12px', fontFamily: 'monospace', color: '#C8D1DA', textAlign: 'right' }}>DOM: {prop.dom || prop.days_on_market || '--'}</td>
+                      </tr>
+                    ))}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
         <div className="overflow-x-auto" style={{ margin: '0 -24px' }}>
           <table className="w-full min-w-[900px]" style={{ padding: '0 24px' }}>
             <thead>
@@ -1271,6 +1360,7 @@ export default function AgentFinder() {
             </tbody>
           </table>
         </div>
+        )}
         {filteredRows.length === 0 && resultRows.length > 0 && (
           <div style={{ textAlign: 'center', padding: '32px', color: '#C8D1DA', fontSize: '14px', fontFamily: 'DM Sans, sans-serif' }}>
             No results match the current filter.{' '}
