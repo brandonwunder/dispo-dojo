@@ -5,7 +5,7 @@ export default function ShojiPanel({ icon: Icon, label, description, to, delay =
   return (
     <Link to={to} className="block">
       <motion.div
-        className="shoji-frame rounded-sm p-2 relative overflow-hidden group cursor-pointer elevation-2 glow-on-hover"
+        className="shoji-frame rounded-sm p-2 relative overflow-hidden group cursor-pointer elevation-2"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay, duration: 0.5 }}
