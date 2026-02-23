@@ -8,6 +8,7 @@ import {
   Info,
   Send,
   Filter,
+  Download,
 } from 'lucide-react'
 import WoodPanel from '../components/WoodPanel'
 import ShurikenLoader from '../components/ShurikenLoader'
@@ -45,74 +46,31 @@ const cardVariants = {
   }),
 }
 
-const MOCK_RESULTS = [
-  {
-    id: 1,
-    address: '1234 Oak Street, Phoenix, AZ 85001',
-    price: 285000,
-    owner: 'John Smith',
-    phone: '(480) 555-0101',
-    email: 'jsmith@email.com',
-    source: 'Zillow',
-    dom: 14,
-    beds: 3,
-    baths: 2,
-  },
-  {
-    id: 2,
-    address: '567 Pine Avenue, Scottsdale, AZ 85251',
-    price: 425000,
-    owner: 'Sarah Johnson',
-    phone: '(480) 555-0202',
-    email: 'sjohnson@email.com',
-    source: 'Craigslist',
-    dom: 7,
-    beds: 4,
-    baths: 3,
-  },
-  {
-    id: 3,
-    address: '890 Maple Drive, Mesa, AZ 85201',
-    price: 195000,
-    owner: 'Mike Williams',
-    phone: '(602) 555-0303',
-    email: 'mwilliams@email.com',
-    source: 'FSBO.com',
-    dom: 21,
-    beds: 2,
-    baths: 1,
-  },
-  {
-    id: 4,
-    address: '321 Cedar Lane, Tempe, AZ 85281',
-    price: 340000,
-    owner: 'Lisa Chen',
-    phone: '(480) 555-0404',
-    email: 'lchen@email.com',
-    source: 'Zillow',
-    dom: 3,
-    beds: 3,
-    baths: 2,
-  },
-  {
-    id: 5,
-    address: '654 Birch Court, Gilbert, AZ 85233',
-    price: 510000,
-    owner: 'Robert Brown',
-    phone: '(480) 555-0505',
-    email: 'rbrown@email.com',
-    source: 'Zillow',
-    dom: 30,
-    beds: 5,
-    baths: 3,
-  },
-]
-
 const SOURCE_STYLES = {
-  Zillow: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-  Craigslist: 'bg-violet-500/10 text-violet-400 border border-violet-500/20',
-  'FSBO.com': 'bg-gold/[0.08] text-gold-dim border border-gold-dim/[0.15]',
+  'fsbo.com': 'bg-gold/[0.08] text-gold-dim border border-gold-dim/[0.15]',
+  'forsalebyowner.com': 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+  zillow: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+  realtor: 'bg-red-500/10 text-red-400 border border-red-500/20',
+  craigslist: 'bg-violet-500/10 text-violet-400 border border-violet-500/20',
 }
+
+const CONTACT_STATUS_STYLES = {
+  complete: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  partial: 'bg-gold/[0.08] text-gold-dim border-gold-dim/[0.15]',
+  phone_only: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  anonymous: 'bg-red-500/10 text-red-400 border-red-500/20',
+  none: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+}
+
+const CONTACT_STATUS_LABEL = {
+  complete: 'Full Contact',
+  partial: 'Partial',
+  phone_only: 'Phone Only',
+  anonymous: 'Anonymous',
+  none: 'No Contact',
+}
+
+const SCRAPER_NAMES = ['fsbo.com', 'forsalebyowner.com', 'zillow', 'realtor', 'craigslist']
 
 const inputClasses =
   'bg-bg-card border border-gold-dim/20 rounded-sm px-4 py-3 text-parchment placeholder:text-text-muted font-body focus:outline-none focus:border-gold-dim/40 transition-colors'
@@ -121,7 +79,8 @@ const selectClasses =
   'bg-bg-card border border-gold-dim/20 rounded-sm px-3 py-3 text-parchment font-body focus:outline-none focus:border-gold-dim/40 transition-colors text-sm appearance-none cursor-pointer'
 
 function formatPrice(num) {
-  return '$' + num.toLocaleString('en-US')
+  if (num == null) return '—'
+  return '$' + Number(num).toLocaleString('en-US')
 }
 
 export default function FSBOFinder() {
@@ -137,17 +96,88 @@ export default function FSBOFinder() {
   const [propertyType, setPropertyType] = useState('All')
   const [minBeds, setMinBeds] = useState('Any')
   const [minBaths, setMinBaths] = useState('Any')
+  const [maxDom, setMaxDom] = useState('')
 
-  function handleSearch(e) {
+  // Live search state
+  const [searchId, setSearchId] = useState(null)
+  const [scrapersStatus, setScrapersStatus] = useState({})
+  const [liveCount, setLiveCount] = useState(0)
+
+  async function handleSearch(e) {
     e.preventDefault()
     if (!query.trim()) return
     setLoading(true)
     setResults(null)
     setSelected(new Set())
-    setTimeout(() => {
+    setScrapersStatus({})
+    setLiveCount(0)
+    setSearchId(null)
+
+    // Detect zip vs city/state
+    const isZip = /^\d{5}(,\s*\d{5})*$/.test(query.trim())
+    const body = {
+      location: query.trim(),
+      location_type: isZip ? 'zip' : 'city_state',
+      min_price: priceMin ? parseInt(priceMin) : null,
+      max_price: priceMax ? parseInt(priceMax) : null,
+      min_beds: minBeds !== 'Any' ? parseInt(minBeds) : null,
+      min_baths: minBaths !== 'Any' ? parseFloat(minBaths) : null,
+      property_type: propertyType !== 'All' ? propertyType.toLowerCase().replace(/\s+/g, '_') : null,
+      max_days_on_market: maxDom ? parseInt(maxDom) : null,
+    }
+
+    try {
+      const res = await fetch('/api/fsbo/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const { search_id } = await res.json()
+      setSearchId(search_id)
+
+      // Open SSE stream
+      const sse = new EventSource(`/api/fsbo/progress/${search_id}`)
+      sse.onmessage = (ev) => {
+        const data = JSON.parse(ev.data)
+        if (data.type === 'complete') {
+          sse.close()
+          // Fetch results
+          fetch(`/api/fsbo/results/${search_id}?per_page=100`)
+            .then((r) => r.json())
+            .then(({ results: rows }) => {
+              setResults(
+                (rows || []).map((r) => ({
+                  ...r,
+                  id: r.listing_url || r.address,
+                  owner: r.owner_name,
+                  dom: r.days_on_market,
+                }))
+              )
+              setLoading(false)
+            })
+            .catch(() => setLoading(false))
+        } else if (data.type === 'error') {
+          sse.close()
+          setLoading(false)
+        } else {
+          // Progress event
+          setLiveCount(data.listings_found || 0)
+          if (data.current_source) {
+            setScrapersStatus((prev) => ({
+              ...prev,
+              [data.current_source]: 'done',
+            }))
+          }
+        }
+      }
+      sse.onerror = () => {
+        sse.close()
+        setLoading(false)
+      }
+    } catch (err) {
+      console.error('FSBO search failed:', err)
       setLoading(false)
-      setResults(MOCK_RESULTS)
-    }, 1800)
+    }
   }
 
   function toggleSelect(id) {
@@ -342,7 +372,7 @@ export default function FSBOFinder() {
                   className="overflow-hidden"
                 >
                   <div className="wood-panel-light rounded-sm p-4 mt-3">
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                       {/* Price Min */}
                       <div>
                         <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
@@ -426,6 +456,20 @@ export default function FSBOFinder() {
                           <option>4+</option>
                         </select>
                       </div>
+
+                      {/* Max Days Listed */}
+                      <div>
+                        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
+                          Max Days Listed
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="Any"
+                          value={maxDom}
+                          onChange={(e) => setMaxDom(e.target.value)}
+                          className={`${inputClasses} w-full !py-2.5 text-sm`}
+                        />
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -463,8 +507,23 @@ export default function FSBOFinder() {
                 <div className="flex items-center gap-3">
                   <ShurikenLoader size={24} />
                   <span className="text-text-dim text-sm font-heading tracking-wide">
-                    Tracking targets...
+                    Tracking targets...{liveCount > 0 && ` (${liveCount} found so far)`}
                   </span>
+                </div>
+                {/* Source status badges */}
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {SCRAPER_NAMES.map((src) => (
+                    <span
+                      key={src}
+                      className={`text-xs px-2 py-0.5 rounded-full font-heading tracking-wide border transition-all ${
+                        scrapersStatus[src] === 'done'
+                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                          : 'bg-bg-elevated text-text-muted border-gold-dim/10'
+                      }`}
+                    >
+                      {src} {scrapersStatus[src] === 'done' ? '✓' : '...'}
+                    </span>
+                  ))}
                 </div>
               </div>
             </WoodPanel>
@@ -498,7 +557,7 @@ export default function FSBOFinder() {
             transition={{ duration: 0.4 }}
           >
             {/* Results header */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <h2 className="font-heading text-lg font-semibold tracking-wide text-parchment">
                   {results.length} Targets Located
@@ -521,14 +580,26 @@ export default function FSBOFinder() {
                   </span>
                 )}
               </div>
-              <button
-                onClick={() => {}}
-                disabled={selected.size === 0}
-                className="gold-shimmer text-ink font-heading font-bold tracking-widest uppercase px-6 py-2 rounded-sm flex items-center gap-2 hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              >
-                <Send size={14} />
-                Send Selected to CRM
-              </button>
+              <div className="flex items-center gap-2">
+                {searchId && (
+                  <a
+                    href={`/api/fsbo/download/${searchId}?fmt=csv`}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-heading tracking-wide text-text-dim border border-gold-dim/20 rounded-sm hover:text-gold hover:border-gold/40 transition-colors"
+                    download
+                  >
+                    <Download size={14} />
+                    Export CSV
+                  </a>
+                )}
+                <button
+                  onClick={() => {}}
+                  disabled={selected.size === 0}
+                  className="gold-shimmer text-ink font-heading font-bold tracking-widest uppercase px-6 py-2 rounded-sm flex items-center gap-2 hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  <Send size={14} />
+                  Send Selected to CRM
+                </button>
+              </div>
             </div>
 
             {/* Results grid - 2 cols on desktop */}
@@ -569,49 +640,75 @@ export default function FSBOFinder() {
                           {row.address}
                         </h3>
 
-                        {/* Price + Source badge row */}
-                        <div className="flex items-center gap-3 mb-3">
+                        {/* Price + Source badge + Contact status badge row */}
+                        <div className="flex items-center gap-2 mb-3 flex-wrap">
                           <span className="text-gold-bright font-heading text-xl font-bold tracking-wide">
                             {formatPrice(row.price)}
                           </span>
                           <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${SOURCE_STYLES[row.source]}`}
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              SOURCE_STYLES[row.source] || 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/20'
+                            }`}
                           >
                             {row.source}
                           </span>
+                          {row.contact_status && (
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                                CONTACT_STATUS_STYLES[row.contact_status] || CONTACT_STATUS_STYLES.none
+                              }`}
+                            >
+                              {CONTACT_STATUS_LABEL[row.contact_status] || row.contact_status}
+                            </span>
+                          )}
                         </div>
 
                         {/* Details grid */}
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
                           <div className="flex items-center gap-2">
                             <span className="text-text-muted font-heading text-xs tracking-wider uppercase">Owner</span>
-                            <span className="text-text-primary font-body">{row.owner}</span>
+                            <span className="text-text-primary font-body">{row.owner || '—'}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-text-muted font-heading text-xs tracking-wider uppercase">DOM</span>
-                            <span className="text-text-primary font-mono">{row.dom} days</span>
+                            <span className="text-text-primary font-mono">
+                              {row.dom != null ? `${row.dom} days` : '—'}
+                            </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-text-muted font-heading text-xs tracking-wider uppercase">Phone</span>
-                            <span className="text-text-dim font-mono text-xs">{row.phone}</span>
+                            <span className="text-text-dim font-mono text-xs">{row.phone || '—'}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-text-muted font-heading text-xs tracking-wider uppercase">Beds/Ba</span>
-                            <span className="text-text-primary font-mono">{row.beds}bd / {row.baths}ba</span>
+                            <span className="text-text-primary font-mono">
+                              {row.beds != null ? row.beds : '?'}bd / {row.baths != null ? row.baths : '?'}ba
+                            </span>
                           </div>
                           <div className="flex items-center gap-2 col-span-2">
                             <span className="text-text-muted font-heading text-xs tracking-wider uppercase">Email</span>
-                            <span className="text-text-dim font-body text-xs truncate">{row.email}</span>
+                            <span className="text-text-dim font-body text-xs truncate">{row.email || '—'}</span>
                           </div>
                         </div>
 
                         {/* Individual Send to CRM */}
-                        <div className="mt-3 pt-3 border-t border-gold-dim/10 flex justify-end">
+                        <div className="mt-3 pt-3 border-t border-gold-dim/10 flex justify-between items-center">
+                          {row.listing_url && (
+                            <a
+                              href={row.listing_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-text-muted hover:text-gold-dim font-body underline underline-offset-2 transition-colors"
+                            >
+                              View listing
+                            </a>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                             }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-heading tracking-wide text-text-dim border border-gold-dim/20 rounded-sm hover:text-gold hover:border-gold/40 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-heading tracking-wide text-text-dim border border-gold-dim/20 rounded-sm hover:text-gold hover:border-gold/40 transition-colors ml-auto"
                           >
                             <Send size={12} />
                             Send to CRM
