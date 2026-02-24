@@ -167,7 +167,10 @@ export default function MessageBubble({
             <p className="mt-0.5 text-[9px] text-text-dim/30">Enter to save, Esc to cancel</p>
           </div>
         ) : (
-          <p className={`text-sm leading-relaxed break-words ${isGrouped ? '' : 'mt-0.5'} ${msg.isDeleted ? 'line-through text-text-dim/30' : 'text-text-dim'}`}>
+          <p
+            className={`text-sm leading-relaxed break-words ${isGrouped ? '' : 'mt-0.5'} ${msg.isDeleted ? 'line-through text-text-dim/30' : ''}`}
+            style={!msg.isDeleted ? { fontFamily: 'var(--font-body, sans-serif)', color: '#E8ECF0', lineHeight: 1.7, fontSize: '14px' } : undefined}
+          >
             {formatMessageBody(msg.body)}
           </p>
         )}

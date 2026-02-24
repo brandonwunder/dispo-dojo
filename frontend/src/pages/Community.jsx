@@ -225,8 +225,8 @@ export default function Community() {
           className="absolute inset-0"
           style={{
             background: `
-              radial-gradient(ellipse 90% 70% at 50% 40%, rgba(11,15,20,0.45) 0%, rgba(11,15,20,0.75) 55%, rgba(11,15,20,0.92) 100%),
-              linear-gradient(180deg, rgba(11,15,20,0.35) 0%, rgba(11,15,20,0.60) 40%, rgba(11,15,20,0.90) 100%)
+              radial-gradient(ellipse 90% 70% at 50% 40%, rgba(11,15,20,0.65) 0%, rgba(11,15,20,0.85) 55%, rgba(11,15,20,0.96) 100%),
+              linear-gradient(180deg, rgba(11,15,20,0.55) 0%, rgba(11,15,20,0.78) 40%, rgba(11,15,20,0.96) 100%)
             `,
           }}
         />
@@ -234,7 +234,7 @@ export default function Community() {
         <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(to right, rgba(11,15,20,0.85) 0%, rgba(11,15,20,0.40) 30%, transparent 60%)',
+            background: 'linear-gradient(to right, rgba(11,15,20,0.95) 0%, rgba(11,15,20,0.65) 35%, rgba(11,15,20,0.30) 65%, transparent 80%)',
           }}
         />
         {/* Layer 3: Bottom fade to page bg */}
@@ -458,7 +458,7 @@ export default function Community() {
             />
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-5 py-4">
+            <div className="flex-1 overflow-y-auto px-5 py-4" style={{ paddingBottom: '8px' }}>
               {loading ? (
                 <MessageSkeleton count={5} />
               ) : error ? (
