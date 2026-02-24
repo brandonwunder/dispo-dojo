@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Shield, Users, Mail, Phone, Calendar, AtSign, Clock, TrendingUp, Plus, Edit2, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../lib/firebase'
 import CountUp from 'react-countup'
@@ -25,22 +25,27 @@ function DealForm({ initial, onClose }) {
 
   async function handleSave() {
     setSaving(true)
-    const data = {
-      ...form,
-      assignmentFee: Number(form.assignmentFee) || 0,
-      beds: Number(form.beds) || 0,
-      baths: Number(form.baths) || 0,
-      sqft: Number(form.sqft) || 0,
-      arv: Number(form.arv) || 0,
-      updatedAt: serverTimestamp(),
+    try {
+      const data = {
+        ...form,
+        assignmentFee: Number(form.assignmentFee) || 0,
+        beds: Number(form.beds) || 0,
+        baths: Number(form.baths) || 0,
+        sqft: Number(form.sqft) || 0,
+        arv: Number(form.arv) || 0,
+        updatedAt: serverTimestamp(),
+      }
+      if (initial?.id) {
+        await updateDoc(doc(db, 'liveDeals', initial.id), data)
+      } else {
+        await addDoc(collection(db, 'liveDeals'), { ...data, createdAt: serverTimestamp() })
+      }
+      onClose()
+    } catch (err) {
+      console.error('Failed to save deal:', err)
+    } finally {
+      setSaving(false)
     }
-    if (initial?.id) {
-      await updateDoc(doc(db, 'liveDeals', initial.id), data)
-    } else {
-      await addDoc(collection(db, 'liveDeals'), { ...data, createdAt: serverTimestamp() })
-    }
-    setSaving(false)
-    onClose()
   }
 
   const inputCls = 'w-full px-3 py-2 rounded-sm bg-black/30 border border-gold-dim/20 text-parchment text-sm placeholder:text-text-muted focus:outline-none focus:border-cyan/40 transition-colors'
@@ -97,7 +102,7 @@ function LiveDealsAdmin() {
   const [editingDeal, setEditingDeal] = useState(null)
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'liveDeals'), (snap) => {
+    const unsub = onSnapshot(query(collection(db, 'liveDeals'), orderBy('createdAt', 'desc')), (snap) => {
       setDeals(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     })
     return unsub
@@ -128,6 +133,7 @@ function LiveDealsAdmin() {
 
       {showForm && (
         <DealForm
+          key={editingDeal?.id ?? 'new'}
           initial={editingDeal}
           onClose={() => { setShowForm(false); setEditingDeal(null) }}
         />
