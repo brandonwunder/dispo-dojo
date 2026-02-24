@@ -17,7 +17,6 @@ import Scripts from './pages/Scripts'
 import WebsiteExplainer from './pages/WebsiteExplainer'
 import BirdDog from './pages/BirdDog'
 import BootsOnGround from './pages/BootsOnGround'
-import RentComps from './pages/RentComps'
 import OfferComparison from './pages/OfferComparison'
 import CallRecordings from './pages/CallRecordings'
 import LiveDeals from './pages/LiveDeals'
@@ -68,7 +67,6 @@ function App() {
             <Route path="community/profile/:uid" element={<CommunityProfile />} />
             <Route path="bird-dog" element={<BirdDog />} />
             <Route path="boots-on-ground" element={<BootsOnGround />} />
-            <Route path="rent-comps" element={<RentComps />} />
             <Route path="offer-comparison" element={<OfferComparison />} />
             <Route path="call-recordings" element={<CallRecordings />} />
             <Route path="live-deals" element={<LiveDeals />} />
