@@ -228,19 +228,59 @@ export default function Community() {
       </div>
 
       {/* -- LEFT: Channel sidebar ---------------------------------- */}
-      <aside className="lacquer-deep flex w-[220px] shrink-0 flex-col border-r border-[rgba(246,196,69,0.10)]">
-        <div className="px-4 pt-5 pb-3">
-          <h2 className="font-display text-lg tracking-wide text-gold">Community</h2>
+      <aside
+        className="flex w-[260px] xl:w-[280px] shrink-0 flex-col h-full relative"
+        style={{
+          background: 'linear-gradient(180deg, #0B0F14 0%, #0E1820 30%, #090D12 70%, #0B0F14 100%)',
+          borderRight: '1px solid rgba(0, 198, 255, 0.08)',
+        }}
+      >
+        {/* Branding dock */}
+        <div className="px-4 pt-5 pb-3 flex-shrink-0">
+          <div className="flex items-center gap-3 mb-1">
+            {/* Hanko seal */}
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
+              style={{
+                background: 'linear-gradient(135deg, #0E5A88 0%, #00C6FF 100%)',
+                fontFamily: 'var(--font-display, serif)',
+                color: '#F4F7FA',
+                boxShadow: '0 0 12px -4px rgba(0,198,255,0.5)',
+                letterSpacing: '0.02em',
+              }}
+            >
+              DD
+            </div>
+            <div>
+              <div className="text-sm font-bold text-[#F4F7FA]" style={{ fontFamily: 'var(--font-heading, sans-serif)', letterSpacing: '0.04em' }}>
+                Dispo Dojo
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-[#8A9AAA]" style={{ fontFamily: 'var(--font-body, sans-serif)' }}>Community</span>
+                <span className="flex items-center gap-1 text-[10px] text-green-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+                  {onlineUsers.length} online
+                </span>
+              </div>
+            </div>
+          </div>
+          {/* Katana divider */}
+          <div className="h-px mt-3" style={{
+            background: 'linear-gradient(90deg, transparent, #00C6FF, #0E5A88, #00C6FF, transparent)',
+            opacity: 0.4,
+            boxShadow: '0 0 8px rgba(0,198,255,0.2)',
+          }} />
         </div>
 
-        <div className="px-4 pb-1">
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-text-dim/50">
+        {/* Channel list */}
+        <div className="flex-1 overflow-y-auto px-2 pb-2">
+          {/* Section header */}
+          <div className="px-2 py-2 text-[10px] font-bold text-[#8A9AAA] tracking-[0.12em] uppercase"
+            style={{ fontFamily: 'var(--font-heading, sans-serif)' }}
+          >
             Channels
-          </span>
-          <div className="katana-line mt-1.5" />
-        </div>
+          </div>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-1">
           {CHANNELS.map((ch) => {
             const isActive = activeChannel === ch.id
             const hasUnread = unreadTracking.channelReadState && !unreadTracking.channelReadState[ch.id] && ch.id !== activeChannel
@@ -248,23 +288,37 @@ export default function Community() {
               <button
                 key={ch.id}
                 onClick={() => switchChannel(ch.id)}
-                className={`flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-sm transition-colors duration-150
-                  ${
-                    isActive
-                      ? 'border-l-2 border-l-[#00C6FF] bg-[rgba(0,198,255,0.08)] font-medium text-[#00C6FF]'
-                      : 'text-text-dim hover:bg-white/[0.04] hover:text-parchment'
-                  }
-                `}
+                className="w-full flex items-center justify-between rounded-lg mb-0.5 group transition-colors duration-150"
+                style={{
+                  background: isActive ? 'rgba(0,198,255,0.08)' : 'transparent',
+                  borderLeft: isActive ? '3px solid #00C6FF' : '3px solid transparent',
+                  padding: isActive ? '8px 12px 8px 9px' : '8px 12px',
+                }}
               >
-                <Hash className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                {ch.name}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="text-sm font-mono flex-shrink-0"
+                    style={{ color: isActive ? '#00C6FF' : '#8A9AAA' }}
+                  >
+                    #
+                  </span>
+                  <span
+                    className="text-sm truncate"
+                    style={{
+                      fontFamily: 'var(--font-body, sans-serif)',
+                      color: isActive ? '#00C6FF' : '#8A9AAA',
+                    }}
+                  >
+                    {ch.name}
+                  </span>
+                </div>
                 {hasUnread && (
-                  <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[#00C6FF] shadow-[0_0_4px_rgba(0,198,255,0.5)]" />
+                  <span className="flex-shrink-0 h-2 w-2 rounded-full bg-[#00C6FF] shadow-[0_0_4px_rgba(0,198,255,0.5)]" />
                 )}
               </button>
             )
           })}
-        </nav>
+        </div>
 
         {/* Direct Messages list */}
         <DMList
@@ -281,18 +335,50 @@ export default function Community() {
         {/* Leaderboard */}
         <Leaderboard leaders={leaders} />
 
-        {/* User card */}
-        <div className="border-t border-[rgba(246,196,69,0.10)] px-3 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <div className="hanko-seal flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
+        {/* User dock */}
+        <div className="flex-shrink-0 px-3 pb-3 pt-2">
+          <div className="h-px mb-3" style={{
+            background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.3), transparent)',
+          }} />
+          <div className="flex items-center gap-3 group">
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, #0E5A88 0%, #00C6FF 100%)',
+                  fontFamily: 'var(--font-heading, sans-serif)',
+                  color: '#F4F7FA',
+                  boxShadow: '0 0 10px -3px rgba(0,198,255,0.4)',
+                  border: '2px solid rgba(0,198,255,0.2)',
+                }}
+              >
                 {initials(displayName)}
               </div>
-              <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0B0F14] bg-green-400" />
+              {/* Online status dot */}
+              <span
+                className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
+                style={{
+                  background: '#22C55E',
+                  borderColor: '#0B0F14',
+                  boxShadow: '0 0 6px rgba(34,197,94,0.6)',
+                }}
+              />
             </div>
-            <span className="truncate text-xs font-heading font-semibold text-parchment">
-              {displayName}
-            </span>
+            {/* Name + role */}
+            <div className="flex-1 min-w-0">
+              <div className="text-sm text-[#F4F7FA] truncate" style={{ fontFamily: 'var(--font-heading, sans-serif)', fontWeight: 600 }}>
+                {displayName}
+              </div>
+              <div className="text-[11px] text-[#8A9AAA]" style={{ fontFamily: 'var(--font-body, sans-serif)' }}>Member</div>
+            </div>
+            {/* Settings icon — appears on group hover */}
+            <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-[#8A9AAA] hover:text-[#F6C445] p-1 rounded">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+              </svg>
+            </button>
           </div>
         </div>
       </aside>
