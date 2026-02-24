@@ -590,42 +590,63 @@ export default function Community() {
         {activeThread && (
           <motion.aside
             key="thread-panel"
-            initial={{ x: 350, opacity: 0 }}
+            className="w-[380px] xl:w-[400px] flex-shrink-0 flex flex-col h-full"
+            style={{
+              background: 'linear-gradient(180deg, #0B0F14 0%, #0E1820 30%, #090D12 70%, #0B0F14 100%)',
+              borderLeft: '1px solid rgba(0,198,255,0.08)',
+            }}
+            initial={{ x: 400, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 350, opacity: 0 }}
-            transition={{ type: 'spring', damping: 26, stiffness: 260 }}
-            className="flex w-[350px] shrink-0 flex-col border-l border-[rgba(246,196,69,0.10)] bg-[#0B0F14]"
+            exit={{ x: 400, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 26 }}
           >
             {/* Thread header */}
-            <header className="flex items-center justify-between border-b border-[rgba(246,196,69,0.10)] px-4 py-3">
-              <span className="font-heading text-sm font-semibold text-parchment">Thread</span>
+            <div
+              className="flex items-center justify-between px-4 py-4 flex-shrink-0"
+              style={{ borderBottom: '1px solid rgba(0,198,255,0.08)' }}
+            >
+              <h3
+                className="font-bold"
+                style={{ fontFamily: 'var(--font-heading, sans-serif)', fontSize: '17px', color: '#F4F7FA' }}
+              >
+                Replies
+              </h3>
               <button
                 onClick={() => setActiveThread(null)}
-                className="text-text-dim/40 transition-colors duration-150 hover:text-parchment focus-visible:outline-none active:scale-90"
+                className="text-[#8A9AAA] hover:text-[#F4F7FA] transition-colors duration-150 p-1 rounded"
               >
-                <X className="h-4 w-4" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
               </button>
-            </header>
-
-            {/* Parent message */}
-            <div className="border-b border-[rgba(246,196,69,0.06)] px-4 py-3">
-              <div className="flex gap-3">
-                <div className="hanko-seal flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[9px] font-bold">
-                  {initials(activeThread.authorName)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="font-heading text-sm font-semibold text-parchment">
-                    {activeThread.authorName}
-                  </span>
-                  <p className="mt-0.5 text-sm leading-relaxed text-text-dim break-words">
-                    {activeThread.body}
-                  </p>
-                  {activeThread.gifUrl && (
-                    <img src={activeThread.gifUrl} alt={activeThread.gifTitle || 'GIF'} className="mt-2 max-w-[250px] rounded-sm" />
-                  )}
-                </div>
-              </div>
             </div>
+
+            {/* Parent message quote */}
+            {activeThread && (
+              <div className="px-4 py-3 mx-3 mt-3 mb-1 rounded-lg flex-shrink-0" style={{
+                background: 'rgba(0,198,255,0.04)',
+                border: '1px solid rgba(0,198,255,0.12)',
+              }}>
+                <div
+                  className="text-[11px] mb-1"
+                  style={{ fontFamily: 'var(--font-body, sans-serif)', color: '#8A9AAA' }}
+                >
+                  {activeThread.authorName}
+                </div>
+                <p
+                  className="text-sm line-clamp-3"
+                  style={{ fontFamily: 'var(--font-body, sans-serif)', color: '#C8D1DA', lineHeight: 1.5 }}
+                >
+                  {activeThread.body || (activeThread.type === 'deal' ? `\u{1F3E0} ${activeThread.dealData?.address}` : '')}
+                </p>
+              </div>
+            )}
+
+            {/* Katana divider */}
+            <div className="mx-4 mt-2 h-px flex-shrink-0" style={{
+              background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.2), transparent)',
+            }} />
 
             {/* Replies */}
             <div className="flex-1 overflow-y-auto px-4 py-3">
