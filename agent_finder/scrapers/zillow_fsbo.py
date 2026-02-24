@@ -56,36 +56,67 @@ class ZillowFSBOScraper(FSBOBaseScraper):
 
         return self._parse_search_results(resp.text, criteria)
 
+    def _find_list_results(self, data: dict) -> list:
+        """
+        Recursively search __NEXT_DATA__ JSON for a list of property objects.
+        Zillow restructures this frequently — search for known keys rather than
+        using a hardcoded path.
+        """
+        LIST_KEYS = {"listResults", "list_results", "searchResults", "mapResults"}
+
+        def _search(node, depth=0):
+            if depth > 8:
+                return []
+            if isinstance(node, list):
+                if node and isinstance(node[0], dict) and (
+                    "zpid" in node[0] or "address" in node[0] or "detailUrl" in node[0]
+                ):
+                    return node
+                for item in node:
+                    found = _search(item, depth + 1)
+                    if found:
+                        return found
+            elif isinstance(node, dict):
+                for key, val in node.items():
+                    if key in LIST_KEYS and isinstance(val, list) and val:
+                        logger.debug("zillow_fsbo: found listing array at key=%r len=%d", key, len(val))
+                        return val
+                for val in node.values():
+                    found = _search(val, depth + 1)
+                    if found:
+                        return found
+            return []
+
+        return _search(data)
+
     def _parse_search_results(self, html: str, criteria: FSBOSearchCriteria) -> List[FSBOListing]:
         soup = BeautifulSoup(html, "lxml")
         results = []
 
         script = soup.find("script", id="__NEXT_DATA__")
         if not script:
+            logger.info("zillow_fsbo: no __NEXT_DATA__ script found in response (len=%d)", len(html))
             return results
 
         try:
             data = json.loads(script.string)
-            search_state = (data.get("props", {}).get("pageProps", {})
-                            .get("searchPageState", {}))
-            cat1 = search_state.get("cat1", {})
-            list_results = cat1.get("searchResults", {}).get("listResults", [])
+            list_results = self._find_list_results(data)
+            logger.info("zillow_fsbo: found %d raw items in listing array", len(list_results))
 
             for item in list_results:
                 listing = self._item_to_listing(item, criteria)
                 if listing:
                     results.append(listing)
+
+            if not list_results:
+                logger.info("zillow_fsbo: listing array empty — Zillow may be blocking or restructured JSON")
+
         except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as e:
-            logger.debug("zillow_fsbo parse failed: %s", e)
+            logger.warning("zillow_fsbo parse failed: %s", e)
 
         return results
 
     def _item_to_listing(self, item: dict, criteria: FSBOSearchCriteria) -> Optional[FSBOListing]:
-        # Filter: only FSBO/by owner listings
-        listing_type = item.get("listingType", "").lower()
-        if listing_type and "owner" not in listing_type and "fsbo" not in listing_type:
-            return None
-
         address = item.get("address", "") or item.get("streetAddress", "")
         if not address:
             return None
@@ -162,7 +193,7 @@ class ZillowFSBOScraper(FSBOBaseScraper):
             days_on_market=dom,
             owner_name=owner_name, phone=phone, email=None,
             listing_url=detail_url,
-            source="zillow",
+            source="zillow_fsbo",
             contact_status="none",
         )
         listing.contact_status = listing.compute_contact_status()
