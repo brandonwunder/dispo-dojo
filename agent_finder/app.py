@@ -634,20 +634,21 @@ async def debug_fsbo_scraper(source: str = "realtor_fsbo", location: str = "Phoe
     import logging
     import io
 
-    # Capture log output
     log_stream = io.StringIO()
     handler = logging.StreamHandler(log_stream)
     handler.setLevel(logging.DEBUG)
     root_logger = logging.getLogger("agent_finder")
-    root_logger.addHandler(handler)
-    root_logger.setLevel(logging.DEBUG)
-
-    location_type = "zip" if location.strip().lstrip("-").isdigit() else "city_state"
-    criteria = FSBOSearchCriteria(location=location, location_type=location_type)
+    original_level = root_logger.level  # Save original level
 
     results = []
     error = None
     try:
+        root_logger.addHandler(handler)        # Move INSIDE try
+        root_logger.setLevel(logging.DEBUG)    # Move INSIDE try
+
+        location_type = "zip" if location.strip().lstrip("-").isdigit() else "city_state"
+        criteria = FSBOSearchCriteria(location=location, location_type=location_type)
+
         import httpx as _httpx
         async with _httpx.AsyncClient(follow_redirects=True, timeout=45.0) as client:
             if source == "fsbo.com":
@@ -666,7 +667,9 @@ async def debug_fsbo_scraper(source: str = "realtor_fsbo", location: str = "Phoe
                 from .scrapers.craigslist_fsbo import CraigslistFSBOScraper
                 scraper = CraigslistFSBOScraper(client)
             else:
-                return {"error": f"Unknown source: {source}. Valid: fsbo.com, forsalebyowner.com, zillow_fsbo, realtor_fsbo, craigslist"}
+                return {
+                    "error": f"Unknown source: {source}. Valid: fsbo.com, forsalebyowner.com, zillow_fsbo, realtor_fsbo, craigslist"
+                }
 
             listings = await scraper.search_area(criteria)
             results = [
@@ -688,6 +691,7 @@ async def debug_fsbo_scraper(source: str = "realtor_fsbo", location: str = "Phoe
         error = traceback.format_exc()
     finally:
         root_logger.removeHandler(handler)
+        root_logger.setLevel(original_level)   # Restore original level
 
     return {
         "source": source,
