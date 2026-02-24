@@ -278,7 +278,7 @@ export default function FSBOFinder() {
       </div>
 
       {/* ── Content ── */}
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: '720px', margin: '0 auto', padding: '48px 24px 80px' }}>
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: '720px', margin: '0 auto', padding: '80px 24px 80px' }}>
 
         {/* ── Hero header ── */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
