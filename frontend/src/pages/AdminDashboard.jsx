@@ -95,6 +95,71 @@ function DealForm({ initial, onClose }) {
   )
 }
 
+// ── BuyerListAdmin ────────────────────────────────────────────────────────────
+function BuyerListAdmin() {
+  const [buyers, setBuyers] = useState([])
+  const [expanded, setExpanded] = useState(null)
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      collection(db, 'users'),
+      (snap) => {
+        const withBuyBox = snap.docs
+          .map((d) => ({ uid: d.id, ...d.data() }))
+          .filter((u) => u.buyBox)
+        setBuyers(withBuyBox)
+      },
+      (err) => {
+        console.error('BuyerListAdmin snapshot error:', err)
+      }
+    )
+    return unsub
+  }, [])
+
+  return (
+    <div>
+      <h2 className="font-heading text-lg text-gold tracking-wide mb-5">Buyer List</h2>
+      {buyers.length === 0 ? (
+        <p className="text-text-dim text-sm font-body text-center py-8">No buyers have submitted criteria yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {buyers.map((buyer) => {
+            const bb = buyer.buyBox
+            const isExpanded = expanded === buyer.uid
+            return (
+              <WoodPanel key={buyer.uid}>
+                <button
+                  className="w-full text-left"
+                  onClick={() => setExpanded(isExpanded ? null : buyer.uid)}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <span className="font-heading text-sm text-parchment tracking-wide">{buyer.displayName || buyer.email}</span>
+                      <span className="text-text-muted text-xs ml-2 font-body">{buyer.email}</span>
+                    </div>
+                    <div className="text-right text-xs text-text-dim font-body">
+                      {bb.markets?.join(', ') || '—'} · ${Number(bb.minPrice || 0).toLocaleString()}–${Number(bb.maxPrice || 0).toLocaleString()}
+                    </div>
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div className="mt-3 pt-3 border-t border-gold-dim/10 grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                    <div><span className="text-text-dim font-heading uppercase tracking-wider">Deal Types</span><p className="text-parchment mt-0.5">{bb.dealTypes?.join(', ') || '—'}</p></div>
+                    <div><span className="text-text-dim font-heading uppercase tracking-wider">Property Types</span><p className="text-parchment mt-0.5">{bb.propertyTypes?.join(', ') || '—'}</p></div>
+                    <div><span className="text-text-dim font-heading uppercase tracking-wider">Close Timeline</span><p className="text-parchment mt-0.5">{bb.closeTimeline || '—'}</p></div>
+                    <div><span className="text-text-dim font-heading uppercase tracking-wider">Last Updated</span><p className="text-parchment mt-0.5">{bb.updatedAt ? new Date(bb.updatedAt).toLocaleDateString() : '—'}</p></div>
+                    {bb.notes && <div className="col-span-2"><span className="text-text-dim font-heading uppercase tracking-wider">Notes</span><p className="text-parchment mt-0.5">{bb.notes}</p></div>}
+                  </div>
+                )}
+              </WoodPanel>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── LiveDealsAdmin ────────────────────────────────────────────────────────────
 function LiveDealsAdmin() {
   const [deals, setDeals] = useState([])
@@ -484,11 +549,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Buyer List tab */}
-      {activeTab === 'buyer-list' && (
-        <div className="text-center py-12 text-text-dim font-body text-sm">
-          Buyer List — coming in next task
-        </div>
-      )}
+      {activeTab === 'buyer-list' && <BuyerListAdmin />}
     </motion.div>
   )
 }
