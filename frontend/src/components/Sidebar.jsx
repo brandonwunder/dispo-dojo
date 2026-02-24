@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut } from 'lucide-react'
+import { LogOut, MapPin } from 'lucide-react'
 import {
   LanternIcon,
   CompassIcon,
@@ -16,7 +16,9 @@ import {
   ShurikenIcon,
 } from '../icons/index'
 import { useAuth } from '../context/AuthContext'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import NinjaAvatar from './NinjaAvatar'
+import QuickSettingsPanel from './QuickSettingsPanel'
 
 const navSections = [
   {
@@ -24,6 +26,7 @@ const navSections = [
     items: [
       { to: '/', icon: LanternIcon, label: 'Dashboard' },
       { to: '/community', icon: ShurikenIcon, label: 'Community' },
+      { to: '/leaderboard', icon: ToriiIcon, label: 'Leaderboard' },
     ],
   },
   {
@@ -31,6 +34,8 @@ const navSections = [
     items: [
       { to: '/agent-finder', icon: CompassIcon, label: 'Listing Agent Finder' },
       { to: '/lead-scrubbing', icon: ForgeHammerIcon, label: 'Lead Scrubbing' },
+      { to: '/bird-dog', icon: HawkIcon, label: 'Bird Dog Network' },
+      { to: '/boots-on-ground', icon: MapPin, label: 'Boots on Ground' },
     ],
   },
   {
@@ -60,9 +65,10 @@ const adminSection = {
 }
 
 export default function Sidebar({ isOpen, onClose }) {
-  const { isAdmin, user, logout } = useAuth()
+  const { isAdmin, user, logout, profile } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const sections = isAdmin
     ? [navSections[0], adminSection, ...navSections.slice(1)]
@@ -143,9 +149,13 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* User info at bottom */}
       <div className="px-4 py-4 border-t border-[rgba(0,198,255,0.1)] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full hanko-seal flex items-center justify-center text-xs font-heading font-bold text-parchment shrink-0">
-          {initials}
-        </div>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          title="Open settings"
+          className="w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-[rgba(246,196,69,0.15)] hover:ring-[rgba(0,198,255,0.4)] transition-all duration-200"
+        >
+          <NinjaAvatar config={profile?.avatarConfig} size={32} rank={profile?.rank || 'initiate'} />
+        </button>
         <span className="font-heading text-sm text-text-dim tracking-wide truncate flex-1">
           {name}
         </span>
@@ -193,6 +203,8 @@ export default function Sidebar({ isOpen, onClose }) {
           </>
         )}
       </AnimatePresence>
+
+      <QuickSettingsPanel isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   )
 }
