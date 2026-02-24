@@ -550,6 +550,7 @@ export default function Community() {
                               uid={msg.authorId}
                               name={profilePopover.name}
                               email={profilePopover.email}
+                              currentUserId={currentUid}
                               onClose={() => setProfilePopover(null)}
                               onStartDM={async (uid) => {
                                 const convoId = await startConversation(uid, profilePopover.name)
