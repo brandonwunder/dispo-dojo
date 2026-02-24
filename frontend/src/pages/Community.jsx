@@ -9,6 +9,7 @@ import {
   Reply,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import UserProfileCard from '../components/UserProfileCard'
 import { db } from '../lib/firebase'
 import {
   collection,
@@ -76,6 +77,7 @@ export default function Community() {
   const [replyInput, setReplyInput] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
   const [showReplyEmoji, setShowReplyEmoji] = useState(false)
+  const [profilePopover, setProfilePopover] = useState(null)
 
   const feedEnd = useRef(null)
   const replyEnd = useRef(null)
@@ -152,6 +154,7 @@ export default function Community() {
     setActiveThread(null)
     setShowEmoji(false)
     setShowReplyEmoji(false)
+    setProfilePopover(null)
   }, [])
 
   /* ── send message ────────────────────────────────────── */
@@ -310,9 +313,23 @@ export default function Community() {
                   {/* content */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-2">
-                      <span className="font-heading text-sm font-semibold text-parchment">
+                      <button
+                        onClick={() => setProfilePopover(
+                          profilePopover?.id === msg.id ? null : { id: msg.id, name: msg.authorName, email: msg.authorEmail }
+                        )}
+                        className="font-heading text-sm font-semibold text-parchment hover:text-gold transition-colors cursor-pointer relative"
+                      >
                         {msg.authorName}
-                      </span>
+                        <AnimatePresence>
+                          {profilePopover?.id === msg.id && (
+                            <UserProfileCard
+                              name={profilePopover.name}
+                              email={profilePopover.email}
+                              onClose={() => setProfilePopover(null)}
+                            />
+                          )}
+                        </AnimatePresence>
+                      </button>
                       <span className="text-[10px] text-text-dim/30">
                         {fmtDate(msg.createdAt)} {fmtTime(msg.createdAt)}
                       </span>

@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { signInAnonymously, signOut as firebaseSignOut } from 'firebase/auth'
+import { auth } from '../lib/firebase'
 
 const AuthContext = createContext(null)
 
@@ -42,10 +44,18 @@ export function AuthProvider({ children }) {
     saveUsers(users)
   }, [users])
 
+  // Sign in anonymously to Firebase when user is already logged in from localStorage
+  useEffect(() => {
+    if (user) {
+      signInAnonymously(auth).catch(console.error)
+    }
+  }, [])
+
   const login = (identifier, password) => {
     // Admin login
     if (identifier === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       setUser({ email: ADMIN_EMAIL, name: 'Admin', isAdmin: true })
+      signInAnonymously(auth).catch(console.error)
       return { success: true }
     }
 
@@ -72,6 +82,7 @@ export function AuthProvider({ children }) {
       username: existing.username,
       isAdmin: false,
     })
+    signInAnonymously(auth).catch(console.error)
     return { success: true }
   }
 
@@ -96,16 +107,19 @@ export function AuthProvider({ children }) {
     }
     setUsers((prev) => [...prev, newUser])
     setUser({ email, name, username, isAdmin: false })
+    signInAnonymously(auth).catch(console.error)
     return { success: true }
   }
 
   const quickLogin = () => {
     setUser({ email: 'guest@dispodojo.com', name: 'Guest', username: 'guest', isAdmin: false })
+    signInAnonymously(auth).catch(console.error)
     return { success: true }
   }
 
   const logout = () => {
     setUser(null)
+    firebaseSignOut(auth).catch(console.error)
   }
 
   return (
