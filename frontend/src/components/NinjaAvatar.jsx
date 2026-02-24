@@ -9,7 +9,7 @@ export const RANK_BELT = {
   scout:          '#00C6FF',
   shinobi:        '#7F00FF',
   shadow:         '#555577',
-  blade:          '#3b82f6',
+  blade:          '#00C6FF',
   jonin:          '#E53935',
   'shadow-master':'#0B0F14',
   kage:           '#F6C445',
