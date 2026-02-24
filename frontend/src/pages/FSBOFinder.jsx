@@ -216,6 +216,15 @@ export default function FSBOFinder() {
     } catch {}
   }
 
+  const clearAllSearches = async () => {
+    for (const s of pastSearches) {
+      await fetch(`/api/fsbo/searches/${s.search_id}`, { method: 'DELETE' })
+    }
+    setPastSearches([])
+    setResults([])
+    setSearchId(null)
+  }
+
   // ── Results filtering ─────────────────────────────────────────────────────
 
   function applyFilter(list) {
@@ -509,7 +518,7 @@ export default function FSBOFinder() {
                         background: st?.done ? s.color : 'rgba(255,255,255,0.2)',
                         boxShadow: st?.done ? `0 0 6px ${s.color}` : 'none',
                         flexShrink: 0,
-                        animation: !st?.done ? 'pulse 1.5s ease-in-out infinite' : 'none',
+                        animation: !st?.done ? 'spin 1s linear infinite' : 'none',
                       }} />
                       <span style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '12px', fontWeight: 600, color: '#C8D1DA' }}>{s.label}</span>
                       <span style={{ marginLeft: 'auto', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: st?.done ? s.color : '#8A9BB0' }}>
@@ -619,6 +628,22 @@ export default function FSBOFinder() {
                   {pastSearches.length}
                 </span>
               </h2>
+              <button
+                onClick={clearAllSearches}
+                style={{
+                  marginLeft: 'auto',
+                  background: 'rgba(229,57,53,0.12)',
+                  border: '1px solid rgba(229,57,53,0.3)',
+                  borderRadius: 8,
+                  color: '#E57373',
+                  fontSize: 12,
+                  fontFamily: 'DM Sans, sans-serif',
+                  padding: '4px 12px',
+                  cursor: 'pointer',
+                }}
+              >
+                Clear All
+              </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -713,6 +738,10 @@ export default function FSBOFinder() {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.4; }
         }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
       `}</style>
     </div>
   )
@@ -799,7 +828,7 @@ function ResultCard({ row, compact = false }) {
           }}
         >
           <ExternalLink size={11} />
-          View Listing
+          View Listing →
         </a>
       )}
     </div>
