@@ -83,40 +83,9 @@ function getSectionForPath(sections, pathname) {
   return null
 }
 
-export default function Sidebar({ isOpen, onClose }) {
-  const { isAdmin, user, logout, profile } = useAuth()
-  const location = useLocation()
-  const navigate = useNavigate()
-  const [settingsOpen, setSettingsOpen] = useState(false)
-
-  const sections = isAdmin
-    ? [navSections[0], adminSection, ...navSections.slice(1)]
-    : navSections
-
-  // Track which titled section is expanded (only one at a time)
-  const [expandedSection, setExpandedSection] = useState(
-    () => getSectionForPath(sections, location.pathname)
-  )
-
-  // Auto-expand the section containing the active route on navigation
-  useEffect(() => {
-    const active = getSectionForPath(sections, location.pathname)
-    if (active) setExpandedSection(active)
-  }, [location.pathname])
-
-  const name = user?.name || 'Guest'
-
-  // Close sidebar on route change (mobile)
-  useEffect(() => {
-    if (onClose) onClose()
-  }, [location.pathname])
-
-  const toggleSection = (title) => {
-    setExpandedSection(prev => prev === title ? null : title)
-  }
-
-  const NavItem = ({ item }) => (
-    <NavLink key={item.to} to={item.to} end={item.to === '/'}>
+function NavItem({ item }) {
+  return (
+    <NavLink to={item.to} end={item.to === '/'}>
       {({ isActive }) => (
         <motion.div
           className={`flex items-center gap-3 px-3 py-2.5 rounded-sm mb-0.5 transition-colors relative ${
@@ -152,6 +121,39 @@ export default function Sidebar({ isOpen, onClose }) {
       )}
     </NavLink>
   )
+}
+
+export default function Sidebar({ isOpen, onClose }) {
+  const { isAdmin, user, logout, profile } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  const sections = isAdmin
+    ? [navSections[0], adminSection, ...navSections.slice(1)]
+    : navSections
+
+  // Track which titled section is expanded (only one at a time)
+  const [expandedSection, setExpandedSection] = useState(
+    () => getSectionForPath(sections, location.pathname)
+  )
+
+  // Auto-expand the section containing the active route on navigation
+  useEffect(() => {
+    const active = getSectionForPath(sections, location.pathname)
+    if (active) setExpandedSection(active)
+  }, [location.pathname, sections])
+
+  const name = user?.name || 'Guest'
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    if (onClose) onClose()
+  }, [location.pathname])
+
+  const toggleSection = (title) => {
+    setExpandedSection(prev => prev === title ? null : title)
+  }
 
   const sidebarContent = (
     <>
@@ -164,14 +166,10 @@ export default function Sidebar({ isOpen, onClose }) {
       </div>
 
       {/* Navigation sections */}
-      <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-4" style={{ touchAction: 'pan-y' }}>
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-4 flex flex-col" style={{ touchAction: 'pan-y' }}>
         {sections.map((section) => {
           const isCollapsible = !!section.title
           const isExpanded = !isCollapsible || expandedSection === section.title
-          // Highlight section header if any child is active
-          const hasActiveChild = section.items.some(
-            item => item.to !== '/' && location.pathname.startsWith(item.to)
-          )
 
           return (
             <div key={section.title || 'top'} className="mb-1 mt-3 first:mt-0">
@@ -232,27 +230,26 @@ export default function Sidebar({ isOpen, onClose }) {
             </div>
           )
         })}
-      </nav>
 
-      {/* Floating logo */}
-      <div className="flex justify-center py-4 shrink-0">
-        <div className="relative">
-          {/* Glow orb behind logo */}
-          <div
-            className="absolute inset-0 rounded-full blur-2xl"
-            style={{
-              background: 'radial-gradient(ellipse, rgba(0,198,255,0.18) 0%, rgba(14,90,136,0.10) 60%, transparent 100%)',
-              transform: 'scale(1.6)',
-            }}
-          />
-          <img
-            src="/dispo-dojo-logo.png"
-            alt="Dispo Dojo"
-            className="relative w-20 h-20 object-contain drop-shadow-lg"
-            style={{ animation: 'logoFloat 6s ease-in-out infinite' }}
-          />
+        {/* Floating logo — grows to fill remaining space, centers logo */}
+        <div className="mt-auto mb-10 pt-6 pb-2 flex justify-center">
+          <div className="relative">
+            <div
+              className="absolute inset-0 rounded-full blur-2xl"
+              style={{
+                background: 'radial-gradient(ellipse, rgba(0,198,255,0.22) 0%, rgba(14,90,136,0.12) 60%, transparent 100%)',
+                transform: 'scale(2)',
+              }}
+            />
+            <img
+              src="/dispo-dojo-logo.png"
+              alt="Dispo Dojo"
+              className="relative w-48 h-48 object-contain drop-shadow-lg"
+              style={{ animation: 'logoFloat 6s ease-in-out infinite' }}
+            />
+          </div>
         </div>
-      </div>
+      </nav>
 
       {/* User info at bottom */}
       <div className="px-4 py-4 border-t border-[rgba(0,198,255,0.1)] flex items-center gap-3">
