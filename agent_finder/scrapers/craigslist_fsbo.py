@@ -65,17 +65,25 @@ class CraigslistFSBOScraper(FSBOBaseScraper):
     def _resolve_area(self, criteria: FSBOSearchCriteria) -> Optional[str]:
         """Map location to a Craigslist subdomain."""
         location = criteria.location.lower().strip()
-        # Try exact match first
-        if location in CRAIGSLIST_AREAS:
-            return CRAIGSLIST_AREAS[location]
-        # Try city part only (strip state)
+
+        # Strip state suffix formats: "phoenix, az" or "phoenix az"
         city = location.split(",")[0].strip()
-        if city in CRAIGSLIST_AREAS:
-            return CRAIGSLIST_AREAS[city]
-        # Try partial match
+        # Also strip trailing 2-letter state code without comma: "phoenix az" -> "phoenix"
+        city = re.sub(r'\s+[a-z]{2}$', '', city).strip()
+
+        # Try lookups from most specific to least
+        for candidate in [location, city]:
+            if candidate in CRAIGSLIST_AREAS:
+                logger.debug("craigslist: resolved %r → %s via key %r", location, CRAIGSLIST_AREAS[candidate], candidate)
+                return CRAIGSLIST_AREAS[candidate]
+
+        # Partial match — key starts with city or city starts with key
         for key, val in CRAIGSLIST_AREAS.items():
-            if key in city or city in key:
+            if len(city) > 3 and (key == city or key.startswith(city) or city.startswith(key)):
+                logger.debug("craigslist: partial match %r → %s via key %r", city, val, key)
                 return val
+
+        logger.info("craigslist: no area found for location=%r (tried city=%r)", location, city)
         return None
 
     async def _scrape_area(self, area: str, criteria: FSBOSearchCriteria) -> List[FSBOListing]:
@@ -113,17 +121,41 @@ class CraigslistFSBOScraper(FSBOBaseScraper):
     def _get_post_links(self, soup: BeautifulSoup, base: str) -> List[tuple]:
         """Extract post links and dates from search results page."""
         links = []
-        # Craigslist structure: <li class="cl-search-result"> or <li class="result-row">
-        for item in (soup.select("li.cl-search-result") or soup.select("li.result-row")):
-            a = item.select_one("a.cl-app-anchor") or item.select_one("a.result-title")
+
+        # Try selectors from newest to oldest Craigslist layout
+        items = (
+            soup.select("li.cl-search-result")
+            or soup.select("li.result-row")
+            or soup.select(".cl-search-view-mode-list li")
+        )
+
+        if not items:
+            logger.info("craigslist: no result items found with known selectors (page len=%d)", len(str(soup)))
+            if soup.select_one(".cl-search-empty") or "no results" in soup.get_text().lower():
+                logger.info("craigslist: search returned 0 listings for this area")
+            return []
+
+        logger.debug("craigslist: found %d result items", len(items))
+
+        for item in items:
+            a = (
+                item.select_one("a.cl-app-anchor")
+                or item.select_one("a.result-title")
+                or item.select_one("a[href*='/d/']")
+                or item.select_one("a")
+            )
             if not a:
                 continue
             href = a.get("href", "")
             if not href:
                 continue
             full = href if href.startswith("http") else urljoin(base, href)
-            # Parse post date
-            date_el = item.select_one("time") or item.select_one(".result-date")
+
+            date_el = (
+                item.select_one("time")
+                or item.select_one(".result-date")
+                or item.select_one("[datetime]")
+            )
             post_date = None
             if date_el:
                 dt_str = date_el.get("datetime", "") or date_el.get("title", "")
@@ -132,6 +164,7 @@ class CraigslistFSBOScraper(FSBOBaseScraper):
                 except ValueError:
                     pass
             links.append((full, post_date))
+
         return links
 
     async def _scrape_post(self, url: str, posted_date: Optional[datetime],
