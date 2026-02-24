@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BarChart3, AlertTriangle, ExternalLink, Download, ChevronDown, ArrowRight } from 'lucide-react'
+import { BarChart3, AlertTriangle, ExternalLink, Download, ChevronDown, ArrowRight, MapPin } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { jsPDF } from 'jspdf'
 import ShurikenLoader from '../components/ShurikenLoader'
@@ -18,6 +18,150 @@ const inputClass =
 
 const labelClass =
   'block font-heading text-[#F6C445]/80 tracking-widest uppercase text-xs font-semibold mb-1.5'
+
+// ─── Address Autocomplete ────────────────────────────────────────────────────
+
+function useAddressAutocomplete(query) {
+  const [suggestions, setSuggestions] = useState([])
+  const [loading, setLoading] = useState(false)
+  const timerRef = useRef(null)
+
+  useEffect(() => {
+    if (!query || query.length < 4) {
+      setSuggestions([])
+      return
+    }
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const resp = await fetch(
+          `https://nominatim.openstreetmap.org/search?` +
+            new URLSearchParams({
+              q: query,
+              format: 'json',
+              addressdetails: 1,
+              limit: 6,
+              countrycodes: 'us',
+            }),
+          { headers: { 'Accept-Language': 'en-US' } }
+        )
+        const data = await resp.json()
+        // Only show results that look like real street addresses
+        const filtered = data
+          .filter((r) => r.address?.road || r.address?.house_number)
+          .map((r) => {
+            const a = r.address
+            const parts = [
+              a.house_number && a.road ? `${a.house_number} ${a.road}` : a.road,
+              a.city || a.town || a.village || a.county,
+              a.state,
+              a.postcode,
+            ].filter(Boolean)
+            return { label: parts.join(', '), display: r.display_name }
+          })
+        setSuggestions(filtered)
+      } catch {
+        setSuggestions([])
+      } finally {
+        setLoading(false)
+      }
+    }, 320)
+    return () => clearTimeout(timerRef.current)
+  }, [query])
+
+  return { suggestions, loading, clear: () => setSuggestions([]) }
+}
+
+function AddressAutocomplete({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const containerRef = useRef(null)
+  const { suggestions, loading, clear } = useAddressAutocomplete(focused ? value : '')
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  useEffect(() => {
+    setOpen(suggestions.length > 0)
+  }, [suggestions])
+
+  const handleSelect = (label) => {
+    onChange({ target: { value: label } })
+    setOpen(false)
+    clear()
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div className="relative">
+        <MapPin
+          size={15}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-[#00C6FF]/50 pointer-events-none"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={onChange}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 150)}
+          placeholder="123 Main St, Atlanta, GA 30318"
+          className={
+            'bg-[rgba(255,255,255,0.04)] border border-[rgba(0,198,255,0.18)] rounded-sm pl-9 pr-4 py-3 ' +
+            'text-[#F4F7FA] placeholder:text-[#C8D1DA]/40 font-body text-sm ' +
+            'focus:outline-none focus:border-[rgba(0,198,255,0.55)] transition-colors w-full'
+          }
+          required
+          autoComplete="off"
+        />
+        {loading && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div
+              className="w-3.5 h-3.5 rounded-full border-2 border-[#00C6FF]/30 border-t-[#00C6FF] animate-spin"
+            />
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {open && (
+          <motion.ul
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+            className="absolute z-50 left-0 right-0 mt-1 rounded-sm border border-[rgba(0,198,255,0.18)] overflow-hidden"
+            style={{ background: 'rgba(11,15,22,0.97)', backdropFilter: 'blur(16px)' }}
+          >
+            {suggestions.map((s, i) => (
+              <li key={i}>
+                <button
+                  type="button"
+                  onMouseDown={() => handleSelect(s.label)}
+                  className="w-full text-left px-4 py-2.5 flex items-start gap-2.5 hover:bg-[rgba(0,198,255,0.08)] transition-colors group"
+                >
+                  <MapPin
+                    size={13}
+                    className="text-[#00C6FF]/50 mt-0.5 shrink-0 group-hover:text-[#00C6FF]"
+                  />
+                  <span className="text-sm text-[#F4F7FA] font-body leading-snug">{s.label}</span>
+                </button>
+              </li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -460,14 +604,7 @@ export default function RentComps() {
 
           <div className="mb-4">
             <label className={labelClass}>Property Address *</label>
-            <input
-              type="text"
-              value={form.address}
-              onChange={set('address')}
-              placeholder="123 Main St, Atlanta, GA 30318"
-              className={inputClass}
-              required
-            />
+            <AddressAutocomplete value={form.address} onChange={set('address')} />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
