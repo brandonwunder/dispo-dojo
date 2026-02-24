@@ -164,8 +164,8 @@ export default function Community() {
   }, [])
 
   // Send handlers
-  const handleSendMessage = useCallback((body, gifUrl, gifTitle, attachments) => {
-    sendMessage(body, displayName, displayEmail, gifUrl, gifTitle, attachments)
+  const handleSendMessage = useCallback((body, gifUrl, gifTitle, attachments, type = null, dealData = null) => {
+    sendMessage(body, displayName, displayEmail, gifUrl, gifTitle, attachments, type, dealData)
     setTyping(false)
   }, [sendMessage, displayName, displayEmail, setTyping])
 

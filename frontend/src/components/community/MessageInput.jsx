@@ -1,0 +1,264 @@
+import { useState, useRef } from 'react'
+import { AnimatePresence } from 'framer-motion'
+import { Send, SmilePlus, Image, Paperclip, X, Loader2 } from 'lucide-react'
+import EmojiPicker from './EmojiPicker'
+import GifPicker from './GifPicker'
+import MentionAutocomplete from './MentionAutocomplete'
+import DealForm from './DealForm'
+
+export default function MessageInput({
+  placeholder,
+  onSend,
+  onTyping,
+  fileUpload,
+  onlineUsers,
+}) {
+  const [body, setBody] = useState('')
+  const [showEmoji, setShowEmoji] = useState(false)
+  const [showGif, setShowGif] = useState(false)
+  const [pendingGif, setPendingGif] = useState(null)
+  const [pendingAttachments, setPendingAttachments] = useState([])
+  const [mentionQuery, setMentionQuery] = useState('')
+  const [showMentions, setShowMentions] = useState(false)
+  const [showDealForm, setShowDealForm] = useState(false)
+  const inputRef = useRef(null)
+  const fileInputRef = useRef(null)
+
+  const handleSend = () => {
+    const trimmed = body.trim()
+    if (!trimmed && !pendingGif && pendingAttachments.length === 0) return
+    onSend(
+      trimmed,
+      pendingGif?.url || null,
+      pendingGif?.title || null,
+      pendingAttachments,
+    )
+    setBody('')
+    setPendingGif(null)
+    setPendingAttachments([])
+    inputRef.current?.focus()
+  }
+
+  const handleKey = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  const handleChange = (e) => {
+    const val = e.target.value
+    setBody(val)
+    onTyping?.(true)
+
+    // Detect @mention
+    const lastAt = val.lastIndexOf('@')
+    if (lastAt !== -1 && lastAt === val.length - 1) {
+      setShowMentions(true)
+      setMentionQuery('')
+    } else if (lastAt !== -1 && !val.slice(lastAt).includes(' ')) {
+      setShowMentions(true)
+      setMentionQuery(val.slice(lastAt + 1))
+    } else {
+      setShowMentions(false)
+    }
+  }
+
+  const handleMentionSelect = (name) => {
+    const lastAt = body.lastIndexOf('@')
+    setBody(body.slice(0, lastAt) + `@${name} `)
+    setShowMentions(false)
+    inputRef.current?.focus()
+  }
+
+  const handleEmojiSelect = (emoji) => {
+    setBody((prev) => prev + emoji)
+    inputRef.current?.focus()
+  }
+
+  const handleGifSelect = (url, title) => {
+    setPendingGif({ url, title })
+  }
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !fileUpload) return
+    const attachment = await fileUpload.upload(file)
+    if (attachment) {
+      setPendingAttachments((prev) => [...prev, attachment])
+    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const removePendingGif = () => setPendingGif(null)
+  const removePendingAttachment = (idx) => {
+    setPendingAttachments((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  const hasContent = body.trim() || pendingGif || pendingAttachments.length > 0
+
+  return (
+    <div className="border-t border-[rgba(246,196,69,0.10)] px-5 py-3">
+      {/* Pending previews */}
+      {(pendingGif || pendingAttachments.length > 0 || fileUpload?.uploading) && (
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          {pendingGif && (
+            <div className="relative inline-block">
+              <img src={pendingGif.url} alt={pendingGif.title} className="h-16 rounded-sm" />
+              <button
+                onClick={removePendingGif}
+                className="absolute -top-1 -right-1 rounded-full bg-black/70 p-0.5 text-white hover:bg-red-500"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          {pendingAttachments.map((att, i) => (
+            <div key={i} className="relative flex items-center gap-1 rounded-sm border border-[rgba(246,196,69,0.1)] bg-white/[0.03] px-2 py-1">
+              <span className="text-[10px] text-parchment truncate max-w-[120px]">{att.name}</span>
+              <button
+                onClick={() => removePendingAttachment(i)}
+                className="text-text-dim/40 hover:text-red-400"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          {fileUpload?.uploading && (
+            <div className="flex items-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin text-[#00C6FF]" />
+              <span className="text-[10px] text-text-dim/40">{fileUpload.progress}%</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Input bar */}
+      <div className="relative flex items-center gap-2 rounded-sm border border-[rgba(246,196,69,0.12)] bg-black/30 px-3 py-2 focus-within:border-[rgba(246,196,69,0.25)]">
+        {/* @mention autocomplete */}
+        <MentionAutocomplete
+          query={mentionQuery}
+          users={onlineUsers || []}
+          onSelect={handleMentionSelect}
+          visible={showMentions}
+        />
+
+        {/* File upload */}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="text-text-dim/40 transition-colors duration-150 hover:text-gold focus-visible:outline-none active:scale-90"
+          title="Attach file"
+        >
+          <Paperclip className="h-4 w-4" />
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileSelect}
+          accept="image/*,.pdf,.doc,.docx"
+        />
+
+        {/* Deal share button */}
+        <button
+          type="button"
+          onClick={() => setShowDealForm(true)}
+          title="Share a deal"
+          className="text-text-dim/40 transition-colors duration-150 hover:text-[#F6C445] focus-visible:outline-none active:scale-90"
+          style={{ fontSize: '16px', lineHeight: 1 }}
+        >
+          🏠
+        </button>
+
+        {/* Text input */}
+        <input
+          ref={inputRef}
+          type="text"
+          value={body}
+          onChange={handleChange}
+          onKeyDown={handleKey}
+          placeholder={placeholder || 'Type a message...'}
+          className="min-w-0 flex-1 bg-transparent text-sm text-parchment placeholder:text-text-dim/30 focus:outline-none"
+        />
+
+        {/* GIF button */}
+        <div className="relative">
+          <button
+            onClick={() => { setShowGif((v) => !v); setShowEmoji(false) }}
+            className="text-text-dim/40 transition-colors duration-150 hover:text-gold focus-visible:outline-none active:scale-90"
+            title="GIF"
+          >
+            <Image className="h-4 w-4" />
+          </button>
+          <AnimatePresence>
+            {showGif && (
+              <GifPicker
+                onSelect={(url, title) => { handleGifSelect(url, title); setShowGif(false) }}
+                onClose={() => setShowGif(false)}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Emoji button */}
+        <div className="relative">
+          <button
+            onClick={() => { setShowEmoji((v) => !v); setShowGif(false) }}
+            className="text-text-dim/40 transition-colors duration-150 hover:text-gold focus-visible:outline-none active:scale-90"
+            title="Emoji"
+          >
+            <SmilePlus className="h-4 w-4" />
+          </button>
+          <AnimatePresence>
+            {showEmoji && (
+              <EmojiPicker
+                onSelect={handleEmojiSelect}
+                onClose={() => setShowEmoji(false)}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Send button */}
+        <button
+          onClick={handleSend}
+          disabled={!hasContent}
+          className={`transition-colors duration-150 focus-visible:outline-none active:scale-90 ${
+            hasContent ? 'text-[#00C6FF]' : 'text-text-dim/20'
+          }`}
+          title="Send"
+        >
+          <Send className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* File upload error */}
+      {fileUpload?.error && (
+        <p className="mt-1 text-[10px] text-red-400/70">
+          {fileUpload.error}
+          <button onClick={fileUpload.clearError} className="ml-1 underline">dismiss</button>
+        </p>
+      )}
+
+      {/* Deal form modal */}
+      <AnimatePresence>
+        {showDealForm && (
+          <DealForm
+            onClose={() => setShowDealForm(false)}
+            onSubmit={(dealData) => {
+              onSend(
+                `🏠 ${dealData.address}`,
+                null,
+                null,
+                [],
+                'deal',
+                dealData,
+              )
+              setShowDealForm(false)
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}

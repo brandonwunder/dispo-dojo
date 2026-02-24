@@ -37,13 +37,13 @@ export default function useMessages(channelId, ready = true) {
     return unsub
   }, [channelId, ready])
 
-  const sendMessage = useCallback(async (body, authorName, authorEmail, gifUrl = null, gifTitle = null, attachments = []) => {
+  const sendMessage = useCallback(async (body, authorName, authorEmail, gifUrl = null, gifTitle = null, attachments = [], type = null, dealData = null) => {
     const uid = auth.currentUser?.uid
     if (!uid) throw new Error('Not authenticated')
     const trimmed = body.trim()
-    if (!trimmed && !gifUrl && attachments.length === 0) return
+    if (!trimmed && !gifUrl && attachments.length === 0 && !dealData) return
 
-    await addDoc(collection(db, 'messages'), {
+    const messageDoc = {
       channelId,
       authorId: uid,
       authorName: authorName || 'Guest',
@@ -63,8 +63,14 @@ export default function useMessages(channelId, ready = true) {
       isEdited: false,
       editedAt: null,
       createdAt: serverTimestamp(),
-    })
+    }
+
+    if (type) messageDoc.type = type
+    if (dealData) messageDoc.dealData = dealData
+
+    await addDoc(collection(db, 'messages'), messageDoc)
     incrementStat(uid, 'messages').catch(console.error)
+    incrementStat(uid, 'totalMessages').catch(console.error)
   }, [channelId])
 
   const editMessage = useCallback(async (messageId, newBody) => {

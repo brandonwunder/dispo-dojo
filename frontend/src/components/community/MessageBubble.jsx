@@ -4,6 +4,7 @@ import { Reply, Smile, Pencil, Trash2, Pin } from 'lucide-react'
 import ReactionBar from './ReactionBar'
 import AttachmentPreview from './AttachmentPreview'
 import RankBadge from './RankBadge'
+import DealCard from './DealCard'
 import { formatMessageBody } from '../../lib/formatMessage'
 
 function initials(name) {
@@ -188,6 +189,10 @@ export default function MessageBubble({
               <AttachmentPreview key={i} attachment={att} />
             ))}
           </div>
+        )}
+
+        {msg.type === 'deal' && msg.dealData && (
+          <DealCard dealData={msg.dealData} />
         )}
 
         {msg.reactions && Object.keys(msg.reactions).length > 0 && (
