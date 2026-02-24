@@ -112,6 +112,7 @@ function generatePDF(address, inputs, comps, results) {
     doc.setFontSize(9)
     doc.text(['Address', 'List', 'Sold', '% Under', 'DOM'].join('   '), 20, y); y += 6
     comps.forEach((c) => {
+      if (y > 265) { doc.addPage(); y = 20 }
       doc.text([
         (c.address || '').slice(0, 28),
         fmt(c.listPrice),
@@ -206,39 +207,40 @@ export default function OfferComparison() {
     setResults(null)
     setCompError(null)
 
-    let compData = null
     try {
-      const resp = await fetch(`${API}/api/comps?address=${encodeURIComponent(address)}`)
-      if (resp.ok) {
-        compData = await resp.json()
-        setComps(compData)
-      } else {
-        setCompError('Could not fetch comps. Comparison will use market estimates.')
-      }
-    } catch {
-      setCompError('Comp pull failed — running comparison without market data.')
-    }
-
-    const inputs = { purchasePrice, cashToSeller, closeTimeline, skipInspection, skipAppraisal, noRenegotiation }
-    const res = calcResults(inputs, compData)
-    setResults(res)
-
-    // Save to Firestore history
-    if (firebaseUid) {
+      let compData = null
       try {
-        await addDoc(collection(db, 'users', firebaseUid, 'comparisons'), {
-          address,
-          inputs,
-          comps: compData?.comps || [],
-          results: res,
-          createdAt: serverTimestamp(),
-        })
-      } catch (e) {
-        console.warn('Could not save comparison history', e)
+        const resp = await fetch(`${API}/api/comps?address=${encodeURIComponent(address)}`)
+        if (resp.ok) {
+          compData = await resp.json()
+          setComps(compData)
+        } else {
+          setCompError('Could not fetch comps. Comparison will use market estimates.')
+        }
+      } catch {
+        setCompError('Comp pull failed — running comparison without market data.')
       }
-    }
 
-    setLoading(false)
+      const res = calcResults(inputs, compData)
+      setResults(res)
+
+      // Save to Firestore history
+      if (firebaseUid) {
+        try {
+          await addDoc(collection(db, 'users', firebaseUid, 'comparisons'), {
+            address,
+            inputs,
+            comps: compData?.comps || [],
+            results: res,
+            createdAt: serverTimestamp(),
+          })
+        } catch (e) {
+          console.warn('Could not save comparison history', e)
+        }
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   function loadHistoryItem(item) {
@@ -255,7 +257,7 @@ export default function OfferComparison() {
     setShowHistory(false)
   }
 
-  const inputs = { purchasePrice, cashToSeller, closeTimeline }
+  const inputs = { purchasePrice, cashToSeller, closeTimeline, skipInspection, skipAppraisal, noRenegotiation }
   const canRun = address && purchasePrice
 
   return (
