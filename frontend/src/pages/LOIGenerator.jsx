@@ -13,6 +13,7 @@ import {
   Pencil,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { incrementStat } from '../lib/userProfile'
 import WoodPanel from '../components/WoodPanel'
 import Button from '../components/Button'
 
@@ -77,7 +78,7 @@ const slideVariants = {
 }
 
 export default function LOIGenerator() {
-  const { user } = useAuth()
+  const { user, firebaseUid } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [direction, setDirection] = useState(1)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -126,6 +127,7 @@ export default function LOIGenerator() {
   }
 
   const handleGenerate = () => {
+    if (firebaseUid) incrementStat(firebaseUid, 'lois')
     setShowSuccess(true)
   }
 
