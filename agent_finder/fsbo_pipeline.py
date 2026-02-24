@@ -52,6 +52,7 @@ class FSBOPipeline:
                     "scrapers_total": self.SCRAPERS_TOTAL,
                     "listings_found": len(all_listings) + new_count,
                     "current_source": source,
+                    "source_count": new_count,
                     "status": "complete" if scrapers_done == self.SCRAPERS_TOTAL else "running",
                 })
 
