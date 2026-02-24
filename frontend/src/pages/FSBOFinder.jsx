@@ -1,123 +1,144 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search,
-  Home,
-  ChevronDown,
-  ChevronUp,
-  Info,
-  Send,
-  Filter,
-  Download,
+  MapPin, Search, Download, ChevronDown, ChevronUp,
+  Trash2, Phone, Mail, ExternalLink, SlidersHorizontal,
 } from 'lucide-react'
-import WoodPanel from '../components/WoodPanel'
-import ShurikenLoader from '../components/ShurikenLoader'
-import Button from '../components/Button'
+import SearchableSelect from '../components/SearchableSelect'
+import { US_STATES, CITIES_BY_STATE } from '../data/usLocations'
 
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const SOURCES = [
+  { key: 'fsbo.com',           label: 'FSBO.com',        color: '#F6C445' },
+  { key: 'forsalebyowner.com', label: 'ForSaleByOwner',  color: '#22C55E' },
+  { key: 'zillow_fsbo',        label: 'Zillow',          color: '#00C6FF' },
+  { key: 'realtor_fsbo',       label: 'Realtor',         color: '#E53935' },
+  { key: 'craigslist',         label: 'Craigslist',      color: '#A78BFA' },
+]
+
+const CONTACT_LABEL = {
+  full: 'Full Contact', partial: 'Phone + Name', phone_only: 'Phone Only',
+  email_only: 'Email Only', none: 'No Contact', anonymous: 'Anonymous',
+}
+const CONTACT_COLOR = {
+  full: '#22C55E', partial: '#F6C445', phone_only: '#F6C445',
+  email_only: '#F6C445', none: '#8A9BB0', anonymous: '#8A9BB0',
 }
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] },
-  },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const GC = {
+  background: 'rgba(11,15,20,0.82)',
+  backdropFilter: 'blur(20px) saturate(1.2)',
+  WebkitBackdropFilter: 'blur(20px) saturate(1.2)',
+  border: '1px solid rgba(0,198,255,0.12)',
+  borderRadius: '16px',
+  padding: '24px',
+  position: 'relative',
+  overflow: 'hidden',
 }
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 16, scale: 0.97 },
-  visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      delay: i * 0.08,
-      duration: 0.4,
-      ease: [0.25, 0.46, 0.45, 0.94],
-    },
-  }),
+function CyanLine() {
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
+      background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.5), transparent)',
+    }} />
+  )
 }
 
-const SOURCE_STYLES = {
-  'fsbo.com': 'bg-gold/[0.08] text-gold-dim border border-gold-dim/[0.15]',
-  'forsalebyowner.com': 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
-  zillow: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-  realtor: 'bg-red-500/10 text-red-400 border border-red-500/20',
-  craigslist: 'bg-violet-500/10 text-violet-400 border border-violet-500/20',
+function formatPrice(p) {
+  if (p == null) return '—'
+  return '$' + p.toLocaleString()
 }
 
-const CONTACT_STATUS_STYLES = {
-  complete: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  partial: 'bg-gold/[0.08] text-gold-dim border-gold-dim/[0.15]',
-  phone_only: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-  anonymous: 'bg-red-500/10 text-red-400 border-red-500/20',
-  none: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
-}
-
-const CONTACT_STATUS_LABEL = {
-  complete: 'Full Contact',
-  partial: 'Partial',
-  phone_only: 'Phone Only',
-  anonymous: 'Anonymous',
-  none: 'No Contact',
-}
-
-const SCRAPER_NAMES = ['fsbo.com', 'forsalebyowner.com', 'zillow', 'realtor', 'craigslist']
-
-const inputClasses =
-  'bg-bg-card border border-gold-dim/20 rounded-sm px-4 py-3 text-parchment placeholder:text-text-muted font-body focus:outline-none focus:border-gold-dim/40 transition-colors'
-
-const selectClasses =
-  'bg-bg-card border border-gold-dim/20 rounded-sm px-3 py-3 text-parchment font-body focus:outline-none focus:border-gold-dim/40 transition-colors text-sm appearance-none cursor-pointer'
-
-function formatPrice(num) {
-  if (num == null) return '—'
-  return '$' + Number(num).toLocaleString('en-US')
-}
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function FSBOFinder() {
-  const [query, setQuery] = useState('')
+  // Search form
+  const [selectedState, setSelectedState] = useState('')
+  const [selectedCityZip, setSelectedCityZip] = useState('')
+  const [isZipSearch, setIsZipSearch] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState(null)
-  const [selected, setSelected] = useState(new Set())
-
-  // Filter state
   const [priceMin, setPriceMin] = useState('')
   const [priceMax, setPriceMax] = useState('')
-  const [propertyType, setPropertyType] = useState('All')
   const [minBeds, setMinBeds] = useState('Any')
   const [minBaths, setMinBaths] = useState('Any')
+  const [propertyType, setPropertyType] = useState('All')
   const [maxDom, setMaxDom] = useState('')
 
-  // Live search state
+  // Search state
+  const [phase, setPhase] = useState('idle') // 'idle' | 'loading' | 'complete'
   const [searchId, setSearchId] = useState(null)
-  const [scrapersStatus, setScrapersStatus] = useState({})
+  const [searchLabel, setSearchLabel] = useState('')
+  const [scrapersStatus, setScrapersStatus] = useState({}) // key → { done, count }
   const [liveCount, setLiveCount] = useState(0)
+  const [results, setResults] = useState([])
+  const [activeFilter, setActiveFilter] = useState('all')
 
-  async function handleSearch(e) {
-    e.preventDefault()
-    if (!query.trim()) return
-    setLoading(true)
-    setResults(null)
-    setSelected(new Set())
+  // Past searches
+  const [pastSearches, setPastSearches] = useState([])
+  const [expandedId, setExpandedId] = useState(null)
+  const [expandedResults, setExpandedResults] = useState({}) // id → listings[]
+
+  const esRef = useRef(null)
+
+  // Load past searches on mount
+  useEffect(() => { loadPastSearches() }, [])
+
+  async function loadPastSearches() {
+    try {
+      const r = await fetch('/api/fsbo/searches')
+      if (r.ok) {
+        const data = await r.json()
+        setPastSearches(data.filter(s => s.status === 'complete'))
+      }
+    } catch {}
+  }
+
+  // ── Location helpers ──────────────────────────────────────────────────────
+
+  function handleStateChange(code) {
+    setSelectedState(code)
+    setSelectedCityZip('')
+    setIsZipSearch(false)
+  }
+
+  function handleCityZipChange(val) {
+    setSelectedCityZip(val)
+    setIsZipSearch(/^\d{5}$/.test(val))
+  }
+
+  const stateOptions = US_STATES.map(s => ({ value: s.code, label: s.name }))
+  const cityOptions = selectedState
+    ? (CITIES_BY_STATE[selectedState] || []).map(c => ({ value: c, label: c }))
+    : []
+
+  const selectedStateName = US_STATES.find(s => s.code === selectedState)?.name || ''
+  const canSearch = Boolean(selectedState && selectedCityZip)
+
+  // ── Search ────────────────────────────────────────────────────────────────
+
+  async function handleSearch() {
+    if (!canSearch) return
+    if (esRef.current) { esRef.current.close(); esRef.current = null }
+
+    const location = isZipSearch ? selectedCityZip : `${selectedCityZip}, ${selectedState}`
+    const location_type = isZipSearch ? 'zip' : 'city_state'
+    const label = isZipSearch ? `ZIP ${selectedCityZip}, ${selectedStateName}` : `${selectedCityZip}, ${selectedStateName}`
+
+    setPhase('loading')
     setScrapersStatus({})
     setLiveCount(0)
-    setSearchId(null)
+    setResults([])
+    setSearchLabel(label)
+    setActiveFilter('all')
 
-    // Detect zip vs city/state
-    const isZip = /^\d{5}(,\s*\d{5})*$/.test(query.trim())
     const body = {
-      location: query.trim(),
-      location_type: isZip ? 'zip' : 'city_state',
+      location, location_type,
+      state: selectedState,
+      city_zip: selectedCityZip,
       min_price: priceMin ? parseInt(priceMin) : null,
       max_price: priceMax ? parseInt(priceMax) : null,
       min_beds: minBeds !== 'Any' ? parseInt(minBeds) : null,
@@ -127,607 +148,660 @@ export default function FSBOFinder() {
     }
 
     try {
-      const res = await fetch('/api/fsbo/search', {
+      const r = await fetch('/api/fsbo/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-      const { search_id } = await res.json()
+      const { search_id } = await r.json()
       setSearchId(search_id)
 
-      // Open SSE stream
-      const sse = new EventSource(`/api/fsbo/progress/${search_id}`)
-      sse.onmessage = (ev) => {
-        const data = JSON.parse(ev.data)
-        if (data.type === 'complete') {
-          sse.close()
-          // Fetch results
-          fetch(`/api/fsbo/results/${search_id}?per_page=100`)
-            .then((r) => r.json())
-            .then(({ results: rows }) => {
-              setResults(
-                (rows || []).map((r) => ({
-                  ...r,
-                  id: r.listing_url || r.address,
-                  owner: r.owner_name,
-                  dom: r.days_on_market,
-                }))
-              )
-              setLoading(false)
-            })
-            .catch(() => setLoading(false))
-        } else if (data.type === 'error') {
-          sse.close()
-          setLoading(false)
+      const es = new EventSource(`/api/fsbo/progress/${search_id}`)
+      esRef.current = es
+
+      es.onmessage = async (e) => {
+        const data = JSON.parse(e.data)
+        if (data.type === 'complete' || data.status === 'complete') {
+          es.close()
+          esRef.current = null
+          try {
+            const res = await fetch(`/api/fsbo/results/${search_id}?per_page=200`)
+            const resData = await res.json()
+            setResults(resData.results || [])
+          } catch {}
+          setPhase('complete')
+          loadPastSearches()
         } else {
-          // Progress event
-          setLiveCount(data.listings_found || 0)
           if (data.current_source) {
-            setScrapersStatus((prev) => ({
+            setScrapersStatus(prev => ({
               ...prev,
-              [data.current_source]: 'done',
+              [data.current_source]: { done: true, count: data.source_count ?? 0 },
             }))
           }
+          setLiveCount(data.listings_found ?? 0)
         }
       }
-      sse.onerror = () => {
-        sse.close()
-        setLoading(false)
+      es.onerror = () => {
+        es.close()
+        esRef.current = null
+        setPhase('complete')
+        loadPastSearches()
       }
-    } catch (err) {
-      console.error('FSBO search failed:', err)
-      setLoading(false)
+    } catch {
+      setPhase('idle')
     }
   }
 
-  function toggleSelect(id) {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+  // ── Past search expansion ─────────────────────────────────────────────────
 
-  function toggleSelectAll() {
-    if (!results) return
-    if (selected.size === results.length) {
-      setSelected(new Set())
-    } else {
-      setSelected(new Set(results.map((r) => r.id)))
+  async function toggleExpand(sid) {
+    if (expandedId === sid) { setExpandedId(null); return }
+    setExpandedId(sid)
+    if (!expandedResults[sid]) {
+      try {
+        const r = await fetch(`/api/fsbo/results/${sid}?per_page=200`)
+        const data = await r.json()
+        setExpandedResults(prev => ({ ...prev, [sid]: data.results || [] }))
+      } catch {
+        setExpandedResults(prev => ({ ...prev, [sid]: [] }))
+      }
     }
   }
+
+  async function deleteSearch(sid) {
+    try {
+      await fetch(`/api/fsbo/searches/${sid}`, { method: 'DELETE' })
+      setPastSearches(prev => prev.filter(s => s.search_id !== sid))
+      if (expandedId === sid) setExpandedId(null)
+    } catch {}
+  }
+
+  // ── Results filtering ─────────────────────────────────────────────────────
+
+  function applyFilter(list) {
+    if (activeFilter === 'phone') return list.filter(r => r.phone)
+    if (activeFilter === 'email') return list.filter(r => r.email)
+    if (activeFilter === 'contact') return list.filter(r => r.phone || r.email)
+    return list
+  }
+
+  const filteredResults = applyFilter(results)
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="max-w-[1400px] mx-auto"
-    >
-      {/* ── Forest Background Scene ── */}
-      <div className="relative mb-8 rounded-sm overflow-hidden" style={{ minHeight: 220 }}>
-        {/* Dark gradient base with forest tones */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(to bottom, #0a120a 0%, #06060f 40%, #06060f 100%)',
-          }}
-        />
+    <div style={{ position: 'relative', minHeight: '100vh' }}>
 
-        {/* Moon glow - upper right */}
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            top: 10,
-            right: 40,
-            width: 150,
-            height: 150,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(220,235,255,0.25) 0%, rgba(180,210,255,0.08) 40%, transparent 70%)',
-          }}
-        />
-        {/* Moon disc */}
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            top: 35,
-            right: 65,
-            width: 50,
-            height: 50,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(240,245,255,0.9) 0%, rgba(200,220,255,0.5) 60%, transparent 100%)',
-            boxShadow: '0 0 40px 10px rgba(200,220,255,0.15)',
-          }}
-        />
-
-        {/* Tree silhouettes at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-4 pointer-events-none" style={{ height: 100 }}>
-          {/* Tree 1 */}
-          <div style={{
-            width: 0, height: 0,
-            borderLeft: '30px solid transparent',
-            borderRight: '30px solid transparent',
-            borderBottom: '80px solid #0a1a0a',
-            transform: 'rotate(180deg)',
-            marginBottom: -2,
-          }} />
-          {/* Tree 2 */}
-          <div style={{
-            width: 0, height: 0,
-            borderLeft: '22px solid transparent',
-            borderRight: '22px solid transparent',
-            borderBottom: '60px solid #081408',
-            transform: 'rotate(180deg)',
-            marginBottom: -2,
-          }} />
-          {/* Tree 3 */}
-          <div style={{
-            width: 0, height: 0,
-            borderLeft: '35px solid transparent',
-            borderRight: '35px solid transparent',
-            borderBottom: '90px solid #0c1c0c',
-            transform: 'rotate(180deg)',
-            marginBottom: -2,
-          }} />
-          {/* Tree 4 */}
-          <div style={{
-            width: 0, height: 0,
-            borderLeft: '18px solid transparent',
-            borderRight: '18px solid transparent',
-            borderBottom: '55px solid #091509',
-            transform: 'rotate(180deg)',
-            marginBottom: -2,
-          }} />
-          {/* Tree 5 */}
-          <div style={{
-            width: 0, height: 0,
-            borderLeft: '28px solid transparent',
-            borderRight: '28px solid transparent',
-            borderBottom: '75px solid #0a180a',
-            transform: 'rotate(180deg)',
-            marginBottom: -2,
-          }} />
-        </div>
-
-        {/* Content overlay on the forest background */}
-        <div className="relative z-10 px-6 py-10 text-center">
-          <motion.div variants={itemVariants}>
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <div className="hanko-seal w-12 h-12 rounded-full flex items-center justify-center">
-                <Home size={24} className="text-white" />
-              </div>
-            </div>
-            <h1 className="font-display text-3xl tracking-[0.08em] text-parchment brush-underline">
-              The Hunting Grounds
-            </h1>
-            <p className="text-text-dim text-base max-w-2xl mx-auto mt-3 font-body">
-              Track For Sale By Owner listings across the land &mdash; powered by free data sources
-            </p>
-          </motion.div>
-        </div>
+      {/* ── Background layers ── */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
+        {/* Layer 0: FSBO background image */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: 'url(/fsbo-bg.png)',
+          backgroundSize: '120%',
+          backgroundPosition: '82% 30%',
+          backgroundRepeat: 'no-repeat',
+        }} />
+        {/* Layer 1: radial darkening */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(ellipse 80% 60% at 65% 30%, rgba(11,15,20,0.3) 0%, rgba(11,15,20,0.88) 100%)',
+        }} />
+        {/* Layer 2: linear fade */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to bottom, rgba(11,15,20,0.55) 0%, rgba(11,15,20,0.25) 40%, rgba(11,15,20,0.7) 100%)',
+        }} />
+        {/* Layer 3: left-edge darkening */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to right, rgba(11,15,20,0.75) 0%, transparent 50%)',
+        }} />
+        {/* Layer 4: bottom fade to page bg */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: '200px',
+          background: 'linear-gradient(to bottom, transparent, #0B0F14)',
+        }} />
       </div>
 
-      {/* Info banner */}
-      <motion.div variants={itemVariants}>
-        <div className="flex items-center gap-3 px-5 py-3.5 mb-6 rounded-sm border border-gold/25 bg-gold/[0.04] backdrop-blur-sm">
-          <Info size={18} className="text-gold shrink-0" />
-          <span className="text-sm text-gold font-heading tracking-wide">
-            Targets can be sent directly to your CRM pipeline for follow-up
-          </span>
-        </div>
-      </motion.div>
+      {/* ── Content ── */}
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: '720px', margin: '0 auto', padding: '48px 24px 80px' }}>
 
-      {/* Search Section */}
-      <motion.div variants={itemVariants}>
-        <WoodPanel headerBar="Hunting Grounds — FSBO Tracker" className="mb-6">
-          <form onSubmit={handleSearch}>
-            {/* Main search row */}
-            <div className="flex gap-3">
-              <div className="relative flex-1">
-                <Search
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Enter city, state or ZIP code..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className={`${inputClasses} w-full pl-11 text-base`}
-                />
-              </div>
-              <button
-                type="submit"
-                className="gold-shimmer text-ink font-heading font-bold tracking-widest uppercase px-8 py-3 rounded-sm shrink-0 flex items-center gap-2 hover:brightness-110 transition-all"
-              >
-                <Search size={16} />
-                Hunt
-              </button>
+        {/* ── Hero header ── */}
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+            <div style={{
+              width: '52px', height: '52px', borderRadius: '14px',
+              background: 'rgba(0,198,255,0.1)',
+              border: '1px solid rgba(0,198,255,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 24px rgba(0,198,255,0.2)',
+            }}>
+              <MapPin
+                size={26}
+                style={{ color: '#00C6FF', filter: 'drop-shadow(0 0 8px rgba(0,198,255,0.7))' }}
+              />
             </div>
+          </div>
+          <h1 style={{
+            fontFamily: 'Onari, serif',
+            fontSize: 'clamp(28px, 5vw, 42px)',
+            fontWeight: 400,
+            color: '#F4F7FA',
+            margin: '0 0 12px',
+            textShadow: '0 2px 20px rgba(0,198,255,0.15)',
+            letterSpacing: '0.02em',
+          }}>
+            FSBO Lead Finder
+          </h1>
+          <p style={{
+            fontFamily: 'DM Sans, sans-serif',
+            fontSize: '14px',
+            color: '#C8D1DA',
+            lineHeight: 1.6,
+            margin: 0,
+            maxWidth: '480px',
+            marginInline: 'auto',
+          }}>
+            Search For Sale By Owner listings across the US — powered by multiple free data sources.
+          </p>
+        </div>
 
-            {/* Filters toggle */}
-            <button
-              type="button"
-              onClick={() => setFiltersOpen((v) => !v)}
-              className="mt-3 inline-flex items-center gap-1.5 text-sm text-text-dim hover:text-gold transition-colors font-heading tracking-wide"
-            >
-              <Filter size={14} />
-              Filters
-              {filtersOpen ? (
-                <ChevronUp size={14} />
-              ) : (
-                <ChevronDown size={14} />
-              )}
-            </button>
+        {/* ── Search form ── */}
+        <motion.div style={GC} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+          <CyanLine />
 
-            {/* Collapsible filters */}
-            <AnimatePresence>
-              {filtersOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
-                  className="overflow-hidden"
-                >
-                  <div className="wood-panel-light rounded-sm p-4 mt-3">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                      {/* Price Min */}
-                      <div>
-                        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
-                          Min Price
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="$0"
-                          value={priceMin}
-                          onChange={(e) => setPriceMin(e.target.value)}
-                          className={`${inputClasses} w-full !py-2.5 text-sm`}
-                        />
-                      </div>
+          {/* State + City row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontFamily: 'Rajdhani, sans-serif', fontSize: '11px', fontWeight: 600, color: '#8A9BB0', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
+                State
+              </label>
+              <SearchableSelect
+                value={selectedState}
+                onChange={handleStateChange}
+                options={stateOptions}
+                placeholder="Select a state..."
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontFamily: 'Rajdhani, sans-serif', fontSize: '11px', fontWeight: 600, color: '#8A9BB0', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
+                City or ZIP
+              </label>
+              <SearchableSelect
+                value={selectedCityZip}
+                onChange={handleCityZipChange}
+                options={cityOptions}
+                placeholder={selectedState ? 'Select city or enter ZIP...' : 'Select state first'}
+                disabled={!selectedState}
+                zipMode={true}
+              />
+            </div>
+          </div>
 
-                      {/* Price Max */}
-                      <div>
-                        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
-                          Max Price
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="No max"
-                          value={priceMax}
-                          onChange={(e) => setPriceMax(e.target.value)}
-                          className={`${inputClasses} w-full !py-2.5 text-sm`}
-                        />
-                      </div>
-
-                      {/* Property Type */}
-                      <div>
-                        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
-                          Property Type
-                        </label>
-                        <select
-                          value={propertyType}
-                          onChange={(e) => setPropertyType(e.target.value)}
-                          className={`${selectClasses} w-full !py-2.5`}
-                        >
-                          <option>All</option>
-                          <option>Single Family</option>
-                          <option>Multi-Family</option>
-                          <option>Condo</option>
-                          <option>Townhouse</option>
-                          <option>Land</option>
-                        </select>
-                      </div>
-
-                      {/* Beds */}
-                      <div>
-                        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
-                          Beds (min)
-                        </label>
-                        <select
-                          value={minBeds}
-                          onChange={(e) => setMinBeds(e.target.value)}
-                          className={`${selectClasses} w-full !py-2.5`}
-                        >
-                          <option>Any</option>
-                          <option>1</option>
-                          <option>2</option>
-                          <option>3</option>
-                          <option>4</option>
-                          <option>5+</option>
-                        </select>
-                      </div>
-
-                      {/* Baths */}
-                      <div>
-                        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
-                          Baths (min)
-                        </label>
-                        <select
-                          value={minBaths}
-                          onChange={(e) => setMinBaths(e.target.value)}
-                          className={`${selectClasses} w-full !py-2.5`}
-                        >
-                          <option>Any</option>
-                          <option>1</option>
-                          <option>2</option>
-                          <option>3</option>
-                          <option>4+</option>
-                        </select>
-                      </div>
-
-                      {/* Max Days Listed */}
-                      <div>
-                        <label className="block text-xs font-heading font-semibold text-text-dim tracking-[0.08em] uppercase mb-1.5">
-                          Max Days Listed
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="Any"
-                          value={maxDom}
-                          onChange={(e) => setMaxDom(e.target.value)}
-                          className={`${inputClasses} w-full !py-2.5 text-sm`}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </form>
-        </WoodPanel>
-      </motion.div>
-
-      {/* Loading State */}
-      <AnimatePresence>
-        {loading && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mb-6"
+          {/* Filters toggle */}
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(o => !o)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'none', border: 'none', color: '#8A9BB0',
+              fontFamily: 'DM Sans, sans-serif', fontSize: '13px',
+              cursor: 'pointer', padding: '4px 0', marginBottom: filtersOpen ? '12px' : '16px',
+            }}
           >
-            <WoodPanel>
-              <div className="flex flex-col items-center gap-4 py-8">
-                {/* Pulsing progress bar */}
-                <div className="w-full max-w-md h-1.5 bg-bg-elevated rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-gold-dim via-gold to-gold-bright"
-                    initial={{ x: '-100%' }}
-                    animate={{ x: '100%' }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1.2,
-                      ease: 'easeInOut',
-                    }}
-                    style={{ width: '40%' }}
-                  />
-                </div>
-                <div className="flex items-center gap-3">
-                  <ShurikenLoader size={24} />
-                  <span className="text-text-dim text-sm font-heading tracking-wide">
-                    Tracking targets...{liveCount > 0 && ` (${liveCount} found so far)`}
-                  </span>
-                </div>
-                {/* Source status badges */}
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {SCRAPER_NAMES.map((src) => (
-                    <span
-                      key={src}
-                      className={`text-xs px-2 py-0.5 rounded-full font-heading tracking-wide border transition-all ${
-                        scrapersStatus[src] === 'done'
-                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                          : 'bg-bg-elevated text-text-muted border-gold-dim/10'
-                      }`}
-                    >
-                      {src} {scrapersStatus[src] === 'done' ? '✓' : '...'}
-                    </span>
+            <SlidersHorizontal size={13} />
+            Filters
+            {filtersOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          </button>
+
+          {/* Filters panel */}
+          <AnimatePresence>
+            {filtersOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                style={{ overflow: 'hidden' }}
+              >
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '10px',
+                  padding: '16px',
+                  background: 'rgba(0,0,0,0.25)',
+                  border: '1px solid rgba(0,198,255,0.08)',
+                  borderRadius: '10px',
+                  marginBottom: '16px',
+                }}>
+                  {[
+                    { label: 'Min Price', value: priceMin, set: setPriceMin, type: 'number', placeholder: '200000' },
+                    { label: 'Max Price', value: priceMax, set: setPriceMax, type: 'number', placeholder: '600000' },
+                    { label: 'Max Days Listed', value: maxDom, set: setMaxDom, type: 'number', placeholder: '90' },
+                  ].map(f => (
+                    <div key={f.label}>
+                      <label style={{ display: 'block', fontFamily: 'Rajdhani, sans-serif', fontSize: '11px', fontWeight: 600, color: '#8A9BB0', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '5px' }}>
+                        {f.label}
+                      </label>
+                      <input
+                        type={f.type}
+                        value={f.value}
+                        onChange={e => f.set(e.target.value)}
+                        placeholder={f.placeholder}
+                        style={{
+                          width: '100%', padding: '8px 10px',
+                          background: 'rgba(0,0,0,0.3)',
+                          border: '1px solid rgba(0,198,255,0.15)',
+                          borderRadius: '7px',
+                          color: '#F4F7FA',
+                          fontSize: '13px',
+                          fontFamily: 'DM Sans, sans-serif',
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                  ))}
+                  {[
+                    { label: 'Min Beds', value: minBeds, set: setMinBeds, opts: ['Any','1','2','3','4','5+'] },
+                    { label: 'Min Baths', value: minBaths, set: setMinBaths, opts: ['Any','1','2','3','4+'] },
+                    { label: 'Property Type', value: propertyType, set: setPropertyType, opts: ['All','Single Family','Multi-Family','Condo','Townhouse','Land'] },
+                  ].map(f => (
+                    <div key={f.label}>
+                      <label style={{ display: 'block', fontFamily: 'Rajdhani, sans-serif', fontSize: '11px', fontWeight: 600, color: '#8A9BB0', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '5px' }}>
+                        {f.label}
+                      </label>
+                      <select
+                        value={f.value}
+                        onChange={e => f.set(e.target.value)}
+                        style={{
+                          width: '100%', padding: '8px 10px',
+                          background: 'rgba(0,0,0,0.3)',
+                          border: '1px solid rgba(0,198,255,0.15)',
+                          borderRadius: '7px',
+                          color: '#F4F7FA',
+                          fontSize: '13px',
+                          fontFamily: 'DM Sans, sans-serif',
+                          outline: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {f.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
                   ))}
                 </div>
-              </div>
-            </WoodPanel>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-      {/* Empty / Default State */}
-      {!loading && !results && (
-        <motion.div variants={itemVariants}>
-          <WoodPanel>
-            <div className="flex flex-col items-center justify-center gap-4 text-center py-12">
-              <Home size={64} className="text-gold-dim" strokeWidth={1.2} />
-              <p className="text-parchment text-lg font-heading tracking-wide max-w-md">
-                No targets found in the hunting grounds
-              </p>
-              <p className="text-text-muted text-sm font-body">
-                Enter a city or ZIP code above to begin tracking FSBO listings
-              </p>
-            </div>
-          </WoodPanel>
-        </motion.div>
-      )}
-
-      {/* Results Section */}
-      <AnimatePresence>
-        {!loading && results && results.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
+          {/* Search button */}
+          <button
+            type="button"
+            onClick={handleSearch}
+            disabled={!canSearch || phase === 'loading'}
+            className="gold-shimmer"
+            style={{
+              width: '100%', padding: '12px',
+              fontFamily: 'Rajdhani, sans-serif',
+              fontSize: '15px', fontWeight: 700,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              border: 'none', borderRadius: '8px',
+              cursor: canSearch && phase !== 'loading' ? 'pointer' : 'not-allowed',
+              opacity: canSearch && phase !== 'loading' ? 1 : 0.5,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            }}
           >
-            {/* Results header */}
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <h2 className="font-heading text-lg font-semibold tracking-wide text-parchment">
-                  {results.length} Targets Located
-                </h2>
-                <span className="text-sm text-text-muted font-body">
-                  <input
-                    type="checkbox"
-                    checked={
-                      results.length > 0 &&
-                      selected.size === results.length
-                    }
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-gold-dim/20 bg-bg-elevated cursor-pointer accent-[#C9A96E] mr-2 align-middle"
-                  />
-                  Select all
-                </span>
-                {selected.size > 0 && (
-                  <span className="text-sm text-gold font-mono">
-                    ({selected.size} selected)
-                  </span>
-                )}
+            <Search size={15} />
+            {phase === 'loading' ? 'Searching...' : 'Search'}
+          </button>
+        </motion.div>
+
+        {/* ── Loading / progress panel ── */}
+        <AnimatePresence>
+          {phase === 'loading' && (
+            <motion.div
+              style={{ ...GC, marginTop: '20px' }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
+              <CyanLine />
+              <p style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '13px', color: '#8A9BB0', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '12px', marginTop: 0 }}>
+                Searching {searchLabel} across 5 sources...
+              </p>
+
+              {/* Shimmer progress bar */}
+              <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden', marginBottom: '16px' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${Math.round((Object.keys(scrapersStatus).length / 5) * 100)}%`,
+                  background: 'linear-gradient(110deg, #a67c2e 0%, #d4a853 20%, #fce8a8 40%, #d4a853 60%, #a67c2e 100%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'progressShimmer 1.4s linear infinite',
+                  transition: 'width 0.5s ease',
+                  borderRadius: '3px',
+                }} />
               </div>
-              <div className="flex items-center gap-2">
+
+              {/* Live count */}
+              <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: '#C8D1DA', marginBottom: '16px', marginTop: 0 }}>
+                <span style={{ color: '#F6C445', fontWeight: 600 }}>{liveCount}</span> listings found so far...
+              </p>
+
+              {/* Per-source chips */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '8px' }}>
+                {SOURCES.map(s => {
+                  const st = scrapersStatus[s.key]
+                  return (
+                    <div key={s.key} style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '8px 12px',
+                      background: 'rgba(0,0,0,0.3)',
+                      border: `1px solid ${st?.done ? s.color + '40' : 'rgba(255,255,255,0.06)'}`,
+                      borderRadius: '8px',
+                      transition: 'border-color 0.3s',
+                    }}>
+                      <div style={{
+                        width: 7, height: 7, borderRadius: '50%',
+                        background: st?.done ? s.color : 'rgba(255,255,255,0.2)',
+                        boxShadow: st?.done ? `0 0 6px ${s.color}` : 'none',
+                        flexShrink: 0,
+                        animation: !st?.done ? 'pulse 1.5s ease-in-out infinite' : 'none',
+                      }} />
+                      <span style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '12px', fontWeight: 600, color: '#C8D1DA' }}>{s.label}</span>
+                      <span style={{ marginLeft: 'auto', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: st?.done ? s.color : '#8A9BB0' }}>
+                        {st?.done ? `${st.count}` : '…'}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Results ── */}
+        <AnimatePresence>
+          {phase === 'complete' && (
+            <motion.div style={{ marginTop: '20px' }} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+              {/* Summary bar */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
+                <div>
+                  <span style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '18px', fontWeight: 700, color: '#F4F7FA', letterSpacing: '0.03em' }}>
+                    {results.length} FSBO Listings
+                  </span>
+                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: '#8A9BB0', marginLeft: '8px' }}>
+                    — {searchLabel}
+                  </span>
+                </div>
                 {searchId && (
                   <a
                     href={`/api/fsbo/download/${searchId}?fmt=csv`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-heading tracking-wide text-text-dim border border-gold-dim/20 rounded-sm hover:text-gold hover:border-gold/40 transition-colors"
                     download
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '5px',
+                      padding: '7px 14px',
+                      background: 'rgba(0,198,255,0.08)',
+                      border: '1px solid rgba(0,198,255,0.25)',
+                      borderRadius: '8px',
+                      color: '#00C6FF',
+                      fontFamily: 'DM Sans, sans-serif', fontSize: '13px',
+                      textDecoration: 'none',
+                    }}
                   >
-                    <Download size={14} />
+                    <Download size={13} />
                     Export CSV
                   </a>
                 )}
-                <button
-                  onClick={() => {}}
-                  disabled={selected.size === 0}
-                  className="gold-shimmer text-ink font-heading font-bold tracking-widest uppercase px-6 py-2 rounded-sm flex items-center gap-2 hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                >
-                  <Send size={14} />
-                  Send Selected to CRM
-                </button>
               </div>
-            </div>
 
-            {/* Results grid - 2 cols on desktop */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {results.map((row, i) => (
-                <motion.div
-                  key={row.id}
-                  custom={i}
-                  variants={cardVariants}
-                  initial="hidden"
-                  animate="visible"
-                >
-                  <WoodPanel
-                    hover
-                    className={`cursor-pointer transition-all duration-200 ${
-                      selected.has(row.id)
-                        ? 'ring-1 ring-gold/40 shadow-[0_0_16px_rgba(212,168,83,0.12)]'
-                        : ''
-                    }`}
-                    onClick={() => toggleSelect(row.id)}
+              {/* Filter pills */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                {[
+                  { key: 'all', label: 'All' },
+                  { key: 'phone', label: 'Has Phone' },
+                  { key: 'email', label: 'Has Email' },
+                  { key: 'contact', label: 'Has Contact' },
+                ].map(f => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    onClick={() => setActiveFilter(f.key)}
+                    style={{
+                      padding: '4px 14px',
+                      borderRadius: '20px',
+                      border: '1px solid',
+                      borderColor: activeFilter === f.key ? 'rgba(0,198,255,0.5)' : 'rgba(255,255,255,0.1)',
+                      background: activeFilter === f.key ? 'rgba(0,198,255,0.15)' : 'rgba(0,0,0,0.2)',
+                      color: activeFilter === f.key ? '#00C6FF' : '#C8D1DA',
+                      fontFamily: 'DM Sans, sans-serif', fontSize: '12px',
+                      cursor: 'pointer',
+                      boxShadow: activeFilter === f.key ? '0 0 8px rgba(0,198,255,0.2)' : 'none',
+                      transition: 'all 0.15s',
+                    }}
                   >
-                    <div className="flex items-start gap-3">
-                      {/* Selection checkbox */}
-                      <input
-                        type="checkbox"
-                        checked={selected.has(row.id)}
-                        onChange={(e) => {
-                          e.stopPropagation()
-                          toggleSelect(row.id)
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 mt-1 rounded border-gold-dim/20 bg-bg-elevated cursor-pointer accent-[#C9A96E] shrink-0"
-                      />
+                    {f.label}
+                    {f.key === 'all' && ` (${results.length})`}
+                  </button>
+                ))}
+              </div>
 
-                      <div className="flex-1 min-w-0">
-                        {/* Address */}
-                        <h3 className="font-heading text-parchment text-base font-semibold tracking-wide leading-snug mb-1">
-                          {row.address}
-                        </h3>
+              {/* Results grid */}
+              {filteredResults.length === 0 ? (
+                <div style={{ ...GC, textAlign: 'center', padding: '48px 24px' }}>
+                  <CyanLine />
+                  <p style={{ color: '#8A9BB0', fontFamily: 'DM Sans, sans-serif', fontSize: '14px', margin: 0 }}>
+                    No listings found for this search — try a nearby city or different state.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
+                  {filteredResults.map((row, i) => (
+                    <ResultCard key={i} row={row} />
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                        {/* Price + Source badge + Contact status badge row */}
-                        <div className="flex items-center gap-2 mb-3 flex-wrap">
-                          <span className="text-gold-bright font-heading text-xl font-bold tracking-wide">
-                            {formatPrice(row.price)}
-                          </span>
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              SOURCE_STYLES[row.source] || 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/20'
-                            }`}
-                          >
-                            {row.source}
-                          </span>
-                          {row.contact_status && (
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
-                                CONTACT_STATUS_STYLES[row.contact_status] || CONTACT_STATUS_STYLES.none
-                              }`}
-                            >
-                              {CONTACT_STATUS_LABEL[row.contact_status] || row.contact_status}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Details grid */}
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
-                          <div className="flex items-center gap-2">
-                            <span className="text-text-muted font-heading text-xs tracking-wider uppercase">Owner</span>
-                            <span className="text-text-primary font-body">{row.owner || '—'}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-text-muted font-heading text-xs tracking-wider uppercase">DOM</span>
-                            <span className="text-text-primary font-mono">
-                              {row.dom != null ? `${row.dom} days` : '—'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-text-muted font-heading text-xs tracking-wider uppercase">Phone</span>
-                            <span className="text-text-dim font-mono text-xs">{row.phone || '—'}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-text-muted font-heading text-xs tracking-wider uppercase">Beds/Ba</span>
-                            <span className="text-text-primary font-mono">
-                              {row.beds != null ? row.beds : '?'}bd / {row.baths != null ? row.baths : '?'}ba
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 col-span-2">
-                            <span className="text-text-muted font-heading text-xs tracking-wider uppercase">Email</span>
-                            <span className="text-text-dim font-body text-xs truncate">{row.email || '—'}</span>
-                          </div>
-                        </div>
-
-                        {/* Individual Send to CRM */}
-                        <div className="mt-3 pt-3 border-t border-gold-dim/10 flex justify-between items-center">
-                          {row.listing_url && (
-                            <a
-                              href={row.listing_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-text-muted hover:text-gold-dim font-body underline underline-offset-2 transition-colors"
-                            >
-                              View listing
-                            </a>
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-heading tracking-wide text-text-dim border border-gold-dim/20 rounded-sm hover:text-gold hover:border-gold/40 transition-colors ml-auto"
-                          >
-                            <Send size={12} />
-                            Send to CRM
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </WoodPanel>
-                </motion.div>
-              ))}
+        {/* ── Past Searches ── */}
+        {pastSearches.length > 0 && (
+          <motion.div style={{ ...GC, marginTop: '32px' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <CyanLine />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '15px', fontWeight: 700, color: '#F4F7FA', letterSpacing: '0.08em', textTransform: 'uppercase', margin: 0 }}>
+                Past Searches
+                <span style={{ marginLeft: '8px', padding: '2px 8px', background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.2)', borderRadius: '12px', color: '#00C6FF', fontSize: '11px' }}>
+                  {pastSearches.length}
+                </span>
+              </h2>
             </div>
 
-            {/* Footer note */}
-            <p className="text-center text-xs text-text-muted mt-6 font-heading tracking-wide">
-              Showing {results.length} targets &mdash; Data sourced from public FSBO platforms
-            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {pastSearches.map(s => {
+                const hasResults = s.total_listings > 0
+                const isExpanded = expandedId === s.search_id
+                const expRes = expandedResults[s.search_id] || []
+                const dateStr = new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+                return (
+                  <div key={s.search_id} style={{
+                    background: 'rgba(0,0,0,0.25)',
+                    border: `1px solid ${isExpanded ? 'rgba(0,198,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                  }}>
+                    {/* Row header */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px' }}>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(s.search_id)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+                      >
+                        {isExpanded
+                          ? <ChevronUp size={14} style={{ color: '#00C6FF', flexShrink: 0 }} />
+                          : <ChevronDown size={14} style={{ color: '#8A9BB0', flexShrink: 0 }} />
+                        }
+                        <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: '#F4F7FA' }}>
+                          {s.city_zip || s.location}{s.state ? `, ${s.state}` : ''}
+                        </span>
+                        <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: '#8A9BB0' }}>{dateStr}</span>
+                        <span style={{
+                          marginLeft: 'auto',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontFamily: 'Rajdhani, sans-serif',
+                          fontWeight: 700,
+                          background: hasResults ? 'rgba(74,124,89,0.2)' : 'rgba(255,255,255,0.05)',
+                          border: `1px solid ${hasResults ? 'rgba(74,124,89,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                          color: hasResults ? '#4ade80' : '#8A9BB0',
+                        }}>
+                          {s.total_listings} {s.total_listings === 1 ? 'listing' : 'listings'}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteSearch(s.search_id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#8A9BB0', flexShrink: 0, display: 'flex', alignItems: 'center' }}
+                        title="Delete"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+
+                    {/* Expanded results */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          style={{ overflow: 'hidden' }}
+                        >
+                          <div style={{ padding: '0 14px 14px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            {expRes.length === 0 ? (
+                              <p style={{ color: '#8A9BB0', fontSize: '13px', fontFamily: 'DM Sans, sans-serif', marginTop: '12px' }}>No listings stored for this search.</p>
+                            ) : (
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px', marginTop: '12px' }}>
+                                {expRes.map((row, i) => <ResultCard key={i} row={row} compact />)}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )
+              })}
+            </div>
           </motion.div>
         )}
-      </AnimatePresence>
-    </motion.div>
+      </div>
+
+      {/* CSS keyframes */}
+      <style>{`
+        @keyframes progressShimmer {
+          0% { background-position: 200% center; }
+          100% { background-position: -200% center; }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+// ─── ResultCard ───────────────────────────────────────────────────────────────
+
+function ResultCard({ row, compact = false }) {
+  const source = SOURCES.find(s => s.key === row.source) || { label: row.source || 'Unknown', color: '#8A9BB0' }
+  const contactColor = CONTACT_COLOR[row.contact_status] || '#8A9BB0'
+  const contactLabel = CONTACT_LABEL[row.contact_status] || row.contact_status || 'Unknown'
+
+  return (
+    <div style={{
+      background: 'rgba(11,15,20,0.7)',
+      border: '1px solid rgba(0,198,255,0.1)',
+      borderRadius: '12px',
+      padding: compact ? '12px' : '16px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px',
+    }}>
+      {/* Address + price */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+        <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: compact ? '12px' : '13px', color: '#F4F7FA', fontWeight: 600, lineHeight: 1.4 }}>
+          {row.address}
+        </span>
+        <span style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: compact ? '14px' : '16px', fontWeight: 700, color: '#F6C445', flexShrink: 0 }}>
+          {formatPrice(row.price)}
+        </span>
+      </div>
+
+      {/* Beds / Baths / DOM */}
+      {(row.beds != null || row.baths != null || row.days_on_market != null) && (
+        <div style={{ display: 'flex', gap: '12px', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: '#8A9BB0' }}>
+          {row.beds != null && <span>{row.beds} bd</span>}
+          {row.baths != null && <span>{row.baths} ba</span>}
+          {row.days_on_market != null && <span>{row.days_on_market}d listed</span>}
+        </div>
+      )}
+
+      {/* Badges */}
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        <span style={{
+          padding: '2px 8px', borderRadius: '12px', fontSize: '10px',
+          fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+          background: source.color + '1A', border: `1px solid ${source.color}40`, color: source.color,
+        }}>{source.label}</span>
+        <span style={{
+          padding: '2px 8px', borderRadius: '12px', fontSize: '10px',
+          fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+          background: contactColor + '1A', border: `1px solid ${contactColor}40`, color: contactColor,
+        }}>{contactLabel}</span>
+      </div>
+
+      {/* Contact info */}
+      {(row.phone || row.email) && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          {row.phone && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: '#C8D1DA' }}>
+              <Phone size={11} style={{ color: '#F6C445' }} />
+              {row.phone}
+            </div>
+          )}
+          {row.email && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: '#C8D1DA' }}>
+              <Mail size={11} style={{ color: '#00C6FF' }} />
+              {row.email}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* View listing link */}
+      {row.listing_url && (
+        <a
+          href={row.listing_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '4px',
+            fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: '#00C6FF',
+            textDecoration: 'none', marginTop: '2px',
+          }}
+        >
+          <ExternalLink size={11} />
+          View Listing
+        </a>
+      )}
+    </div>
   )
 }
