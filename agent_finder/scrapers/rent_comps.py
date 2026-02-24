@@ -170,7 +170,6 @@ async def search_rental_comps(
     subject_lat: float,
     subject_lon: float,
     beds: int,
-    baths: float,
     sqft: int,
     year_built: int,
 ) -> list:
@@ -202,9 +201,9 @@ async def search_rental_comps(
     comps = []
     async with httpx.AsyncClient() as client:
         for _, row in df.iterrows():
-            # Extract monthly rent
+            # Extract monthly rent — for_rent uses list_price_min/max, not list_price
             rent = 0.0
-            for col in ["list_price", "price", "monthly_rent", "rent"]:
+            for col in ["list_price_min", "list_price_max", "list_price", "price", "monthly_rent", "rent"]:
                 try:
                     v = float(_safe(row, col, 0) or 0)
                     if v > 0:
@@ -217,7 +216,10 @@ async def search_rental_comps(
 
             try:
                 comp_beds = int(float(_safe(row, "beds", 0) or 0))
-                comp_baths = float(_safe(row, "baths", 0) or 0)
+                # for_rent schema uses full_baths/half_baths instead of baths
+                full_baths = float(_safe(row, "full_baths", 0) or 0)
+                half_baths = float(_safe(row, "half_baths", 0) or 0)
+                comp_baths = full_baths + (half_baths * 0.5) if (full_baths or half_baths) else float(_safe(row, "baths", 0) or 0)
                 comp_sqft_raw = _safe(row, "sqft", 0)
                 comp_sqft = int(float(comp_sqft_raw) or 0) if comp_sqft_raw else 0
                 comp_year_raw = _safe(row, "year_built", 0)
@@ -261,7 +263,8 @@ async def search_rental_comps(
                     comp_addr = v
                     break
 
-            dom_raw = _safe(row, "days_on_market", _safe(row, "dom", ""))
+            # for_rent schema uses days_on_mls
+            dom_raw = _safe(row, "days_on_mls", _safe(row, "days_on_market", _safe(row, "dom", "")))
             try:
                 dom = int(float(dom_raw)) if dom_raw else None
             except Exception:
@@ -363,7 +366,6 @@ async def get_rent_comps(
         subject_lat=lat,
         subject_lon=lon,
         beds=beds or 3,
-        baths=baths or 2.0,
         sqft=sqft or 0,
         year_built=year_built or 0,
     )
