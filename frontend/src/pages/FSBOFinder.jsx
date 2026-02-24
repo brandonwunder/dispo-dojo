@@ -141,7 +141,7 @@ export default function FSBOFinder() {
       city_zip: selectedCityZip,
       min_price: priceMin ? parseInt(priceMin) : null,
       max_price: priceMax ? parseInt(priceMax) : null,
-      min_beds: minBeds !== 'Any' ? parseInt(minBeds) : null,
+      min_beds: minBeds !== 'Any' ? parseInt(minBeds, 10) : null,
       min_baths: minBaths !== 'Any' ? parseFloat(minBaths) : null,
       property_type: propertyType !== 'All' ? propertyType.toLowerCase().replace(/\s+/g, '_') : null,
       max_days_on_market: maxDom ? parseInt(maxDom) : null,
@@ -217,9 +217,11 @@ export default function FSBOFinder() {
   }
 
   const clearAllSearches = async () => {
-    for (const s of pastSearches) {
-      await fetch(`/api/fsbo/searches/${s.search_id}`, { method: 'DELETE' })
-    }
+    await Promise.allSettled(
+      pastSearches.map(s =>
+        fetch(`/api/fsbo/searches/${s.search_id}`, { method: 'DELETE' })
+      )
+    )
     setPastSearches([])
     setResults([])
     setSearchId(null)
@@ -589,7 +591,7 @@ export default function FSBOFinder() {
                       fontFamily: 'DM Sans, sans-serif', fontSize: '12px',
                       cursor: 'pointer',
                       boxShadow: activeFilter === f.key ? '0 0 8px rgba(0,198,255,0.2)' : 'none',
-                      transition: 'all 0.15s',
+                      transition: 'border-color 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease',
                     }}
                   >
                     {f.label}
