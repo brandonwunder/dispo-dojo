@@ -37,6 +37,7 @@ export default function MessageBubble({
   onPin,
   onToggleReaction,
   onAuthorClick,
+  onScrollToMessage,
   currentUid,
 }) {
   const [showActions, setShowActions] = useState(false)
@@ -153,6 +154,24 @@ export default function MessageBubble({
           </div>
         )}
 
+        {/* Discord-style reply reference */}
+        {msg.replyTo && (
+          <button
+            onClick={() => onScrollToMessage?.(msg.replyTo.id)}
+            className="mb-1 flex items-center gap-1.5 max-w-full text-left group/reply"
+            style={{ marginTop: isGrouped ? '0' : '2px' }}
+          >
+            <div className="w-0.5 h-full rounded-full shrink-0" style={{ background: 'rgba(200,209,218,0.3)', minHeight: '14px' }} />
+            <Reply className="h-3 w-3 shrink-0" style={{ color: 'rgba(200,209,218,0.4)' }} />
+            <span className="text-[11px] font-semibold truncate" style={{ color: 'rgba(200,209,218,0.55)', fontFamily: 'var(--font-heading, sans-serif)' }}>
+              {msg.replyTo.authorName}
+            </span>
+            <span className="text-[11px] truncate group-hover/reply:underline" style={{ color: 'rgba(200,209,218,0.35)', fontFamily: 'var(--font-body, sans-serif)', maxWidth: '260px' }}>
+              {msg.replyTo.bodyPreview || ''}
+            </span>
+          </button>
+        )}
+
         {editing ? (
           <div className="mt-1">
             <input
@@ -206,15 +225,16 @@ export default function MessageBubble({
           />
         )}
 
-        <button
-          onClick={() => onReply(msg)}
-          className="mt-1 flex items-center gap-1 text-[11px] text-text-dim/30 opacity-0 transition-opacity duration-150 hover:text-[#00C6FF] group-hover:opacity-100 focus-visible:opacity-100 active:scale-95"
-        >
-          <Reply className="h-3 w-3" />
-          {msg.replyCount > 0
-            ? `${msg.replyCount} ${msg.replyCount === 1 ? 'reply' : 'replies'}`
-            : 'Reply'}
-        </button>
+        {msg.replyCount > 0 && (
+          <button
+            onClick={() => onReply(msg)}
+            className="mt-1 flex items-center gap-1.5 text-[11px] transition-colors duration-150 hover:text-[#00C6FF] active:scale-95"
+            style={{ color: 'rgba(0,198,255,0.6)', fontFamily: 'var(--font-heading, sans-serif)' }}
+          >
+            <Reply className="h-3 w-3" />
+            {msg.replyCount} {msg.replyCount === 1 ? 'reply' : 'replies'}
+          </button>
+        )}
       </div>
 
       <AnimatePresence>

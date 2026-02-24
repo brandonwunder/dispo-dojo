@@ -931,7 +931,7 @@ export default function AgentFinder() {
                   '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
               }}
             >
-              Listing Agent Finder
+              Find Agent Emails
             </h1>
           </div>
           <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>

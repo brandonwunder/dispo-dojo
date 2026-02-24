@@ -192,6 +192,7 @@ class RedfinScraper(BaseScraper):
         phone = ""
         list_date = ""
         days_on_market = ""
+        listing_price = ""
 
         # Path 1: listingBroker section (most common for active listings)
         broker_info = payload.get("listingBroker", {})
@@ -269,6 +270,22 @@ class RedfinScraper(BaseScraper):
         if not days_on_market and list_date:
             days_on_market = compute_days_on_market(list_date)
 
+        # Extract listing price
+        main_info = payload.get("mainHouseInfo", {})
+        price_val = (
+            payload.get("listingPrice")
+            or payload.get("price")
+            or main_info.get("listingPrice")
+            or main_info.get("price")
+            or payload.get("aboveTheFoldInfo", {}).get("price")
+            or payload.get("aboveTheFoldInfo", {}).get("listingPrice")
+        )
+        if price_val:
+            try:
+                listing_price = f"${int(price_val):,}"
+            except (ValueError, TypeError):
+                listing_price = str(price_val)
+
         listing_url = f"{REDFIN_BASE_URL}{url_path}" if url_path else ""
 
         return AgentInfo(
@@ -280,4 +297,5 @@ class RedfinScraper(BaseScraper):
             listing_url=listing_url,
             list_date=list_date,
             days_on_market=days_on_market,
+            listing_price=listing_price,
         )

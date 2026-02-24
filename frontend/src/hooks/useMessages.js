@@ -37,7 +37,7 @@ export default function useMessages(channelId, ready = true) {
     return unsub
   }, [channelId, ready])
 
-  const sendMessage = useCallback(async (body, authorName, authorEmail, gifUrl = null, gifTitle = null, attachments = [], type = null, dealData = null) => {
+  const sendMessage = useCallback(async (body, authorName, authorEmail, gifUrl = null, gifTitle = null, attachments = [], type = null, dealData = null, replyTo = null) => {
     const uid = auth.currentUser?.uid
     if (!uid) throw new Error('Not authenticated')
     const trimmed = body.trim()
@@ -67,6 +67,7 @@ export default function useMessages(channelId, ready = true) {
 
     if (type) messageDoc.type = type
     if (dealData) messageDoc.dealData = dealData
+    if (replyTo) messageDoc.replyTo = replyTo
 
     await addDoc(collection(db, 'messages'), messageDoc)
     incrementStat(uid, 'messages').catch(console.error)

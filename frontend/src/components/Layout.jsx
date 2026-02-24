@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import MistLayer from './MistLayer';
 import TorchLight from './TorchLight';
 import EmberField from './EmberField';
-import { CursorProvider } from './CustomCursor';
 import RainEffect from './RainEffect';
 import Sidebar from './Sidebar';
 import { Menu } from 'lucide-react';
@@ -14,7 +13,7 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <CursorProvider>
+    <>
       <div className="min-h-screen bg-bg ink-wash wall-texture">
         {/* === ATMOSPHERE STACK === */}
         <MistLayer />
@@ -56,6 +55,6 @@ export default function Layout() {
           </div>
         </main>
       </div>
-    </CursorProvider>
+    </>
   );
 }

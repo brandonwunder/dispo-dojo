@@ -81,6 +81,7 @@ export default function Community() {
   const { user, isAdmin, firebaseReady } = useAuth()
   const [activeChannel, setActiveChannel] = useState('general')
   const [activeThread, setActiveThread] = useState(null)
+  const [replyingTo, setReplyingTo] = useState(null)
   const [profilePopover, setProfilePopover] = useState(null)
   const [reactionPickerMsgId, setReactionPickerMsgId] = useState(null)
 
@@ -164,9 +165,10 @@ export default function Community() {
   }, [])
 
   // Send handlers
-  const handleSendMessage = useCallback((body, gifUrl, gifTitle, attachments, type = null, dealData = null) => {
-    sendMessage(body, displayName, displayEmail, gifUrl, gifTitle, attachments, type, dealData)
+  const handleSendMessage = useCallback((body, gifUrl, gifTitle, attachments, type = null, dealData = null, replyTo = null) => {
+    sendMessage(body, displayName, displayEmail, gifUrl, gifTitle, attachments, type, dealData, replyTo)
     setTyping(false)
+    setReplyingTo(null)
   }, [sendMessage, displayName, displayEmail, setTyping])
 
   const handleSendReply = useCallback((body, gifUrl, gifTitle, attachments) => {
@@ -273,10 +275,13 @@ export default function Community() {
                 Dispo Dojo
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-[#8A9AAA]" style={{ fontFamily: 'var(--font-body, sans-serif)' }}>Community</span>
+                <span className="text-[11px] text-[#8A9AAA]" style={{ fontFamily: 'var(--font-body, sans-serif)' }}>Message Board</span>
                 <span className="flex items-center gap-1 text-[10px] text-green-400">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
                   {onlineUsers.length} online
+                </span>
+                <span className="text-[10px]" style={{ color: 'rgba(200,209,218,0.4)' }}>
+                  · {allUsers.length} members
                 </span>
               </div>
             </div>
@@ -504,11 +509,12 @@ export default function Community() {
                       <MessageBubble
                         msg={msg}
                         isGrouped={isGrouped}
-                        isOwn={msg.authorId === currentUid}
+                        isOwn={msg.authorId === currentUid || msg.authorEmail === displayEmail}
                         isAdmin={isAdmin}
                         communityRank={profilesMap[msg.authorId]?.communityRank}
                         currentUid={currentUid}
-                        onReply={(m) => setActiveThread(m)}
+                        onReply={(m) => setReplyingTo(m)}
+                        onScrollToMessage={scrollToMessage}
                         onReact={(id) => setReactionPickerMsgId(reactionPickerMsgId === id ? null : id)}
                         onEdit={editMessage}
                         onDelete={deleteMessage}
@@ -580,6 +586,8 @@ export default function Community() {
               onTyping={setTyping}
               fileUpload={fileUpload}
               onlineUsers={onlineUsers}
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
             />
           </>
         )}

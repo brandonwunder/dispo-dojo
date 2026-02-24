@@ -201,6 +201,27 @@ class ZillowScraper(BaseScraper):
         if not days_on_market and list_date:
             days_on_market = compute_days_on_market(list_date)
 
+        # Extract listing price
+        listing_price = ""
+        if script:
+            try:
+                zdata = json.loads(script.string)
+                zprop = (zdata.get("props", {}).get("pageProps", {})
+                         .get("property", {})) or {}
+                price_val = (
+                    zprop.get("price")
+                    or zprop.get("listingPrice")
+                    or zprop.get("list_price")
+                    or (property_data.get("price") if property_data else None)
+                )
+                if price_val:
+                    try:
+                        listing_price = f"${int(price_val):,}"
+                    except (ValueError, TypeError):
+                        listing_price = str(price_val)
+            except (json.JSONDecodeError, KeyError, TypeError, AttributeError):
+                pass
+
         return AgentInfo(
             agent_name=clean_name(agent_name),
             brokerage=brokerage.strip() if brokerage else "",
@@ -210,6 +231,7 @@ class ZillowScraper(BaseScraper):
             listing_url=listing_url,
             list_date=list_date,
             days_on_market=days_on_market,
+            listing_price=listing_price,
         )
 
     @staticmethod

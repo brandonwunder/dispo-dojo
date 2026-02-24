@@ -16,7 +16,7 @@ import {
   ShurikenIcon,
 } from '../icons/index'
 import { useAuth } from '../context/AuthContext'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import NinjaAvatar from './NinjaAvatar'
 import QuickSettingsPanel from './QuickSettingsPanel'
 
@@ -26,7 +26,7 @@ const navSections = [
     items: [
       { to: '/', icon: LayoutDashboard, label: 'JV Dashboard' },
       { to: '/community', icon: MessageSquare, label: 'Message Board' },
-      { to: '/live-deals', icon: Briefcase, label: 'Live Deals' },
+      { to: '/live-deals', icon: Briefcase, label: 'View Active Deals' },
     ],
   },
   {
@@ -128,10 +128,13 @@ export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const navRef = useRef(null)
+  const sectionRefs = useRef({})
 
-  const sections = isAdmin
-    ? [navSections[0], adminSection, ...navSections.slice(1)]
-    : navSections
+  const sections = useMemo(
+    () => isAdmin ? [navSections[0], adminSection, ...navSections.slice(1)] : navSections,
+    [isAdmin]
+  )
 
   // Track which titled section is expanded (only one at a time)
   const [expandedSection, setExpandedSection] = useState(
@@ -152,27 +155,57 @@ export default function Sidebar({ isOpen, onClose }) {
   }, [location.pathname])
 
   const toggleSection = (title) => {
-    setExpandedSection(prev => prev === title ? null : title)
+    setExpandedSection(prev => {
+      const next = prev === title ? null : title
+      if (next) {
+        // Scroll the section header into view after animation starts
+        setTimeout(() => {
+          sectionRefs.current[title]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 60)
+      } else {
+        // Scroll back to top of nav when collapsing
+        setTimeout(() => {
+          navRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+        }, 60)
+      }
+      return next
+    })
   }
 
   const sidebarContent = (
     <>
-      {/* Wordmark */}
-      <div className="px-6 pt-8 pb-6 text-center">
-        <h1 className="font-display text-2xl neon-shimmer-text tracking-wider">
-          DISPO DOJO
-        </h1>
-        <div className="katana-line mt-3" />
+      {/* Logo */}
+      <div className="pt-6 pb-2 flex justify-center">
+        <div className="relative">
+          <div
+            className="absolute inset-0 rounded-full blur-2xl pointer-events-none"
+            style={{
+              background: 'radial-gradient(ellipse, rgba(0,198,255,0.07) 0%, rgba(14,90,136,0.04) 60%, transparent 100%)',
+              transform: 'scale(1.4)',
+            }}
+          />
+          <img
+            src="/dispo-dojo-logo.png"
+            alt="Dispo Dojo"
+            className="relative w-40 h-40 object-contain drop-shadow-lg"
+            style={{ animation: 'logoFloat 6s ease-in-out infinite' }}
+          />
+        </div>
       </div>
+      <div className="mx-6 katana-line mb-2" />
 
       {/* Navigation sections */}
-      <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-4 flex flex-col" style={{ touchAction: 'pan-y' }}>
+      <nav ref={navRef} className="flex-1 min-h-0 overflow-y-auto px-3 pt-8 pb-4 flex flex-col" style={{ touchAction: 'pan-y' }}>
         {sections.map((section) => {
           const isCollapsible = !!section.title
           const isExpanded = !isCollapsible || expandedSection === section.title
 
           return (
-            <div key={section.title || 'top'} className="mb-1 mt-3 first:mt-0">
+            <div
+              key={section.title || 'top'}
+              className="mb-1 mt-3 first:mt-0"
+              ref={isCollapsible ? (el) => { sectionRefs.current[section.title] = el } : undefined}
+            >
               {isCollapsible && (
                 <button
                   onClick={() => toggleSection(section.title)}
@@ -202,10 +235,10 @@ export default function Sidebar({ isOpen, onClose }) {
                 </button>
               )}
 
-              {isCollapsible && (
+              {isCollapsible && isExpanded && (
                 <div
                   className="mx-3 katana-line"
-                  style={{ marginBottom: isExpanded ? '6px' : '4px', opacity: isExpanded ? 1 : 0.4, transition: 'opacity 0.2s' }}
+                  style={{ marginBottom: '6px' }}
                 />
               )}
 
@@ -231,24 +264,6 @@ export default function Sidebar({ isOpen, onClose }) {
           )
         })}
 
-        {/* Floating logo — grows to fill remaining space, centers logo */}
-        <div className="mt-auto mb-10 pt-6 pb-2 flex justify-center">
-          <div className="relative">
-            <div
-              className="absolute inset-0 rounded-full blur-2xl"
-              style={{
-                background: 'radial-gradient(ellipse, rgba(0,198,255,0.22) 0%, rgba(14,90,136,0.12) 60%, transparent 100%)',
-                transform: 'scale(2)',
-              }}
-            />
-            <img
-              src="/dispo-dojo-logo.png"
-              alt="Dispo Dojo"
-              className="relative w-48 h-48 object-contain drop-shadow-lg"
-              style={{ animation: 'logoFloat 6s ease-in-out infinite' }}
-            />
-          </div>
-        </div>
       </nav>
 
       {/* User info at bottom */}
@@ -277,7 +292,7 @@ export default function Sidebar({ isOpen, onClose }) {
   return (
     <>
       {/* Desktop sidebar — always visible */}
-      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[250px] lacquer-deep lacquer-shine sidebar-shadow z-40 flex-col border-r border-[rgba(0,198,255,0.12)]">
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[250px] lacquer-deep sidebar-shadow z-40 flex-col border-r border-[rgba(0,198,255,0.12)]">
         {sidebarContent}
       </aside>
 
@@ -296,7 +311,7 @@ export default function Sidebar({ isOpen, onClose }) {
             />
             {/* Drawer */}
             <motion.aside
-              className="fixed left-0 top-0 bottom-0 w-[280px] lacquer-deep lacquer-shine sidebar-shadow z-50 flex flex-col border-r border-[rgba(0,198,255,0.12)] lg:hidden"
+              className="fixed left-0 top-0 bottom-0 w-[280px] lacquer-deep sidebar-shadow z-50 flex flex-col border-r border-[rgba(0,198,255,0.12)] lg:hidden"
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}

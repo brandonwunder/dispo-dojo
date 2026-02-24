@@ -50,6 +50,7 @@ class AgentInfo:
     listing_url: str = ""        # URL of the listing where data was found
     list_date: str = ""          # Date listing was posted (ISO or display format)
     days_on_market: str = ""     # Days on market (computed or from source)
+    listing_price: str = ""      # Listing price (e.g. "$450,000")
 
     @property
     def has_contact_info(self) -> bool:
@@ -70,6 +71,7 @@ class AgentInfo:
             listing_url=self.listing_url or other.listing_url,
             list_date=self.list_date or other.list_date,
             days_on_market=self.days_on_market or other.days_on_market,
+            listing_price=self.listing_price or other.listing_price,
         )
 
 

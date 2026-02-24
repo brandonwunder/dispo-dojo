@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
-import { AnimatePresence } from 'framer-motion'
-import { Send, SmilePlus, Image, Paperclip, X, Loader2 } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Send, SmilePlus, Image, Paperclip, X, Loader2, Reply } from 'lucide-react'
 import EmojiPicker from './EmojiPicker'
 import GifPicker from './GifPicker'
 import MentionAutocomplete from './MentionAutocomplete'
@@ -21,6 +21,8 @@ export default function MessageInput({
   fileUpload,
   onlineUsers,
   channelId = 'general',
+  replyingTo = null,
+  onCancelReply,
 }) {
   const [body, setBody] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
@@ -41,10 +43,14 @@ export default function MessageInput({
       pendingGif?.url || null,
       pendingGif?.title || null,
       pendingAttachments,
+      null,
+      null,
+      replyingTo ? { id: replyingTo.id, authorName: replyingTo.authorName, bodyPreview: (replyingTo.body || '').slice(0, 100) } : null,
     )
     setBody('')
     setPendingGif(null)
     setPendingAttachments([])
+    onCancelReply?.()
     inputRef.current?.focus()
   }
 
@@ -115,6 +121,30 @@ export default function MessageInput({
         boxShadow: '0 -4px 24px rgba(0,0,0,0.4)',
       }}
     >
+      {/* Replying-to banner */}
+      <AnimatePresence>
+        {replyingTo && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.15 }}
+            className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-md"
+            style={{ background: 'rgba(0,198,255,0.06)', border: '1px solid rgba(0,198,255,0.15)' }}
+          >
+            <Reply className="h-3 w-3 shrink-0" style={{ color: 'rgba(0,198,255,0.6)' }} />
+            <span className="text-[11px]" style={{ color: 'rgba(0,198,255,0.6)', fontFamily: 'var(--font-heading, sans-serif)' }}>
+              Replying to <span className="font-semibold">{replyingTo.authorName}</span>
+            </span>
+            <span className="text-[11px] truncate flex-1" style={{ color: 'rgba(200,209,218,0.35)', fontFamily: 'var(--font-body, sans-serif)' }}>
+              — {(replyingTo.body || '').slice(0, 80)}
+            </span>
+            <button onClick={onCancelReply} className="ml-auto shrink-0 hover:text-white transition-colors" style={{ color: 'rgba(200,209,218,0.4)' }}>
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Pending previews */}
       {(pendingGif || pendingAttachments.length > 0 || fileUpload?.uploading) && (
         <div className="mb-2 flex flex-wrap items-center gap-2">

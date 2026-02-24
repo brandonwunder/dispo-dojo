@@ -35,6 +35,7 @@ def export_results(
             "listing_url": r.agent_info.listing_url if r.agent_info else "",
             "list_date": r.agent_info.list_date if r.agent_info else "",
             "days_on_market": r.agent_info.days_on_market if r.agent_info else "",
+            "listing_price": r.agent_info.listing_price if r.agent_info else "",
             "lookup_status": r.status.value,
             "confidence": f"{r.confidence:.2f}",
             "verified": "Yes" if r.verified else "No",
@@ -98,6 +99,7 @@ def export_results_zip(
             "listing_url": r.agent_info.listing_url if r.agent_info else "",
             "list_date": r.agent_info.list_date if r.agent_info else "",
             "days_on_market": r.agent_info.days_on_market if r.agent_info else "",
+            "listing_price": r.agent_info.listing_price if r.agent_info else "",
             "lookup_status": r.status.value,
             "confidence": f"{r.confidence:.2f}",
             "verified": "Yes" if r.verified else "No",
@@ -118,7 +120,7 @@ def export_results_zip(
     # Fill any rows that weren't processed (shouldn't happen, but safe)
     for col in ["agent_name", "brokerage", "agent_phone", "agent_email",
                  "data_source", "listing_url", "list_date", "days_on_market",
-                 "lookup_status", "confidence", "verified", "sources_matched"]:
+                 "listing_price", "lookup_status", "confidence", "verified", "sources_matched"]:
         if col not in merged.columns:
             merged[col] = ""
 

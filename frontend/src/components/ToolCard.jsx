@@ -25,7 +25,13 @@ export default function ToolCard({ icon: Icon, image, label, description, to, de
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
         onClick={() => navigate(to)}
-        className="group relative cursor-pointer rounded-xl border border-[rgba(255,255,255,0.07)] bg-[#0d0d1a] elevation-2 washi-texture overflow-visible"
+        className="group relative cursor-pointer rounded-xl border border-[rgba(255,255,255,0.07)] elevation-2 washi-texture overflow-visible"
+        style={{
+          background: 'rgba(11,15,20,0.58)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          boxShadow: '0 24px 48px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,198,255,0.06), inset 0 1px 0 rgba(255,255,255,0.04), inset 0 0 40px rgba(0,198,255,0.03)',
+        }}
       >
         {/* Left accent bar — gradient c1→c2→c3 */}
         <div

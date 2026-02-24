@@ -157,6 +157,17 @@ class HomeHarvestScraper(BaseScraper):
         if not days_on_market and list_date:
             days_on_market = compute_days_on_market(list_date)
 
+        listing_price = ""
+        for col in ["list_price", "price", "listing_price", "sale_price", "sold_price"]:
+            if col in row.index:
+                val = _safe_str(row.get(col))
+                if val:
+                    try:
+                        listing_price = f"${int(float(val)):,}"
+                    except (ValueError, TypeError):
+                        listing_price = val
+                    break
+
         return AgentInfo(
             agent_name=clean_name(agent_name),
             brokerage=broker.strip(),
@@ -166,6 +177,7 @@ class HomeHarvestScraper(BaseScraper):
             listing_url=listing_url,
             list_date=list_date,
             days_on_market=days_on_market,
+            listing_price=listing_price,
         )
 
     def _find_best_match(self, df, prop: Property):
