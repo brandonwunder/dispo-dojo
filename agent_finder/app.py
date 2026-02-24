@@ -624,6 +624,81 @@ async def fsbo_delete_search(search_id: str):
     return {"ok": True}
 
 
+@api.get("/fsbo/debug-scraper")
+async def debug_fsbo_scraper(source: str = "realtor_fsbo", location: str = "Phoenix, AZ"):
+    """
+    Run a single FSBO scraper and return raw results + captured logs.
+    source: one of fsbo.com | forsalebyowner.com | zillow_fsbo | realtor_fsbo | craigslist
+    location: e.g. "Phoenix, AZ" or "85001"
+    """
+    import logging
+    import io
+
+    # Capture log output
+    log_stream = io.StringIO()
+    handler = logging.StreamHandler(log_stream)
+    handler.setLevel(logging.DEBUG)
+    root_logger = logging.getLogger("agent_finder")
+    root_logger.addHandler(handler)
+    root_logger.setLevel(logging.DEBUG)
+
+    location_type = "zip" if location.strip().lstrip("-").isdigit() else "city_state"
+    criteria = FSBOSearchCriteria(location=location, location_type=location_type)
+
+    results = []
+    error = None
+    try:
+        import httpx as _httpx
+        async with _httpx.AsyncClient(follow_redirects=True, timeout=45.0) as client:
+            if source == "fsbo.com":
+                from .scrapers.fsbo_com import FsboComScraper
+                scraper = FsboComScraper(client)
+            elif source == "forsalebyowner.com":
+                from .scrapers.forsalebyowner_com import ForSaleByOwnerScraper
+                scraper = ForSaleByOwnerScraper(client)
+            elif source == "zillow_fsbo":
+                from .scrapers.zillow_fsbo import ZillowFSBOScraper
+                scraper = ZillowFSBOScraper(client)
+            elif source == "realtor_fsbo":
+                from .scrapers.realtor_fsbo import RealtorFSBOScraper
+                scraper = RealtorFSBOScraper(client)
+            elif source == "craigslist":
+                from .scrapers.craigslist_fsbo import CraigslistFSBOScraper
+                scraper = CraigslistFSBOScraper(client)
+            else:
+                return {"error": f"Unknown source: {source}. Valid: fsbo.com, forsalebyowner.com, zillow_fsbo, realtor_fsbo, craigslist"}
+
+            listings = await scraper.search_area(criteria)
+            results = [
+                {
+                    "address": l.address,
+                    "price": l.price,
+                    "beds": l.beds,
+                    "baths": l.baths,
+                    "phone": l.phone,
+                    "email": l.email,
+                    "source": l.source,
+                    "listing_url": l.listing_url,
+                    "contact_status": l.contact_status,
+                }
+                for l in listings
+            ]
+    except Exception as e:
+        import traceback
+        error = traceback.format_exc()
+    finally:
+        root_logger.removeHandler(handler)
+
+    return {
+        "source": source,
+        "location": location,
+        "result_count": len(results),
+        "results": results[:10],
+        "logs": log_stream.getvalue(),
+        "error": error,
+    }
+
+
 async def _run_fsbo_pipeline(search_id: str, criteria: FSBOSearchCriteria):
     """Background task that runs the FSBO pipeline and stores results."""
     search = fsbo_searches[search_id]
