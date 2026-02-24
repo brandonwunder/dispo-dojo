@@ -5,6 +5,7 @@ import logging
 from typing import List, Optional
 
 import httpx
+import pandas as pd
 
 from ..config import REALTOR_FSBO
 from ..fsbo_models import FSBOListing, FSBOSearchCriteria
@@ -69,8 +70,6 @@ class RealtorFSBOScraper(FSBOBaseScraper):
         return results
 
     def _row_to_listing(self, row, criteria: FSBOSearchCriteria) -> Optional[FSBOListing]:
-        import pandas as pd
-
         def safe(val) -> str:
             if val is None:
                 return ""
