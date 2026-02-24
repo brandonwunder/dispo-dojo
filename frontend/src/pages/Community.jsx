@@ -575,7 +575,7 @@ export default function Community() {
 
             {/* Message input */}
             <MessageInput
-              placeholder={`Message #${channelMeta?.name || 'general'}...`}
+              channelId={activeChannel}
               onSend={handleSendMessage}
               onTyping={setTyping}
               fileUpload={fileUpload}

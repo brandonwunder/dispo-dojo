@@ -6,12 +6,21 @@ import GifPicker from './GifPicker'
 import MentionAutocomplete from './MentionAutocomplete'
 import DealForm from './DealForm'
 
+const CHANNEL_PLACEHOLDERS = {
+  general: 'Drop a message in #general...',
+  wins: 'Share your win in #wins! 🔥',
+  'deal-talk': 'Post a deal or ask for feedback...',
+  questions: 'Ask your question — no question is too basic...',
+  resources: 'Share a resource with the dojo...',
+}
+
 export default function MessageInput({
   placeholder,
   onSend,
   onTyping,
   fileUpload,
   onlineUsers,
+  channelId = 'general',
 }) {
   const [body, setBody] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
@@ -98,7 +107,14 @@ export default function MessageInput({
   const hasContent = body.trim() || pendingGif || pendingAttachments.length > 0
 
   return (
-    <div className="border-t border-[rgba(246,196,69,0.10)] px-5 py-3">
+    <div
+      className="px-5 py-3"
+      style={{
+        background: '#111B24',
+        borderTop: '1px solid rgba(0,198,255,0.08)',
+        boxShadow: '0 -4px 24px rgba(0,0,0,0.4)',
+      }}
+    >
       {/* Pending previews */}
       {(pendingGif || pendingAttachments.length > 0 || fileUpload?.uploading) && (
         <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -177,8 +193,16 @@ export default function MessageInput({
           value={body}
           onChange={handleChange}
           onKeyDown={handleKey}
-          placeholder={placeholder || 'Type a message...'}
-          className="min-w-0 flex-1 bg-transparent text-sm text-parchment placeholder:text-text-dim/30 focus:outline-none"
+          placeholder={placeholder || CHANNEL_PLACEHOLDERS[channelId] || `Message #${channelId}...`}
+          className="min-w-0 flex-1 text-sm placeholder:text-[rgba(200,209,218,0.30)] focus:outline-none"
+          style={{
+            background: 'transparent',
+            color: '#F4F7FA',
+            fontFamily: 'var(--font-body, sans-serif)',
+            fontSize: '14px',
+            lineHeight: '1.6',
+            outline: 'none',
+          }}
         />
 
         {/* GIF button */}
@@ -223,10 +247,20 @@ export default function MessageInput({
         <button
           onClick={handleSend}
           disabled={!hasContent}
-          className={`transition-colors duration-150 focus-visible:outline-none active:scale-90 ${
-            hasContent ? 'text-[#00C6FF]' : 'text-text-dim/20'
-          }`}
           title="Send"
+          className="rounded-lg p-2 flex items-center justify-center focus-visible:outline-none"
+          style={{
+            background: hasContent
+              ? 'linear-gradient(135deg, #E53935 0%, #B3261E 100%)'
+              : 'rgba(255,255,255,0.05)',
+            color: hasContent ? '#fff' : '#8A9AAA',
+            boxShadow: hasContent ? '0 0 16px -4px rgba(229,57,53,0.5)' : 'none',
+            cursor: hasContent ? 'pointer' : 'not-allowed',
+            transform: hasContent ? 'scale(1)' : 'scale(0.95)',
+            transition: 'background 150ms, box-shadow 150ms, transform 150ms',
+            minWidth: '36px',
+            minHeight: '36px',
+          }}
         >
           <Send className="h-4 w-4" />
         </button>
