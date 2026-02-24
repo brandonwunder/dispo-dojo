@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Shield, Users, Mail, Phone, Calendar, AtSign, Clock } from 'lucide-react'
+import { Shield, Users, Mail, Phone, Calendar, AtSign, Clock, TrendingUp } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import CountUp from 'react-countup'
 import WoodPanel from '../components/WoodPanel'
@@ -179,6 +179,90 @@ export default function AdminDashboard() {
           </div>
         )}
       </WoodPanel>
+
+      {/* ── Upgrade Roadmap ── */}
+      <div className="mt-10 mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="hanko-seal w-9 h-9 rounded-full flex items-center justify-center">
+            <TrendingUp size={16} className="text-white" />
+          </div>
+          <div>
+            <h2 className="font-heading text-lg text-gold tracking-wide">Upgrade Roadmap</h2>
+            <p className="text-text-dim text-xs">Paid improvements to unlock as the platform grows</p>
+          </div>
+        </div>
+        <div className="katana-line mb-5" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            {
+              priority: 'HIGH',
+              title: 'Rental Comps API — Rentcast Pro or AirDNA',
+              description:
+                'Replace formula-derived STR/MTR estimates and HomeHarvest scraping with verified market data. Rentcast provides real LTR comps; AirDNA provides actual Airbnb occupancy and nightly rates.',
+              cost: '~$29–$99/mo',
+              impact: 'Comp accuracy improves significantly. STR figures become market-validated.',
+            },
+            {
+              priority: 'HIGH',
+              title: 'HUD API Token — Free, Requires Sign-Up',
+              description:
+                'Register at huduser.gov for a free API token to unlock exact HUD Fair Market Rent by ZIP/county. Currently using a 90%-of-market fallback estimate on the Rent Comps page.',
+              cost: 'Free (one-time registration)',
+              impact: 'Section 8 FMR data becomes exact per ZIP and bedroom count.',
+            },
+            {
+              priority: 'MEDIUM',
+              title: 'Saved Reports — Firestore Storage',
+              description:
+                'Allow users to save rent comp and underwriting reports to their profile, access history, and share with partners.',
+              cost: '~$0.06/GB Firestore',
+              impact: 'Repeat use increases, users retain and share reports.',
+            },
+            {
+              priority: 'LOW',
+              title: 'Interactive Comp Map — Mapbox or Google Maps',
+              description:
+                'Display rental comps pinned on a neighborhood map to visualize distance and road boundaries, replacing the current text-based distance display.',
+              cost: 'Mapbox free tier or ~$7/mo',
+              impact: 'Visual neighborhood comparison boosts user confidence.',
+            },
+          ].map((item) => (
+            <WoodPanel key={item.title} hover={false} className="relative">
+              <div className="flex items-start gap-2 mb-2">
+                <div
+                  className="shrink-0 px-2 py-0.5 rounded-sm text-[10px] font-heading font-bold tracking-widest"
+                  style={{
+                    background:
+                      item.priority === 'HIGH'
+                        ? 'rgba(229,57,53,0.18)'
+                        : item.priority === 'MEDIUM'
+                        ? 'rgba(246,196,69,0.14)'
+                        : 'rgba(0,198,255,0.1)',
+                    color:
+                      item.priority === 'HIGH'
+                        ? '#E53935'
+                        : item.priority === 'MEDIUM'
+                        ? '#F6C445'
+                        : '#00C6FF',
+                  }}
+                >
+                  {item.priority}
+                </div>
+              </div>
+              <h3 className="font-heading text-sm text-parchment mb-2 leading-snug">{item.title}</h3>
+              <p className="text-text-dim text-xs font-body mb-3 leading-relaxed">{item.description}</p>
+              <div className="flex flex-wrap gap-4 text-xs">
+                <span className="text-gold-dim font-heading">
+                  Cost: <span className="text-gold">{item.cost}</span>
+                </span>
+              </div>
+              <p className="text-text-dim text-xs font-body mt-1">
+                <span className="text-gold-dim font-heading">Impact: </span>{item.impact}
+              </p>
+            </WoodPanel>
+          ))}
+        </div>
+      </div>
     </motion.div>
   )
 }

@@ -446,6 +446,40 @@ async def _run_pipeline(job_id: str, properties):
 
 
 
+# ── Rent Comps endpoint ──
+
+from .scrapers.rent_comps import get_rent_comps as _get_rent_comps
+
+@api.get("/rent-comps")
+async def rent_comps_endpoint(
+    address: str,
+    beds: int = 3,
+    baths: float = 2.0,
+    sqft: int = None,
+    year_built: int = None,
+    property_type: str = "SFH",
+):
+    """Generate a free rental comp report (HomeHarvest + HUD FMR + Overpass)."""
+    if not address or len(address.strip()) < 5:
+        raise HTTPException(400, "A valid property address is required.")
+    try:
+        result = await _get_rent_comps(
+            address=address.strip(),
+            beds=beds,
+            baths=baths,
+            sqft=sqft,
+            year_built=year_built,
+            property_type=property_type,
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(500, f"Comp search failed: {e}")
+
+
 # ── Register API router ──
 app.include_router(api)
 

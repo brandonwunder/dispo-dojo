@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, MapPin } from 'lucide-react'
+import { LogOut, MapPin, Send, Search, MessageSquare, LayoutDashboard, Monitor, Calculator, FileSignature, HandCoins, Footprints, PawPrint, House, MessageCircle, DollarSign, BarChart3 } from 'lucide-react'
 import {
   LanternIcon,
   CompassIcon,
@@ -22,36 +22,37 @@ import QuickSettingsPanel from './QuickSettingsPanel'
 
 const navSections = [
   {
-    title: 'Dashboard',
+    title: '',
     items: [
-      { to: '/', icon: LanternIcon, label: 'Dashboard' },
-      { to: '/community', icon: ShurikenIcon, label: 'Community' },
+      { to: '/', icon: LayoutDashboard, label: 'JV Dashboard' },
+      { to: '/community', icon: MessageSquare, label: 'Message Board' },
     ],
   },
   {
     title: 'Lead Generation',
     items: [
-      { to: '/agent-finder', icon: CompassIcon, label: 'Listing Agent Finder' },
-      { to: '/loi-sender', icon: InkBrushIcon, label: 'LOI Sender' },
-      { to: '/lead-scrubbing', icon: ForgeHammerIcon, label: 'Lead Scrubbing' },
-      { to: '/website-explainer', icon: ToriiIcon, label: 'Website Explainer' },
+      { to: '/lead-scrubbing', icon: Search, label: 'Finding Leads' },
+      { to: '/agent-finder', icon: CompassIcon, label: 'Find Agent Emails' },
+      { to: '/loi-sender', icon: Send, label: 'LOI Sender' },
+      { to: '/website-explainer', icon: Monitor, label: 'Subject-To Explainer' },
     ],
   },
   {
     title: 'Deal Management',
     items: [
-      { to: '/underwriting', icon: AbacusIcon, label: 'Free Underwriting' },
-      { to: '/contract-generator', icon: SealStampIcon, label: 'Contract Generator' },
-      { to: '/find-buyers', icon: WarFanIcon, label: 'Find Buyers' },
+      { to: '/underwriting', icon: Calculator, label: 'Free Underwriting' },
+      { to: '/contract-generator', icon: FileSignature, label: 'Contract Generator' },
+      { to: '/find-buyers', icon: HandCoins, label: 'Find Buyers' },
     ],
   },
   {
     title: 'Resources',
     items: [
-      { to: '/scripts', icon: ScrollIcon, label: 'Scripts & Objections' },
-      { to: '/direct-agent', icon: HawkIcon, label: 'Direct Agent Process' },
-      { to: '/bird-dog', icon: HawkIcon, label: 'Bird Dog Network' },
-      { to: '/boots-on-ground', icon: MapPin, label: 'Boots on Ground' },
+      { to: '/scripts', icon: MessageCircle, label: 'Scripts & Objections' },
+      { to: '/direct-agent', icon: House, label: 'DTA Process' },
+      { to: '/bird-dog', icon: DollarSign, label: 'Bird Dog Network' },
+      { to: '/boots-on-ground', icon: Footprints, label: 'Boots on Ground' },
+      { to: '/rent-comps', icon: BarChart3, label: 'Rent Comps' },
     ],
   },
 ]
@@ -97,13 +98,17 @@ export default function Sidebar({ isOpen, onClose }) {
       </div>
 
       {/* Navigation sections */}
-      <nav className="flex-1 overflow-y-auto px-3 pb-4">
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-4" style={{ touchAction: 'pan-y' }}>
         {sections.map((section) => (
-          <div key={section.title} className="mb-4">
-            <div className="px-3 py-2 text-[10px] font-heading tracking-[0.2em] uppercase text-[#C8D1DA]/40">
-              {section.title}
-            </div>
-            <div className="mx-3 katana-line mb-2" />
+          <div key={section.title || 'top'} className="mb-4">
+            {section.title && (
+              <>
+                <div className="px-3 py-2 text-[10px] font-heading tracking-[0.2em] uppercase text-[#C8D1DA]/40">
+                  {section.title}
+                </div>
+                <div className="mx-3 katana-line mb-2" />
+              </>
+            )}
 
             {section.items.map((item) => (
               <NavLink key={item.to} to={item.to} end={item.to === '/'}>
@@ -116,6 +121,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     }`}
                     whileHover={{ x: 6 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                    style={{ touchAction: 'pan-y' }}
                   >
                     {/* Active glow strip */}
                     {isActive && (

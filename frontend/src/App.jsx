@@ -7,16 +7,18 @@ import AdminDashboard from './pages/AdminDashboard'
 import AgentFinder from './pages/AgentFinder'
 import FindBuyers from './pages/FindBuyers'
 import Community from './pages/Community'
+import CommunityProfile from './pages/CommunityProfile'
 import LeadScrubbing from './pages/LeadScrubbing'
 import Underwriting from './pages/Underwriting'
-import LOIGenerator from './pages/LOIGenerator'
+import LOISender from './pages/LOISender'
 import ContractGenerator from './pages/ContractGenerator'
 import DirectAgent from './pages/DirectAgent'
 import Scripts from './pages/Scripts'
 import WebsiteExplainer from './pages/WebsiteExplainer'
 import BirdDog from './pages/BirdDog'
 import BootsOnGround from './pages/BootsOnGround'
-import Leaderboard from './pages/Leaderboard'
+import RentComps from './pages/RentComps'
+
 
 function ProtectedRoute({ children }) {
   const { isLoggedIn } = useAuth()
@@ -54,15 +56,17 @@ function App() {
             <Route path="find-buyers" element={<FindBuyers />} />
             <Route path="lead-scrubbing" element={<LeadScrubbing />} />
             <Route path="underwriting" element={<Underwriting />} />
-            <Route path="loi-generator" element={<LOIGenerator />} />
+            <Route path="loi-sender" element={<LOISender />} />
             <Route path="contract-generator" element={<ContractGenerator />} />
             <Route path="direct-agent" element={<DirectAgent />} />
             <Route path="scripts" element={<Scripts />} />
             <Route path="website-explainer" element={<WebsiteExplainer />} />
             <Route path="community" element={<Community />} />
+            <Route path="community/profile/:uid" element={<CommunityProfile />} />
             <Route path="bird-dog" element={<BirdDog />} />
             <Route path="boots-on-ground" element={<BootsOnGround />} />
-            <Route path="leaderboard" element={<Leaderboard />} />
+            <Route path="rent-comps" element={<RentComps />} />
+
           </Route>
         </Routes>
       </BrowserRouter>
