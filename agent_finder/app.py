@@ -20,6 +20,7 @@ from .pipeline import AgentFinderPipeline
 from pydantic import BaseModel
 from .fsbo_models import FSBOSearchCriteria
 from .fsbo_pipeline import FSBOPipeline
+from . import fsbo_db
 
 app = FastAPI(title="Agent Finder")
 api = APIRouter(prefix="/api")
@@ -49,6 +50,8 @@ class FSBOSearchRequest(BaseModel):
     min_baths: Optional[float] = None
     property_type: Optional[str] = None
     max_days_on_market: Optional[int] = None
+    state: Optional[str] = None      # e.g. "AZ" — for display in search history
+    city_zip: Optional[str] = None   # e.g. "Phoenix" or "85001" — for display
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 UPLOAD_DIR = Path(__file__).parent / "data"
@@ -493,6 +496,15 @@ async def fsbo_search(req: FSBOSearchRequest):
         "error": None,
         "created_at": datetime.now().isoformat(),
     }
+    fsbo_db.save_search(
+        search_id=search_id,
+        state=req.state or "",
+        city_zip=req.city_zip or req.location,
+        location=req.location,
+        location_type=req.location_type,
+        created_at=fsbo_searches[search_id]["created_at"],
+        criteria=req.dict(),
+    )
     task = asyncio.create_task(_run_fsbo_pipeline(search_id, criteria))
     _fsbo_tasks[search_id] = task
     return {"search_id": search_id}
@@ -533,11 +545,16 @@ async def fsbo_progress_stream(search_id: str):
 
 @api.get("/fsbo/results/{search_id}")
 async def fsbo_results(search_id: str, page: int = 1, per_page: int = 20):
-    """Return paginated results for a completed FSBO search."""
+    """Return paginated results. Checks memory first, then SQLite."""
+    # In-memory (in-progress or just completed this session)
     search = fsbo_searches.get(search_id)
-    if not search:
+    if search:
+        results = search.get("results") or []
+    else:
+        # Load from SQLite (persisted from previous sessions)
+        results = fsbo_db.get_listings(search_id)
+    if not search and not results:
         raise HTTPException(404, "Search not found.")
-    results = search.get("results") or []
     start = (page - 1) * per_page
     end = start + per_page
     return {
@@ -579,30 +596,31 @@ async def fsbo_download(search_id: str, fmt: str = "csv"):
 
 @api.get("/fsbo/searches")
 async def fsbo_list_searches():
-    """List all past FSBO searches."""
-    result = []
-    for sid, s in fsbo_searches.items():
-        result.append({
-            "search_id": sid,
-            "status": s["status"],
-            "criteria": s.get("criteria", {}),
-            "total_listings": s.get("total_listings", 0),
-            "created_at": s.get("created_at", ""),
-        })
-    result.sort(key=lambda x: x["created_at"], reverse=True)
-    return result
+    """List all FSBO searches (from SQLite, includes history)."""
+    db_searches = fsbo_db.get_searches()
+    # Overlay in-memory status for any currently-running searches
+    for s in db_searches:
+        mem = fsbo_searches.get(s["search_id"])
+        if mem and mem["status"] in ("running", "error", "cancelled"):
+            s["status"] = mem["status"]
+            s["total_listings"] = mem.get("total_listings", 0)
+    return db_searches
 
 
 @api.delete("/fsbo/searches/{search_id}")
 async def fsbo_delete_search(search_id: str):
-    """Delete a FSBO search job."""
-    if search_id not in fsbo_searches:
+    """Cancel and delete a FSBO search."""
+    in_memory = search_id in fsbo_searches
+    db_list = fsbo_db.get_searches()
+    in_db = any(s["search_id"] == search_id for s in db_list)
+    if not in_memory and not in_db:
         raise HTTPException(404, "Search not found.")
     task = _fsbo_tasks.get(search_id)
     if task and not task.done():
         task.cancel()
-    del fsbo_searches[search_id]
+    fsbo_searches.pop(search_id, None)
     _fsbo_tasks.pop(search_id, None)
+    fsbo_db.delete_search(search_id)
     return {"ok": True}
 
 
@@ -638,6 +656,8 @@ async def _run_fsbo_pipeline(search_id: str, criteria: FSBOSearchCriteria):
             })
         search["results"] = results
         search["total_listings"] = len(results)
+        fsbo_db.save_listings(search_id, results)
+        fsbo_db.update_search_complete(search_id, len(results))
         search["status"] = "complete"
     except asyncio.CancelledError:
         search["status"] = "cancelled"
