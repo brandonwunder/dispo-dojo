@@ -1,31 +1,42 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import {
-  Hash,
-  MessageSquare,
-  Send,
-  SmilePlus,
-  X,
-  Reply,
-} from 'lucide-react'
+import { Hash, MessageSquare, X } from 'lucide-react'
+import { collection, query, onSnapshot } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
-import UserProfileCard from '../components/UserProfileCard'
-import { db } from '../lib/firebase'
-import {
-  collection,
-  query,
-  orderBy,
-  limit,
-  onSnapshot,
-  addDoc,
-  serverTimestamp,
-  where,
-  doc,
-  updateDoc,
-  increment,
-} from 'firebase/firestore'
+import { auth, db } from '../lib/firebase'
 
-/* ── constants ─────────────────────────────────────────── */
+// Hooks
+import useMessages from '../hooks/useMessages'
+import useReplies from '../hooks/useReplies'
+import useReactions from '../hooks/useReactions'
+import usePresence from '../hooks/usePresence'
+import useOnlineUsers from '../hooks/useOnlineUsers'
+import useFileUpload from '../hooks/useFileUpload'
+import usePinnedMessages from '../hooks/usePinnedMessages'
+import useReputation from '../hooks/useReputation'
+import useLeaderboard from '../hooks/useLeaderboard'
+import useDirectMessages from '../hooks/useDirectMessages'
+import useNotifications from '../hooks/useNotifications'
+import useUnreadTracking from '../hooks/useUnreadTracking'
+import useSearch from '../hooks/useSearch'
+
+// Components
+import MessageBubble from '../components/community/MessageBubble'
+import MessageInput from '../components/community/MessageInput'
+import TypingIndicator from '../components/community/TypingIndicator'
+import PinnedMessagesBar from '../components/community/PinnedMessagesBar'
+import OnlineUsersList from '../components/community/OnlineUsersList'
+import ProfileCard from '../components/community/ProfileCard'
+import Leaderboard from '../components/community/Leaderboard'
+import DMList from '../components/community/DMList'
+import DMConversation from '../components/community/DMConversation'
+import NewDMModal from '../components/community/NewDMModal'
+import NotificationBell from '../components/community/NotificationBell'
+import SearchBar from '../components/community/SearchBar'
+import MessageSkeleton from '../components/community/MessageSkeleton'
+
+/* -- constants ------------------------------------------------ */
 const CHANNELS = [
   { id: 'general', name: 'General', desc: 'Hang out and chat with the community' },
   { id: 'wins', name: 'Wins', desc: 'Share your wins and celebrate together' },
@@ -34,98 +45,89 @@ const CHANNELS = [
   { id: 'resources', name: 'Resources', desc: 'Share useful links and tools' },
 ]
 
-const EMOJI_GRID = [
-  '\u{1F44D}', '\u{1F525}', '\u{1F4AA}', '\u{1F3AF}',
-  '\u{1F4B0}', '\u{1F3E0}', '\u{1F4C8}', '\u2705',
-  '\u{1F91D}', '\u26A1', '\u{1F389}', '\u{1F44A}',
-  '\u{1F48E}', '\u{1F3C6}', '\u2764\uFE0F', '\u{1F602}',
-]
+const QUICK_REACTIONS = ['\u{1F44D}','\u{1F525}','\u{1F4AF}','\u{1F602}','\u2764\uFE0F','\u{1F3AF}']
 
-/* ── helpers ───────────────────────────────────────────── */
+const CHANNEL_EMPTY_STATES = {
+  'general': { icon: '💬', text: 'The dojo is quiet. Break the silence!' },
+  'wins': { icon: '🏆', text: 'No wins shared yet — be the first to celebrate!' },
+  'deal-talk': { icon: '🤝', text: 'No deal talk yet. Drop your first comp or strategy.' },
+  'questions': { icon: '❓', text: 'No questions asked yet. The sensei awaits.' },
+  'resources': { icon: '📚', text: 'No resources shared yet. Share a useful link!' },
+}
+
 function initials(name) {
   if (!name) return '??'
-  return name
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
-function fmtTime(ts) {
-  if (!ts) return ''
-  const d = ts.toDate ? ts.toDate() : new Date(ts)
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-}
-
-function fmtDate(ts) {
-  if (!ts) return ''
-  const d = ts.toDate ? ts.toDate() : new Date(ts)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
-
-/* ── component ─────────────────────────────────────────── */
+/* -- component ------------------------------------------------ */
 export default function Community() {
-  const { user } = useAuth()
-
+  const { user, isAdmin, firebaseReady } = useAuth()
   const [activeChannel, setActiveChannel] = useState('general')
-  const [messages, setMessages] = useState([])
-  const [replies, setReplies] = useState([])
   const [activeThread, setActiveThread] = useState(null)
-
-  const [msgInput, setMsgInput] = useState('')
-  const [replyInput, setReplyInput] = useState('')
-  const [showEmoji, setShowEmoji] = useState(false)
-  const [showReplyEmoji, setShowReplyEmoji] = useState(false)
   const [profilePopover, setProfilePopover] = useState(null)
+  const [reactionPickerMsgId, setReactionPickerMsgId] = useState(null)
+
+  // New state
+  const [viewMode, setViewMode] = useState('channel') // 'channel' | 'dm'
+  const [activeDMId, setActiveDMId] = useState(null)
+  const [showNewDM, setShowNewDM] = useState(false)
+  const [allUsers, setAllUsers] = useState([])
+  const navigate = useNavigate()
 
   const feedEnd = useRef(null)
   const replyEnd = useRef(null)
-  const msgInputRef = useRef(null)
-  const replyInputRef = useRef(null)
-  const emojiRef = useRef(null)
-  const replyEmojiRef = useRef(null)
+  const messageRefs = useRef({})
 
   const displayName = user?.name || user?.username || 'Guest'
   const displayEmail = user?.email || 'guest@dispodojo.com'
+  const currentUid = user?.firebaseUid || auth.currentUser?.uid
   const channelMeta = CHANNELS.find((c) => c.id === activeChannel)
 
-  /* ── real-time messages ──────────────────────────────── */
+  // Hooks -- gated on firebaseReady to prevent permission errors
+  const { messages, sendMessage, editMessage, deleteMessage, loading, error } = useMessages(activeChannel, firebaseReady)
+  const { replies, sendReply, loading: repliesLoading } = useReplies(activeThread?.id)
+  const { toggleReaction } = useReactions()
+  const { setTyping } = usePresence(displayName, activeChannel)
+  const { onlineUsers, typingUsers } = useOnlineUsers(activeChannel, firebaseReady)
+  const fileUpload = useFileUpload(activeChannel)
+  const replyFileUpload = useFileUpload(activeChannel)
+  const { pinnedMessages, pinMessage, unpinMessage } = usePinnedMessages(activeChannel, firebaseReady)
+
+  // New hooks
+  const reputation = useReputation()
+  const { leaders } = useLeaderboard(10)
+  const {
+    conversations,
+    activeMessages: dmMessages,
+    startConversation,
+    sendDirectMessage,
+    markConversationRead,
+  } = useDirectMessages(activeDMId)
+  const {
+    notifications,
+    unreadCount: notifUnreadCount,
+    markRead: markNotifRead,
+    markAllRead: markAllNotifsRead,
+  } = useNotifications()
+  const unreadTracking = useUnreadTracking(activeChannel)
+  const { query: searchQuery, results: searchResults, search, clearSearch } = useSearch(messages)
+
+  // Fetch all users for DM modal
   useEffect(() => {
-    const q = query(
-      collection(db, 'messages'),
-      where('channelId', '==', activeChannel),
-      orderBy('createdAt', 'asc'),
-      limit(100),
-    )
+    if (!firebaseReady) return
+    const q = query(collection(db, 'users'))
     const unsub = onSnapshot(q, (snap) => {
-      setMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    }, (err) => {
-      console.warn('Messages listener error:', err)
+      setAllUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     })
     return unsub
-  }, [activeChannel])
+  }, [firebaseReady])
 
-  /* ── real-time replies ───────────────────────────────── */
-  useEffect(() => {
-    if (!activeThread) {
-      setReplies([])
-      return
-    }
-    const q = query(
-      collection(db, 'replies'),
-      where('messageId', '==', activeThread.id),
-      orderBy('createdAt', 'asc'),
-    )
-    const unsub = onSnapshot(q, (snap) => {
-      setReplies(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    }, (err) => {
-      console.warn('Replies listener error:', err)
-    })
-    return unsub
-  }, [activeThread?.id])
+  // Build profiles map for rank display in MessageBubble
+  const profilesMap = {}
+  allUsers.forEach((u) => { profilesMap[u.id] = u })
 
-  /* ── auto-scroll ─────────────────────────────────────── */
+  // Auto-scroll
   useEffect(() => {
     feedEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -134,113 +136,103 @@ export default function Community() {
     replyEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [replies])
 
-  /* ── close emoji picker on outside click ─────────────── */
-  useEffect(() => {
-    function handleClick(e) {
-      if (showEmoji && emojiRef.current && !emojiRef.current.contains(e.target)) {
-        setShowEmoji(false)
-      }
-      if (showReplyEmoji && replyEmojiRef.current && !replyEmojiRef.current.contains(e.target)) {
-        setShowReplyEmoji(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [showEmoji, showReplyEmoji])
-
-  /* ── channel switch clears thread ────────────────────── */
+  // Channel switch -- also reset viewMode
   const switchChannel = useCallback((id) => {
     setActiveChannel(id)
     setActiveThread(null)
-    setShowEmoji(false)
-    setShowReplyEmoji(false)
     setProfilePopover(null)
+    setReactionPickerMsgId(null)
+    setViewMode('channel')
+    setActiveDMId(null)
   }, [])
 
-  /* ── send message ────────────────────────────────────── */
-  const sendMessage = useCallback(async () => {
-    const body = msgInput.trim()
-    if (!body) return
-    setMsgInput('')
-    try {
-      await addDoc(collection(db, 'messages'), {
-        channelId: activeChannel,
-        authorName: displayName,
-        authorEmail: displayEmail,
-        body,
-        replyCount: 0,
-        createdAt: serverTimestamp(),
-      })
-    } catch (err) {
-      console.error('Failed to send message:', err)
+  // Send handlers
+  const handleSendMessage = useCallback((body, gifUrl, gifTitle, attachments) => {
+    sendMessage(body, displayName, displayEmail, gifUrl, gifTitle, attachments)
+    setTyping(false)
+  }, [sendMessage, displayName, displayEmail, setTyping])
+
+  const handleSendReply = useCallback((body, gifUrl, gifTitle, attachments) => {
+    sendReply(body, displayName, displayEmail, gifUrl, gifTitle, attachments, activeThread?.authorId)
+  }, [sendReply, displayName, displayEmail, activeThread])
+
+  // Pin toggle -- pass authorId
+  const handlePinToggle = useCallback((messageId) => {
+    const msg = messages.find((m) => m.id === messageId)
+    if (msg?.isPinned) {
+      unpinMessage(messageId)
+    } else {
+      pinMessage(messageId, msg?.authorId)
     }
-  }, [msgInput, activeChannel, displayName, displayEmail])
+  }, [messages, pinMessage, unpinMessage])
 
-  /* ── send reply ──────────────────────────────────────── */
-  const sendReply = useCallback(async () => {
-    if (!activeThread) return
-    const body = replyInput.trim()
-    if (!body) return
-    setReplyInput('')
-    try {
-      await addDoc(collection(db, 'replies'), {
-        messageId: activeThread.id,
-        authorName: displayName,
-        authorEmail: displayEmail,
-        body,
-        createdAt: serverTimestamp(),
-      })
-      await updateDoc(doc(db, 'messages', activeThread.id), {
-        replyCount: increment(1),
-      })
-    } catch (err) {
-      console.error('Failed to send reply:', err)
+  // Scroll to pinned message
+  const scrollToMessage = useCallback((messageId) => {
+    const el = messageRefs.current[messageId]
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('ring-1', 'ring-gold/30')
+      setTimeout(() => el.classList.remove('ring-1', 'ring-gold/30'), 2000)
     }
-  }, [replyInput, activeThread, displayName, displayEmail])
+  }, [])
 
-  /* ── key handlers ────────────────────────────────────── */
-  const handleMsgKey = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
-    }
-  }
-
-  const handleReplyKey = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendReply()
-    }
-  }
-
-  /* ── emoji select for message ────────────────────────── */
-  const pickEmoji = (emoji) => {
-    setMsgInput((prev) => prev + emoji)
-    setShowEmoji(false)
-    msgInputRef.current?.focus()
-  }
-
-  /* ── emoji select for reply ──────────────────────────── */
-  const pickReplyEmoji = (emoji) => {
-    setReplyInput((prev) => prev + emoji)
-    setShowReplyEmoji(false)
-    replyInputRef.current?.focus()
-  }
+  // Author click for profile popover
+  const handleAuthorClick = useCallback((msg) => {
+    setProfilePopover(
+      profilePopover?.id === msg.id
+        ? null
+        : { id: msg.id, name: msg.authorName, email: msg.authorEmail }
+    )
+  }, [profilePopover])
 
   /* ================================================================ */
   /*  RENDER                                                          */
   /* ================================================================ */
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+    <div className="relative z-10 flex h-[calc(100vh-64px)] overflow-hidden">
 
-      {/* ── LEFT: Channel sidebar ──────────────────────────────── */}
+      {/* ── Background layers ─────────────────────────────── */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        {/* Layer 0: Ninja gathering image */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: 'url(/community-bg.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 25%',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
+        {/* Layer 1: Atmospheric fade — center heavily darkened for readability */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `
+              radial-gradient(ellipse 90% 70% at 50% 40%, rgba(11,15,20,0.45) 0%, rgba(11,15,20,0.75) 55%, rgba(11,15,20,0.92) 100%),
+              linear-gradient(180deg, rgba(11,15,20,0.35) 0%, rgba(11,15,20,0.60) 40%, rgba(11,15,20,0.90) 100%)
+            `,
+          }}
+        />
+        {/* Layer 2: Left sidebar darkening */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(to right, rgba(11,15,20,0.85) 0%, rgba(11,15,20,0.40) 30%, transparent 60%)',
+          }}
+        />
+        {/* Layer 3: Bottom fade to page bg */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-48"
+          style={{ background: 'linear-gradient(to bottom, transparent, #0B0F14)' }}
+        />
+      </div>
+
+      {/* -- LEFT: Channel sidebar ---------------------------------- */}
       <aside className="lacquer-deep flex w-[220px] shrink-0 flex-col border-r border-[rgba(246,196,69,0.10)]">
-        {/* title */}
         <div className="px-4 pt-5 pb-3">
           <h2 className="font-display text-lg tracking-wide text-gold">Community</h2>
         </div>
 
-        {/* label + divider */}
         <div className="px-4 pb-1">
           <span className="text-[11px] font-semibold uppercase tracking-widest text-text-dim/50">
             Channels
@@ -248,31 +240,55 @@ export default function Community() {
           <div className="katana-line mt-1.5" />
         </div>
 
-        {/* channel list */}
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-1">
-          {CHANNELS.map((ch) => (
-            <button
-              key={ch.id}
-              onClick={() => switchChannel(ch.id)}
-              className={`flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-sm transition-colors duration-150
-                ${
-                  activeChannel === ch.id
-                    ? 'bg-[rgba(0,198,255,0.08)] font-medium text-[#00C6FF]'
-                    : 'text-text-dim hover:bg-white/[0.04] hover:text-parchment'
-                }
-              `}
-            >
-              <Hash className="h-3.5 w-3.5 shrink-0 opacity-60" />
-              {ch.name}
-            </button>
-          ))}
+          {CHANNELS.map((ch) => {
+            const isActive = activeChannel === ch.id
+            const hasUnread = unreadTracking.channelReadState && !unreadTracking.channelReadState[ch.id] && ch.id !== activeChannel
+            return (
+              <button
+                key={ch.id}
+                onClick={() => switchChannel(ch.id)}
+                className={`flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-sm transition-colors duration-150
+                  ${
+                    isActive
+                      ? 'border-l-2 border-l-[#00C6FF] bg-[rgba(0,198,255,0.08)] font-medium text-[#00C6FF]'
+                      : 'text-text-dim hover:bg-white/[0.04] hover:text-parchment'
+                  }
+                `}
+              >
+                <Hash className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                {ch.name}
+                {hasUnread && (
+                  <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[#00C6FF] shadow-[0_0_4px_rgba(0,198,255,0.5)]" />
+                )}
+              </button>
+            )
+          })}
         </nav>
 
-        {/* user card */}
+        {/* Direct Messages list */}
+        <DMList
+          conversations={conversations}
+          currentUid={currentUid}
+          activeDMId={activeDMId}
+          onSelectDM={(id) => { setActiveDMId(id); setViewMode('dm'); markConversationRead(id) }}
+          onNewDM={() => setShowNewDM(true)}
+        />
+
+        {/* Online users */}
+        <OnlineUsersList onlineUsers={onlineUsers} currentUid={currentUid} profilesMap={profilesMap} />
+
+        {/* Leaderboard */}
+        <Leaderboard leaders={leaders} />
+
+        {/* User card */}
         <div className="border-t border-[rgba(246,196,69,0.10)] px-3 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="hanko-seal flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
-              {initials(displayName)}
+            <div className="relative">
+              <div className="hanko-seal flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
+                {initials(displayName)}
+              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0B0F14] bg-green-400" />
             </div>
             <span className="truncate text-xs font-heading font-semibold text-parchment">
               {displayName}
@@ -281,9 +297,9 @@ export default function Community() {
         </div>
       </aside>
 
-      {/* ── CENTER: Message feed ───────────────────────────────── */}
+      {/* -- CENTER: Message feed ----------------------------------- */}
       <main className="flex min-w-0 flex-1 flex-col">
-        {/* channel header */}
+        {/* Channel header */}
         <header className="lacquer-bar flex items-center gap-2 border-b border-[rgba(246,196,69,0.10)] px-5 py-3">
           <Hash className="h-4 w-4 text-text-dim/50" />
           <span className="font-heading text-sm font-semibold text-parchment">
@@ -292,131 +308,154 @@ export default function Community() {
           <span className="ml-2 text-xs text-text-dim/40">
             {channelMeta?.desc}
           </span>
+          <div className="ml-auto flex items-center gap-2">
+            <SearchBar
+              onSearch={search}
+              onClear={clearSearch}
+              results={searchResults}
+              query={searchQuery}
+              onSelectResult={scrollToMessage}
+            />
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={notifUnreadCount}
+              onMarkRead={markNotifRead}
+              onMarkAllRead={markAllNotifsRead}
+              onNavigate={(notif) => {
+                if (notif.channelId) { switchChannel(notif.channelId) }
+                if (notif.messageId) { setTimeout(() => scrollToMessage(notif.messageId), 300) }
+              }}
+            />
+          </div>
         </header>
 
-        {/* messages */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          {messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-text-dim/30">
-              <MessageSquare className="h-10 w-10" />
-              <p className="text-sm">No messages yet. Be the first to post!</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((msg) => (
-                <div key={msg.id} className="group flex gap-3">
-                  {/* avatar */}
-                  <div className="hanko-seal flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[9px] font-bold">
-                    {initials(msg.authorName)}
-                  </div>
+        {/* Conditional rendering: DM conversation or channel feed */}
+        {viewMode === 'dm' && activeDMId ? (
+          <DMConversation
+            conversation={conversations.find((c) => c.id === activeDMId)}
+            messages={dmMessages}
+            onSend={(body, gifUrl, gifTitle, attachments) => {
+              sendDirectMessage(activeDMId, body, displayName, gifUrl, gifTitle, attachments)
+            }}
+            onBack={() => { setViewMode('channel'); setActiveDMId(null) }}
+            currentUid={currentUid}
+            fileUpload={fileUpload}
+            onlineUsers={onlineUsers}
+          />
+        ) : (
+          <>
+            {/* Pinned messages */}
+            <PinnedMessagesBar
+              pinnedMessages={pinnedMessages}
+              isAdmin={isAdmin}
+              onUnpin={unpinMessage}
+              onScrollTo={scrollToMessage}
+            />
 
-                  {/* content */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-2">
-                      <button
-                        onClick={() => setProfilePopover(
-                          profilePopover?.id === msg.id ? null : { id: msg.id, name: msg.authorName, email: msg.authorEmail }
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              {loading ? (
+                <MessageSkeleton count={5} />
+              ) : error ? (
+                <div className="flex h-full flex-col items-center justify-center gap-2 text-red-400/50">
+                  <p className="text-sm">Failed to load messages</p>
+                  <p className="text-xs">{error}</p>
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center gap-3 text-text-dim/30">
+                  <span className="text-4xl">{CHANNEL_EMPTY_STATES[activeChannel]?.icon || '💬'}</span>
+                  <p className="text-sm">{CHANNEL_EMPTY_STATES[activeChannel]?.text || 'No messages yet. Be the first to post!'}</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      ref={(el) => { messageRefs.current[msg.id] = el }}
+                      className="relative transition-all duration-500"
+                    >
+                      <MessageBubble
+                        msg={msg}
+                        isOwn={msg.authorId === currentUid}
+                        isAdmin={isAdmin}
+                        communityRank={profilesMap[msg.authorId]?.communityRank}
+                        currentUid={currentUid}
+                        onReply={(m) => setActiveThread(m)}
+                        onReact={(id) => setReactionPickerMsgId(reactionPickerMsgId === id ? null : id)}
+                        onEdit={editMessage}
+                        onDelete={deleteMessage}
+                        onPin={handlePinToggle}
+                        onToggleReaction={toggleReaction}
+                        onAuthorClick={handleAuthorClick}
+                      />
+
+                      {/* Quick reaction picker */}
+                      <AnimatePresence>
+                        {reactionPickerMsgId === msg.id && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="absolute -top-8 right-12 z-50 flex gap-0.5 rounded-full border border-[rgba(246,196,69,0.15)] bg-[#111B24] px-2 py-1 shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+                          >
+                            {QUICK_REACTIONS.map((em) => (
+                              <button
+                                key={em}
+                                onClick={() => {
+                                  toggleReaction(msg.id, em, msg.reactions, msg.authorId)
+                                  setReactionPickerMsgId(null)
+                                }}
+                                className="flex h-7 w-7 items-center justify-center rounded-full text-sm hover:scale-125 hover:bg-white/[0.08] transition-transform active:scale-95"
+                              >
+                                {em}
+                              </button>
+                            ))}
+                          </motion.div>
                         )}
-                        className="font-heading text-sm font-semibold text-parchment hover:text-gold transition-colors cursor-pointer relative"
-                      >
-                        {msg.authorName}
-                        <AnimatePresence>
-                          {profilePopover?.id === msg.id && (
-                            <UserProfileCard
+                      </AnimatePresence>
+
+                      {/* Profile popover */}
+                      <AnimatePresence>
+                        {profilePopover?.id === msg.id && (
+                          <div className="absolute left-11 top-0 z-40">
+                            <ProfileCard
+                              uid={msg.authorId}
                               name={profilePopover.name}
                               email={profilePopover.email}
                               onClose={() => setProfilePopover(null)}
+                              onStartDM={async (uid) => {
+                                const convoId = await startConversation(uid, profilePopover.name)
+                                if (convoId) { setActiveDMId(convoId); setViewMode('dm') }
+                                setProfilePopover(null)
+                              }}
+                              onViewProfile={(uid) => { navigate(`/community/profile/${uid}`); setProfilePopover(null) }}
                             />
-                          )}
-                        </AnimatePresence>
-                      </button>
-                      <span className="text-[10px] text-text-dim/30">
-                        {fmtDate(msg.createdAt)} {fmtTime(msg.createdAt)}
-                      </span>
+                          </div>
+                        )}
+                      </AnimatePresence>
                     </div>
-                    <p className="mt-0.5 text-sm leading-relaxed text-text-dim break-words">
-                      {msg.body}
-                    </p>
-
-                    {/* reply button */}
-                    <button
-                      onClick={() => setActiveThread(msg)}
-                      className="mt-1 flex items-center gap-1 text-[11px] text-text-dim/30 opacity-0 transition-opacity duration-150 hover:text-[#00C6FF] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/30 active:scale-95"
-                    >
-                      <Reply className="h-3 w-3" />
-                      {msg.replyCount > 0 ? `${msg.replyCount} ${msg.replyCount === 1 ? 'reply' : 'replies'}` : 'Reply'}
-                    </button>
-                  </div>
+                  ))}
+                  <div ref={feedEnd} />
                 </div>
-              ))}
-              <div ref={feedEnd} />
+              )}
             </div>
-          )}
-        </div>
 
-        {/* message input */}
-        <div className="border-t border-[rgba(246,196,69,0.10)] px-5 py-3">
-          <div className="relative flex items-center gap-2 rounded-sm border border-[rgba(246,196,69,0.12)] bg-black/30 px-3 py-2 focus-within:border-[rgba(246,196,69,0.25)]">
-            <input
-              ref={msgInputRef}
-              type="text"
-              value={msgInput}
-              onChange={(e) => setMsgInput(e.target.value)}
-              onKeyDown={handleMsgKey}
+            {/* Typing indicator */}
+            <TypingIndicator typingUsers={typingUsers} currentUid={currentUid} />
+
+            {/* Message input */}
+            <MessageInput
               placeholder={`Message #${channelMeta?.name || 'general'}...`}
-              className="min-w-0 flex-1 bg-transparent text-sm text-parchment placeholder:text-text-dim/30 focus:outline-none"
+              onSend={handleSendMessage}
+              onTyping={setTyping}
+              fileUpload={fileUpload}
+              onlineUsers={onlineUsers}
             />
-
-            {/* emoji button */}
-            <div className="relative" ref={emojiRef}>
-              <button
-                onClick={() => setShowEmoji((v) => !v)}
-                className="text-text-dim/40 transition-colors duration-150 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/30 active:scale-90"
-                aria-label="Emoji picker"
-              >
-                <SmilePlus className="h-4 w-4" />
-              </button>
-
-              {/* emoji popup */}
-              <AnimatePresence>
-                {showEmoji && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute bottom-8 right-0 z-50 grid grid-cols-4 gap-1 rounded-sm border border-[rgba(246,196,69,0.15)] bg-[#111B24] p-2 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
-                  >
-                    {EMOJI_GRID.map((em) => (
-                      <button
-                        key={em}
-                        onClick={() => pickEmoji(em)}
-                        className="flex h-8 w-8 items-center justify-center rounded-sm text-base transition-transform duration-100 hover:scale-125 hover:bg-white/[0.06] active:scale-95"
-                      >
-                        {em}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* send button */}
-            <button
-              onClick={sendMessage}
-              disabled={!msgInput.trim()}
-              className={`transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/30 active:scale-90 ${
-                msgInput.trim() ? 'text-[#00C6FF]' : 'text-text-dim/20'
-              }`}
-              aria-label="Send message"
-            >
-              <Send className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+          </>
+        )}
       </main>
 
-      {/* ── RIGHT: Thread panel ────────────────────────────────── */}
+      {/* -- RIGHT: Thread panel ------------------------------------ */}
       <AnimatePresence>
         {activeThread && (
           <motion.aside
@@ -427,41 +466,38 @@ export default function Community() {
             transition={{ type: 'spring', damping: 26, stiffness: 260 }}
             className="flex w-[350px] shrink-0 flex-col border-l border-[rgba(246,196,69,0.10)] bg-[#0B0F14]"
           >
-            {/* thread header */}
+            {/* Thread header */}
             <header className="flex items-center justify-between border-b border-[rgba(246,196,69,0.10)] px-4 py-3">
               <span className="font-heading text-sm font-semibold text-parchment">Thread</span>
               <button
                 onClick={() => setActiveThread(null)}
-                className="text-text-dim/40 transition-colors duration-150 hover:text-parchment focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/30 active:scale-90"
-                aria-label="Close thread"
+                className="text-text-dim/40 transition-colors duration-150 hover:text-parchment focus-visible:outline-none active:scale-90"
               >
                 <X className="h-4 w-4" />
               </button>
             </header>
 
-            {/* parent message */}
+            {/* Parent message */}
             <div className="border-b border-[rgba(246,196,69,0.06)] px-4 py-3">
               <div className="flex gap-3">
                 <div className="hanko-seal flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[9px] font-bold">
                   {initials(activeThread.authorName)}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-heading text-sm font-semibold text-parchment">
-                      {activeThread.authorName}
-                    </span>
-                    <span className="text-[10px] text-text-dim/30">
-                      {fmtDate(activeThread.createdAt)} {fmtTime(activeThread.createdAt)}
-                    </span>
-                  </div>
+                  <span className="font-heading text-sm font-semibold text-parchment">
+                    {activeThread.authorName}
+                  </span>
                   <p className="mt-0.5 text-sm leading-relaxed text-text-dim break-words">
                     {activeThread.body}
                   </p>
+                  {activeThread.gifUrl && (
+                    <img src={activeThread.gifUrl} alt={activeThread.gifTitle || 'GIF'} className="mt-2 max-w-[250px] rounded-sm" />
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* replies */}
+            {/* Replies */}
             <div className="flex-1 overflow-y-auto px-4 py-3">
               {replies.length === 0 ? (
                 <p className="text-center text-xs text-text-dim/25">No replies yet</p>
@@ -473,17 +509,30 @@ export default function Community() {
                         {initials(r.authorName)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="font-heading text-xs font-semibold text-parchment">
-                            {r.authorName}
-                          </span>
-                          <span className="text-[9px] text-text-dim/25">
-                            {fmtTime(r.createdAt)}
-                          </span>
-                        </div>
-                        <p className="mt-0.5 text-xs leading-relaxed text-text-dim break-words">
-                          {r.body}
-                        </p>
+                        <span className="font-heading text-xs font-semibold text-parchment">
+                          {r.authorName}
+                        </span>
+                        {r.isDeleted && !isAdmin ? (
+                          <p className="text-xs italic text-text-dim/30">This reply was deleted</p>
+                        ) : (
+                          <>
+                            <p className={`mt-0.5 text-xs leading-relaxed break-words ${r.isDeleted ? 'line-through text-text-dim/30' : 'text-text-dim'}`}>
+                              {r.body}
+                            </p>
+                            {r.gifUrl && (
+                              <img src={r.gifUrl} alt={r.gifTitle || 'GIF'} className="mt-1 max-w-[200px] rounded-sm" />
+                            )}
+                            {r.attachments?.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {r.attachments.map((att, i) => (
+                                  att.type?.startsWith('image/')
+                                    ? <img key={i} src={att.url} alt={att.name} className="max-w-[180px] rounded-sm" />
+                                    : <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#00C6FF] underline">{att.name}</a>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -492,66 +541,30 @@ export default function Community() {
               )}
             </div>
 
-            {/* reply input */}
-            <div className="border-t border-[rgba(246,196,69,0.10)] px-4 py-3">
-              <div className="relative flex items-center gap-2 rounded-sm border border-[rgba(246,196,69,0.12)] bg-black/30 px-3 py-2 focus-within:border-[rgba(246,196,69,0.25)]">
-                <input
-                  ref={replyInputRef}
-                  type="text"
-                  value={replyInput}
-                  onChange={(e) => setReplyInput(e.target.value)}
-                  onKeyDown={handleReplyKey}
-                  placeholder="Reply..."
-                  className="min-w-0 flex-1 bg-transparent text-sm text-parchment placeholder:text-text-dim/30 focus:outline-none"
-                />
-
-                {/* reply emoji button */}
-                <div className="relative" ref={replyEmojiRef}>
-                  <button
-                    onClick={() => setShowReplyEmoji((v) => !v)}
-                    className="text-text-dim/40 transition-colors duration-150 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/30 active:scale-90"
-                    aria-label="Emoji picker"
-                  >
-                    <SmilePlus className="h-4 w-4" />
-                  </button>
-
-                  <AnimatePresence>
-                    {showReplyEmoji && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 6, scale: 0.95 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute bottom-8 right-0 z-50 grid grid-cols-4 gap-1 rounded-sm border border-[rgba(246,196,69,0.15)] bg-[#111B24] p-2 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
-                      >
-                        {EMOJI_GRID.map((em) => (
-                          <button
-                            key={em}
-                            onClick={() => pickReplyEmoji(em)}
-                            className="flex h-8 w-8 items-center justify-center rounded-sm text-base transition-transform duration-100 hover:scale-125 hover:bg-white/[0.06] active:scale-95"
-                          >
-                            {em}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* send reply button */}
-                <button
-                  onClick={sendReply}
-                  disabled={!replyInput.trim()}
-                  className={`transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/30 active:scale-90 ${
-                    replyInput.trim() ? 'text-[#00C6FF]' : 'text-text-dim/20'
-                  }`}
-                  aria-label="Send reply"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+            {/* Reply input */}
+            <MessageInput
+              placeholder="Reply..."
+              onSend={handleSendReply}
+              fileUpload={replyFileUpload}
+              onlineUsers={onlineUsers}
+            />
           </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {/* -- NewDMModal -------------------------------------------- */}
+      <AnimatePresence>
+        {showNewDM && (
+          <NewDMModal
+            users={allUsers}
+            currentUid={currentUid}
+            onSelect={async (uid, name) => {
+              const convoId = await startConversation(uid, name)
+              if (convoId) { setActiveDMId(convoId); setViewMode('dm'); markConversationRead(convoId) }
+              setShowNewDM(false)
+            }}
+            onClose={() => setShowNewDM(false)}
+          />
         )}
       </AnimatePresence>
     </div>
