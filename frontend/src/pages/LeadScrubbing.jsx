@@ -71,7 +71,7 @@ export default function LeadScrubbing() {
               Finding Leads
             </h1>
             <p className="text-text-dim text-base mt-1 font-body">
-              Refine raw leads into razor-sharp prospects
+              On-market lead sourcing — training videos
             </p>
           </div>
         </div>
@@ -116,8 +116,8 @@ export default function LeadScrubbing() {
 
             {/* Bullets */}
             <ul className="space-y-3">
-              {video.bullets.map((bullet) => (
-                <li key={bullet} className="flex items-start gap-3">
+              {video.bullets.map((bullet, idx) => (
+                <li key={idx} className="flex items-start gap-3">
                   <ForgeHammerIcon size={18} className="text-gold shrink-0 mt-0.5" />
                   <span className="text-text-dim text-sm leading-relaxed font-body">{bullet}</span>
                 </li>
