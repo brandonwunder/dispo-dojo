@@ -6,7 +6,6 @@ import {
   FileCheck,
   Handshake,
   Search,
-  Home,
   ArrowRight,
   PenLine,
   ClipboardCheck,
@@ -73,12 +72,6 @@ const tools = [
     icon: Search,
     name: 'Agent Finder',
     desc: 'Find listing agents for any property',
-  },
-  {
-    to: '/fsbo-finder',
-    icon: Home,
-    name: 'FSBO Finder',
-    desc: 'Discover For Sale By Owner opportunities',
   },
 ]
 

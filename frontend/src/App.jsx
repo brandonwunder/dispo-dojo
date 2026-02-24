@@ -5,7 +5,8 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import AgentFinder from './pages/AgentFinder'
-import FSBOFinder from './pages/FSBOFinder'
+import FindBuyers from './pages/FindBuyers'
+import Community from './pages/Community'
 import LeadScrubbing from './pages/LeadScrubbing'
 import Underwriting from './pages/Underwriting'
 import LOIGenerator from './pages/LOIGenerator'
@@ -13,7 +14,6 @@ import ContractGenerator from './pages/ContractGenerator'
 import DirectAgent from './pages/DirectAgent'
 import Scripts from './pages/Scripts'
 import WebsiteExplainer from './pages/WebsiteExplainer'
-import DispoProcess from './pages/DispoProcess'
 
 function ProtectedRoute({ children }) {
   const { isLoggedIn } = useAuth()
@@ -48,7 +48,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="agent-finder" element={<AgentFinder />} />
-            <Route path="fsbo-finder" element={<FSBOFinder />} />
+            <Route path="find-buyers" element={<FindBuyers />} />
             <Route path="lead-scrubbing" element={<LeadScrubbing />} />
             <Route path="underwriting" element={<Underwriting />} />
             <Route path="loi-generator" element={<LOIGenerator />} />
@@ -56,7 +56,7 @@ function App() {
             <Route path="direct-agent" element={<DirectAgent />} />
             <Route path="scripts" element={<Scripts />} />
             <Route path="website-explainer" element={<WebsiteExplainer />} />
-            <Route path="dispo-process" element={<DispoProcess />} />
+            <Route path="community" element={<Community />} />
           </Route>
         </Routes>
       </BrowserRouter>

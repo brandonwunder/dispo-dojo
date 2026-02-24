@@ -4,7 +4,6 @@ import { LogOut } from 'lucide-react'
 import {
   LanternIcon,
   CompassIcon,
-  MapIcon,
   ForgeHammerIcon,
   AbacusIcon,
   InkBrushIcon,
@@ -14,6 +13,7 @@ import {
   WarFanIcon,
   MonomiEyeIcon,
   ToriiIcon,
+  ShurikenIcon,
 } from '../icons/index'
 import { useAuth } from '../context/AuthContext'
 import { useEffect } from 'react'
@@ -23,13 +23,13 @@ const navSections = [
     title: 'Dashboard',
     items: [
       { to: '/', icon: LanternIcon, label: 'Dashboard' },
+      { to: '/community', icon: ShurikenIcon, label: 'Community' },
     ],
   },
   {
     title: 'Lead Generation',
     items: [
       { to: '/agent-finder', icon: CompassIcon, label: 'Listing Agent Finder' },
-      { to: '/fsbo-finder', icon: MapIcon, label: 'FSBO Finder' },
       { to: '/lead-scrubbing', icon: ForgeHammerIcon, label: 'Lead Scrubbing' },
     ],
   },
@@ -39,6 +39,7 @@ const navSections = [
       { to: '/underwriting', icon: AbacusIcon, label: 'Free Underwriting' },
       { to: '/loi-generator', icon: InkBrushIcon, label: 'LOI Generator' },
       { to: '/contract-generator', icon: SealStampIcon, label: 'Contract Generator' },
+      { to: '/find-buyers', icon: WarFanIcon, label: 'Find Buyers' },
     ],
   },
   {
@@ -46,7 +47,6 @@ const navSections = [
     items: [
       { to: '/scripts', icon: ScrollIcon, label: 'Scripts & Objections' },
       { to: '/direct-agent', icon: HawkIcon, label: 'Direct Agent Process' },
-      { to: '/dispo-process', icon: WarFanIcon, label: 'Dispo Process' },
       { to: '/website-explainer', icon: ToriiIcon, label: 'Website Explainer' },
     ],
   },

@@ -4,7 +4,6 @@ import { ChevronDown } from 'lucide-react'
 import {
   NinjaLantern,
   NinjaTelescope,
-  NinjaTracker,
   NinjaForge,
   NinjaScroll,
   NinjaCalligraphy,
@@ -19,60 +18,60 @@ import {
 const routeTitles = {
   '/': 'Dashboard',
   '/agent-finder': 'Agent Finder',
-  '/fsbo-finder': 'FSBO Finder',
   '/lead-scrubbing': 'Lead Scrubbing',
   '/underwriting': 'Underwriting',
   '/loi-generator': 'LOI Generator',
   '/contract-generator': 'Contract Generator',
   '/scripts': 'Scripts & Objections',
   '/direct-agent': 'Direct to Agent',
-  '/dispo-process': 'Dispo Process',
   '/website-explainer': 'Website Explainer',
   '/admin': 'Admin Dashboard',
+  '/find-buyers': 'Find Buyers',
+  '/community': 'Community',
 }
 
 const routeLogos = {
   '/': NinjaLantern,
   '/agent-finder': NinjaTelescope,
-  '/fsbo-finder': NinjaTracker,
   '/lead-scrubbing': NinjaForge,
   '/underwriting': NinjaScroll,
   '/loi-generator': NinjaCalligraphy,
   '/contract-generator': NinjaSeal,
   '/scripts': NinjaTraining,
   '/direct-agent': NinjaHawk,
-  '/dispo-process': NinjaStrategy,
   '/website-explainer': NinjaGuide,
   '/admin': NinjaSensei,
+  '/find-buyers': NinjaStrategy,
+  '/community': NinjaLantern,
 }
 
 const routeKanji = {
   '/': '道場',
   '/agent-finder': '探',
-  '/fsbo-finder': '狩',
   '/lead-scrubbing': '鍛',
   '/underwriting': '巻',
   '/loi-generator': '筆',
   '/contract-generator': '印',
   '/scripts': '修',
   '/direct-agent': '鷹',
-  '/dispo-process': '略',
   '/website-explainer': '案',
   '/admin': '師',
+  '/find-buyers': '売',
+  '/community': '衆',
 }
 
 const routeSections = {
   '/agent-finder': 'Lead Generation',
-  '/fsbo-finder': 'Lead Generation',
   '/lead-scrubbing': 'Lead Generation',
   '/underwriting': 'Deal Management',
   '/loi-generator': 'Deal Management',
   '/contract-generator': 'Deal Management',
   '/scripts': 'Resources',
   '/direct-agent': 'Resources',
-  '/dispo-process': 'Resources',
   '/website-explainer': 'Resources',
   '/admin': 'Admin',
+  '/find-buyers': 'Deal Management',
+  '/community': 'Dashboard',
 }
 
 export default function Header() {

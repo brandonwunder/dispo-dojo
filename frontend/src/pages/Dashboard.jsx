@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { Button } from '@/components/ui/button'
 import KpiCard from '../components/KpiCard'
 import ToolCard from '../components/ToolCard'
-import { ScanSearch, MapPinned, Sparkles, TrendingUp, Send, FileCheck2, Crosshair } from 'lucide-react'
+import { ScanSearch, Users, Sparkles, TrendingUp, Send, FileCheck2, Crosshair } from 'lucide-react'
 
 /* ── Seed data ─────────────────────────────────── */
 
@@ -23,10 +23,10 @@ const tools = [
     to: '/agent-finder',
   },
   {
-    label: 'FSBO Finder',
-    icon: MapPinned,
-    description: 'Find For Sale By Owner listings in any city',
-    to: '/fsbo-finder',
+    label: 'Find Buyers',
+    icon: Users,
+    description: 'Access our nationwide buyer network for your deals',
+    to: '/find-buyers',
   },
   {
     label: 'Lead Scrubbing',
