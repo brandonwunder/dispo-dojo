@@ -40,7 +40,7 @@ class ZillowFSBOScraper(FSBOBaseScraper):
             return results
         except Exception as e:
             self._record_failure()
-            logger.info("zillow_fsbo failed: %s: %s", type(e).__name__, e)
+            logger.warning("zillow_fsbo failed: %s: %s", type(e).__name__, e)
             return []
 
     async def _search(self, criteria: FSBOSearchCriteria) -> List[FSBOListing]:
@@ -95,7 +95,7 @@ class ZillowFSBOScraper(FSBOBaseScraper):
 
         script = soup.find("script", id="__NEXT_DATA__")
         if not script:
-            logger.info("zillow_fsbo: no __NEXT_DATA__ script found in response (len=%d)", len(html))
+            logger.warning("zillow_fsbo: no __NEXT_DATA__ script found in response (len=%d)", len(html))
             return results
 
         try:
