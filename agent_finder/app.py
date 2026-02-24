@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import re as _re
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -445,39 +446,89 @@ async def _run_pipeline(job_id: str, properties):
         _tasks.pop(job_id, None)
 
 
-
-# ── Rent Comps endpoint ──
-
-from .scrapers.rent_comps import get_rent_comps as _get_rent_comps
-
-@api.get("/rent-comps")
-async def rent_comps_endpoint(
-    address: str,
-    beds: int = 3,
-    baths: float = 2.0,
-    sqft: int = None,
-    year_built: int = None,
-    property_type: str = "SFH",
-):
-    """Generate a free rental comp report (HomeHarvest + HUD FMR + Overpass)."""
-    if not address or len(address.strip()) < 5:
-        raise HTTPException(400, "A valid property address is required.")
+@api.get("/comps")
+async def get_comps(address: str):
+    """
+    Pull sold comps near a given address using HomeHarvest.
+    Tries progressively wider date ranges: 3 -> 6 -> 9 -> 12 months.
+    Returns at least 3 comps or an empty list.
+    """
     try:
-        result = await _get_rent_comps(
-            address=address.strip(),
-            beds=beds,
-            baths=baths,
-            sqft=sqft,
-            year_built=year_built,
-            property_type=property_type,
-        )
-        return result
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(500, f"Comp search failed: {e}")
+        from homeharvest import scrape_property
+    except ImportError:
+        raise HTTPException(status_code=500, detail="HomeHarvest not installed")
+
+    # Extract zip code or use full address for location
+    zip_match = _re.search(r'\b(\d{5})\b', address)
+    location = zip_match.group(1) if zip_match else address
+
+    comps = []
+    for months in [3, 6, 9, 12]:
+        try:
+            loop = asyncio.get_event_loop()
+
+            def _scrape(months_=months):
+                from datetime import date, timedelta
+                end = date.today()
+                start = end - timedelta(days=months_ * 30)
+                df = scrape_property(
+                    location=location,
+                    listing_type="sold",
+                    date_from=start.strftime("%Y-%m-%d"),
+                    date_to=end.strftime("%Y-%m-%d"),
+                    limit=10,
+                )
+                return df
+
+            df = await loop.run_in_executor(None, _scrape)
+
+            if df is None or len(df) == 0:
+                continue
+
+            results = []
+            for _, row in df.iterrows():
+                list_price = float(row.get('list_price') or row.get('price') or 0)
+                sold_price = float(row.get('sold_price') or row.get('close_price') or list_price)
+                dom = int(row.get('days_on_market') or row.get('dom') or 0)
+                addr = str(row.get('full_street_line') or row.get('street') or '')
+                city = str(row.get('city') or '')
+
+                if list_price <= 0:
+                    continue
+
+                pct_under = round((list_price - sold_price) / list_price * 100, 1) if list_price > 0 else 0
+
+                results.append({
+                    'address': f"{addr}, {city}".strip(', '),
+                    'listPrice': list_price,
+                    'soldPrice': sold_price,
+                    'pctUnderList': pct_under,
+                    'dom': dom,
+                })
+
+            if len(results) >= 3:
+                comps = results[:5]
+                break
+
+            if len(results) > 0:
+                comps = results
+
+        except Exception as e:
+            import logging as _logging
+            _logging.getLogger("agent_finder.comps").warning("Comp scrape failed (%d mo): %s", months, e)
+            continue
+
+    if not comps:
+        return {"comps": [], "avgPctUnderList": 0, "avgDom": 0, "note": "No comps found"}
+
+    avg_pct = round(sum(c['pctUnderList'] for c in comps) / len(comps), 1)
+    avg_dom = round(sum(c['dom'] for c in comps) / len(comps))
+
+    return {
+        "comps": comps,
+        "avgPctUnderList": avg_pct,
+        "avgDom": avg_dom,
+    }
 
 
 # ── Register API router ──
