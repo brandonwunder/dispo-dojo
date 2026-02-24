@@ -247,7 +247,7 @@ export default function BuyBoxes() {
                 )}
                 {saved.closeTimeline && (
                   <div>
-                    <span className="text-xs font-heading text-text-dim tracking-widests uppercase">Close Timeline</span>
+                    <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Close Timeline</span>
                     <p className="text-parchment text-sm font-body mt-0.5">{saved.closeTimeline}</p>
                   </div>
                 )}
