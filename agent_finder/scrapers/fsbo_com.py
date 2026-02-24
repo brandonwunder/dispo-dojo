@@ -126,7 +126,7 @@ class FsboComScraper(FSBOBaseScraper):
         if depth > 8:
             return
         if isinstance(node, str):
-            if ("/listing/" in node or "/property/" in node) and len(node) < 300:
+            if (node.startswith("/") or node.startswith("http")) and ("/listing/" in node or "/property/" in node) and len(node) < 300:
                 full = node if node.startswith("http") else urljoin(BASE_URL, node)
                 if full not in urls:
                     urls.append(full)
