@@ -61,6 +61,21 @@ function initials(name) {
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
+function isSameDay(a, b) {
+  if (!a || !b) return false
+  return a.toDateString() === b.toDateString()
+}
+
+function formatDayLabel(date) {
+  if (!date) return ''
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+  if (isSameDay(date, today)) return 'Today'
+  if (isSameDay(date, yesterday)) return 'Yesterday'
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
 /* -- component ------------------------------------------------ */
 export default function Community() {
   const { user, isAdmin, firebaseReady } = useAuth()
@@ -458,14 +473,37 @@ export default function Community() {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {messages.map((msg) => (
+                  {messages.map((msg, index) => {
+                    const prevMsg = messages[index - 1]
+                    const msgDate = msg.createdAt?.toDate?.()
+                    const prevDate = prevMsg?.createdAt?.toDate?.()
+                    const isNewDay = !prevMsg || !isSameDay(msgDate, prevDate)
+                    const isGrouped = !isNewDay
+                      && prevMsg?.authorId === msg.authorId
+                      && msg.createdAt?.seconds - prevMsg.createdAt?.seconds < 300
+
+                    return (
                     <div
                       key={msg.id}
                       ref={(el) => { messageRefs.current[msg.id] = el }}
                       className="relative transition-all duration-500"
                     >
+                      {isNewDay && (
+                        <div className="flex items-center gap-3 px-4 py-3">
+                          <div className="flex-1 h-px" style={{
+                            background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.2), transparent)'
+                          }} />
+                          <span className="text-[11px] text-[#8A9AAA] px-2 select-none" style={{ fontFamily: 'var(--font-body, sans-serif)' }}>
+                            {formatDayLabel(msgDate)}
+                          </span>
+                          <div className="flex-1 h-px" style={{
+                            background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.2), transparent)'
+                          }} />
+                        </div>
+                      )}
                       <MessageBubble
                         msg={msg}
+                        isGrouped={isGrouped}
                         isOwn={msg.authorId === currentUid}
                         isAdmin={isAdmin}
                         communityRank={profilesMap[msg.authorId]?.communityRank}
@@ -524,7 +562,8 @@ export default function Community() {
                         )}
                       </AnimatePresence>
                     </div>
-                  ))}
+                  )
+                  })}
                   <div ref={feedEnd} />
                 </div>
               )}
