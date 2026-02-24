@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { signInAnonymously, signOut as firebaseSignOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
+import { getOrCreateProfile, updateProfile as fsUpdateProfile } from '../lib/userProfile'
 
 const AuthContext = createContext(null)
 
@@ -31,6 +32,8 @@ function loadUser() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(loadUser)
   const [users, setUsers] = useState(loadUsers)
+  const [firebaseReady, setFirebaseReady] = useState(false)
+  const [profile, setProfile] = useState(null)
 
   useEffect(() => {
     if (user) {
@@ -47,15 +50,32 @@ export function AuthProvider({ children }) {
   // Sign in anonymously to Firebase when user is already logged in from localStorage
   useEffect(() => {
     if (user) {
-      signInAnonymously(auth).catch(console.error)
+      signInAnonymously(auth)
+        .then((cred) => {
+          const uid = cred.user.uid
+          setUser((prev) => (prev ? { ...prev, firebaseUid: uid } : prev))
+          setFirebaseReady(true)
+          return getOrCreateProfile(uid, user)
+        })
+        .then((prof) => setProfile(prof))
+        .catch(console.error)
     }
   }, [])
 
   const login = (identifier, password) => {
     // Admin login
     if (identifier === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      setUser({ email: ADMIN_EMAIL, name: 'Admin', isAdmin: true })
-      signInAnonymously(auth).catch(console.error)
+      const adminUser = { email: ADMIN_EMAIL, name: 'Admin', isAdmin: true }
+      setUser(adminUser)
+      signInAnonymously(auth)
+        .then((cred) => {
+          const uid = cred.user.uid
+          setUser((prev) => (prev ? { ...prev, firebaseUid: uid } : prev))
+          setFirebaseReady(true)
+          return getOrCreateProfile(uid, adminUser)
+        })
+        .then((prof) => setProfile(prof))
+        .catch(console.error)
       return { success: true }
     }
 
@@ -76,13 +96,22 @@ export function AuthProvider({ children }) {
       return { success: false, error: 'Incorrect password' }
     }
 
-    setUser({
+    const loggedInUser = {
       email: existing.email,
       name: existing.name,
       username: existing.username,
       isAdmin: false,
-    })
-    signInAnonymously(auth).catch(console.error)
+    }
+    setUser(loggedInUser)
+    signInAnonymously(auth)
+      .then((cred) => {
+        const uid = cred.user.uid
+        setUser((prev) => (prev ? { ...prev, firebaseUid: uid } : prev))
+        setFirebaseReady(true)
+        return getOrCreateProfile(uid, loggedInUser)
+      })
+      .then((prof) => setProfile(prof))
+      .catch(console.error)
     return { success: true }
   }
 
@@ -106,20 +135,46 @@ export function AuthProvider({ children }) {
       createdAt: new Date().toISOString(),
     }
     setUsers((prev) => [...prev, newUser])
-    setUser({ email, name, username, isAdmin: false })
-    signInAnonymously(auth).catch(console.error)
+    const signedUpUser = { email, name, username, isAdmin: false }
+    setUser(signedUpUser)
+    signInAnonymously(auth)
+      .then((cred) => {
+        const uid = cred.user.uid
+        setUser((prev) => (prev ? { ...prev, firebaseUid: uid } : prev))
+        setFirebaseReady(true)
+        return getOrCreateProfile(uid, signedUpUser)
+      })
+      .then((prof) => setProfile(prof))
+      .catch(console.error)
     return { success: true }
   }
 
   const quickLogin = () => {
-    setUser({ email: 'guest@dispodojo.com', name: 'Guest', username: 'guest', isAdmin: false })
-    signInAnonymously(auth).catch(console.error)
+    const guestUser = { email: 'guest@dispodojo.com', name: 'Guest', username: 'guest', isAdmin: false }
+    setUser(guestUser)
+    signInAnonymously(auth)
+      .then((cred) => {
+        const uid = cred.user.uid
+        setUser((prev) => (prev ? { ...prev, firebaseUid: uid } : prev))
+        setFirebaseReady(true)
+        return getOrCreateProfile(uid, guestUser)
+      })
+      .then((prof) => setProfile(prof))
+      .catch(console.error)
     return { success: true }
   }
 
   const logout = () => {
     setUser(null)
+    setProfile(null)
+    setFirebaseReady(false)
     firebaseSignOut(auth).catch(console.error)
+  }
+
+  const updateProfile = async (data) => {
+    if (!user?.firebaseUid) return
+    await fsUpdateProfile(user.firebaseUid, data)
+    setProfile((prev) => (prev ? { ...prev, ...data } : prev))
   }
 
   return (
@@ -129,10 +184,13 @@ export function AuthProvider({ children }) {
         users,
         isLoggedIn: !!user,
         isAdmin: user?.isAdmin || false,
+        firebaseReady,
+        profile,
         login,
         signup,
         quickLogin,
         logout,
+        updateProfile,
       }}
     >
       {children}
