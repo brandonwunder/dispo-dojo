@@ -14,6 +14,9 @@ import ContractGenerator from './pages/ContractGenerator'
 import DirectAgent from './pages/DirectAgent'
 import Scripts from './pages/Scripts'
 import WebsiteExplainer from './pages/WebsiteExplainer'
+import BirdDog from './pages/BirdDog'
+import BootsOnGround from './pages/BootsOnGround'
+import Leaderboard from './pages/Leaderboard'
 
 function ProtectedRoute({ children }) {
   const { isLoggedIn } = useAuth()
@@ -57,6 +60,9 @@ function App() {
             <Route path="scripts" element={<Scripts />} />
             <Route path="website-explainer" element={<WebsiteExplainer />} />
             <Route path="community" element={<Community />} />
+            <Route path="bird-dog" element={<BirdDog />} />
+            <Route path="boots-on-ground" element={<BootsOnGround />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
           </Route>
         </Routes>
       </BrowserRouter>
