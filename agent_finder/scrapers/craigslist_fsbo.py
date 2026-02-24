@@ -79,7 +79,7 @@ class CraigslistFSBOScraper(FSBOBaseScraper):
 
         # Partial match — key starts with city or city starts with key
         for key, val in CRAIGSLIST_AREAS.items():
-            if len(city) > 3 and (key == city or key.startswith(city) or city.startswith(key)):
+            if len(city) > 3 and len(key) > 3 and (key == city or key.startswith(city)):
                 logger.debug("craigslist: partial match %r → %s via key %r", city, val, key)
                 return val
 
