@@ -22,6 +22,7 @@ import useUnreadTracking from '../hooks/useUnreadTracking'
 import useSearch from '../hooks/useSearch'
 
 // Components
+import ChannelHero from '../components/community/ChannelHero'
 import MessageBubble from '../components/community/MessageBubble'
 import MessageInput from '../components/community/MessageInput'
 import TypingIndicator from '../components/community/TypingIndicator'
@@ -69,6 +70,7 @@ export default function Community() {
   const [reactionPickerMsgId, setReactionPickerMsgId] = useState(null)
 
   // New state
+  const [showMembers, setShowMembers] = useState(false)
   const [viewMode, setViewMode] = useState('channel') // 'channel' | 'dm'
   const [activeDMId, setActiveDMId] = useState(null)
   const [showNewDM, setShowNewDM] = useState(false)
@@ -385,15 +387,17 @@ export default function Community() {
 
       {/* -- CENTER: Message feed ----------------------------------- */}
       <main className="flex min-w-0 flex-1 flex-col">
-        {/* Channel header */}
-        <header className="lacquer-bar flex items-center gap-2 border-b border-[rgba(246,196,69,0.10)] px-5 py-3">
-          <Hash className="h-4 w-4 text-text-dim/50" />
-          <span className="font-heading text-sm font-semibold text-parchment">
-            {channelMeta?.name}
-          </span>
-          <span className="ml-2 text-xs text-text-dim/40">
-            {channelMeta?.desc}
-          </span>
+        {/* Channel hero */}
+        <ChannelHero
+          channelId={activeChannel}
+          messageCount={messages.length}
+          memberCount={onlineUsers.length}
+          pinnedCount={pinnedMessages.length}
+          onPinnedClick={() => {}}
+          onMembersClick={() => setShowMembers(p => !p)}
+        />
+        {/* Toolbar: search + notifications */}
+        <div className="flex items-center gap-2 px-5 py-2 border-b border-[rgba(246,196,69,0.10)]" style={{ background: 'rgba(11,15,20,0.6)' }}>
           <div className="ml-auto flex items-center gap-2">
             <SearchBar
               onSearch={search}
@@ -413,7 +417,7 @@ export default function Community() {
               }}
             />
           </div>
-        </header>
+        </div>
 
         {/* Conditional rendering: DM conversation or channel feed */}
         {viewMode === 'dm' && activeDMId ? (
