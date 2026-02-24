@@ -144,9 +144,9 @@ function GlassCard({ children, maxWidth = '680px' }) {
         marginLeft: 'auto',
         marginRight: 'auto',
         marginBottom: '24px',
-        background: 'rgba(11, 15, 20, 0.82)',
-        backdropFilter: 'blur(20px) saturate(1.2)',
-        WebkitBackdropFilter: 'blur(20px) saturate(1.2)',
+        background: 'rgba(11, 15, 20, 0.58)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         border: '1px solid rgba(0, 198, 255, 0.12)',
         borderRadius: '16px',
         boxShadow:
@@ -155,22 +155,23 @@ function GlassCard({ children, maxWidth = '680px' }) {
           'inset 0 1px 0 rgba(255,255,255,0.04), ' +
           'inset 0 0 40px rgba(0,198,255,0.03)',
         position: 'relative',
-        overflow: 'hidden',
+        overflow: 'visible',
       }}
     >
-      {/* Top accent line */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '2px',
-          background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.5), transparent)',
-          pointerEvents: 'none',
-        }}
-      />
-      <div style={{ padding: '24px' }}>
+      {/* Top accent line — clipped inside its own overlay so border-radius is respected */}
+      <div style={{ position: 'absolute', inset: 0, borderRadius: '16px', overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.5), transparent)',
+          }}
+        />
+      </div>
+      <div style={{ padding: '24px', position: 'relative', zIndex: 1 }}>
         {children}
       </div>
     </div>
@@ -240,6 +241,7 @@ export default function AgentFinder() {
   const [expandedAgents, setExpandedAgents] = useState(new Set())
   const [exportMenuOpen, setExportMenuOpen] = useState(false)
   const [historyDownloadMenu, setHistoryDownloadMenu] = useState(null) // job_id or null
+  const [deleteConfirmJob, setDeleteConfirmJob] = useState(null) // job_id pending delete confirm
   const [bulkCopyToast, setBulkCopyToast] = useState(null)
   const [visibleColumns, setVisibleColumns] = useState(() => {
     try {
@@ -517,15 +519,16 @@ export default function AgentFinder() {
   }
 
   async function expandJob(jobId) {
-    let willExpand
+    const isExpanded = expandedJobs.has(jobId)
     setExpandedJobs(prev => {
       const next = new Set(prev)
-      if (next.has(jobId)) { next.delete(jobId); willExpand = false }
-      else { next.add(jobId); willExpand = true }
+      if (next.has(jobId)) next.delete(jobId)
+      else next.add(jobId)
       return next
     })
 
-    if (!willExpand || jobResults[jobId] !== undefined) return // collapse or already loaded
+    // Collapsing, or results already fetched — nothing more to do
+    if (isExpanded || jobResults[jobId] !== undefined) return
 
     setJobResultsLoading(prev => new Set([...prev, jobId]))
     try {
@@ -534,7 +537,7 @@ export default function AgentFinder() {
       const data = await res.json()
       setJobResults(prev => ({ ...prev, [jobId]: data.results || data.rows || [] }))
     } catch {
-      setJobResults(prev => ({ ...prev, [jobId]: null })) // null = error state
+      setJobResults(prev => ({ ...prev, [jobId]: null }))
     } finally {
       setJobResultsLoading(prev => {
         const next = new Set(prev)
@@ -622,15 +625,16 @@ export default function AgentFinder() {
       : resultRows.filter(r => (r.status || 'not_found') === statusFilter)
 
     const COLS = [
-      { header: 'Address',    get: r => r.address || '' },
-      { header: 'Agent',      get: r => r.agent || r.agent_name || '' },
-      { header: 'Brokerage',  get: r => r.brokerage || r.office || '' },
-      { header: 'Phone',      get: r => r.phone || '' },
-      { header: 'Email',      get: r => r.email || '' },
-      { header: 'Status',     get: r => r.status || '' },
-      { header: 'List Date',  get: r => r.list_date || '' },
-      { header: 'DOM',        get: r => r.dom || r.days_on_market || '' },
-      { header: 'Confidence', get: r => r.confidence != null ? (r.confidence > 1 ? r.confidence : Math.round(r.confidence * 100)) + '%' : '' },
+      { header: 'Address',       get: r => r.address || '' },
+      { header: 'Agent',         get: r => r.agent || r.agent_name || '' },
+      { header: 'Brokerage',     get: r => r.brokerage || r.office || '' },
+      { header: 'Phone',         get: r => r.phone || '' },
+      { header: 'Email',         get: r => r.email || '' },
+      { header: 'Listing Price', get: r => r.listing_price || r.price || '' },
+      { header: 'Status',        get: r => r.status || '' },
+      { header: 'List Date',     get: r => r.list_date || '' },
+      { header: 'DOM',           get: r => r.dom || r.days_on_market || '' },
+      { header: 'Confidence',    get: r => r.confidence != null ? (r.confidence > 1 ? r.confidence : Math.round(r.confidence * 100)) + '%' : '' },
     ]
     const escape = v => `"${String(v).replace(/"/g, '""')}"`
     const header = COLS.map(c => c.header).join(',')
@@ -650,15 +654,16 @@ export default function AgentFinder() {
 
   function downloadAsXLSX(rows, filename) {
     const data = rows.map(r => ({
-      Address:    r.address || '',
-      Agent:      r.agent || r.agent_name || '',
-      Brokerage:  r.brokerage || r.office || '',
-      Phone:      r.phone || '',
-      Email:      r.email || '',
-      Status:     r.status || '',
-      'List Date': r.list_date || '',
-      DOM:        r.dom || r.days_on_market || '',
-      Confidence: r.confidence != null
+      Address:         r.address || '',
+      Agent:           r.agent || r.agent_name || '',
+      Brokerage:       r.brokerage || r.office || '',
+      Phone:           r.phone || '',
+      Email:           r.email || '',
+      'Listing Price': r.listing_price || r.price || '',
+      Status:          r.status || '',
+      'List Date':     r.list_date || '',
+      DOM:             r.dom || r.days_on_market || '',
+      Confidence:      r.confidence != null
         ? (r.confidence > 1 ? r.confidence : Math.round(r.confidence * 100)) + '%'
         : '',
     }))
@@ -907,7 +912,7 @@ export default function AgentFinder() {
 
       {/* ── Page content ────────────────────────────────────────────── */}
       <motion.div
-        className="relative z-10 px-6 py-8"
+        className="relative z-10 px-6 py-16"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -929,7 +934,7 @@ export default function AgentFinder() {
               Listing Agent Finder
             </h1>
           </div>
-          <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6 }}>
+          <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
             Upload a list of on-market properties to retrieve listing agent contact data.
             With recent MLS crackdowns on agent data access, this tool reliably scrapes
             agent names, phones, and emails for your entire list — no MLS access required.
@@ -1085,6 +1090,89 @@ export default function AgentFinder() {
                       border: 'none', cursor: 'pointer',
                     }}>
                     Got It
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Confirm delete modal */}
+        <AnimatePresence>
+          {deleteConfirmJob && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 200,
+                background: 'rgba(5,8,12,0.85)', backdropFilter: 'blur(8px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '24px',
+              }}
+              onClick={() => setDeleteConfirmJob(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.93, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.93, y: 10 }}
+                transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  background: 'rgba(11,15,20,0.97)',
+                  border: '1px solid rgba(229,57,53,0.3)',
+                  borderRadius: '16px',
+                  padding: '32px 36px',
+                  maxWidth: '400px',
+                  width: '100%',
+                  boxShadow: '0 24px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(229,57,53,0.1)',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ fontSize: '32px', marginBottom: '12px' }}>🗑️</div>
+                <h3 style={{
+                  fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '18px',
+                  letterSpacing: '0.06em', textTransform: 'uppercase',
+                  color: '#F4F7FA', marginBottom: '10px',
+                }}>
+                  Delete This Run?
+                </h3>
+                <p style={{
+                  fontFamily: 'DM Sans, sans-serif', fontSize: '13px',
+                  color: '#C8D1DA', lineHeight: 1.6, marginBottom: '28px',
+                }}>
+                  This will permanently remove the run record and its downloaded files. This cannot be undone.
+                </p>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                  <button
+                    onClick={() => setDeleteConfirmJob(null)}
+                    style={{
+                      padding: '9px 24px', borderRadius: '8px',
+                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                      color: '#C8D1DA', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600,
+                      fontSize: '13px', letterSpacing: '0.08em', textTransform: 'uppercase',
+                      cursor: 'pointer', transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => { handleDelete(deleteConfirmJob); setDeleteConfirmJob(null) }}
+                    style={{
+                      padding: '9px 24px', borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #E53935, #B3261E)', border: 'none',
+                      color: '#fff', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700,
+                      fontSize: '13px', letterSpacing: '0.08em', textTransform: 'uppercase',
+                      cursor: 'pointer', boxShadow: '0 0 16px rgba(229,57,53,0.35)',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 0 24px rgba(229,57,53,0.6)' }}
+                    onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 0 16px rgba(229,57,53,0.35)' }}
+                  >
+                    Confirm Delete
                   </button>
                 </div>
               </motion.div>
@@ -1975,7 +2063,7 @@ export default function AgentFinder() {
               <div key={stat.label} style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 padding: '12px 24px', borderRadius: '12px',
-                background: 'rgba(17,27,36,0.7)', backdropFilter: 'blur(12px)',
+                background: 'rgba(11,15,20,0.58)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
                 border: `1px solid ${stat.color}22`,
                 boxShadow: `0 0 16px ${stat.color}18`,
                 minWidth: '180px',
@@ -1994,22 +2082,32 @@ export default function AgentFinder() {
           </div>
         )}
 
-        {jobs.length > 0 && (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ delay: 0.3 }}
-  >
-    <GlassCard>
-      <h2
-        className="font-heading text-xs uppercase mb-5"
-        style={{ color: '#00C6FF', letterSpacing: '0.14em' }}
-      >
-        Job History
-      </h2>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <GlassCard>
+            <h2
+              className="font-heading text-xs uppercase mb-5"
+              style={{ color: '#00C6FF', letterSpacing: '0.14em' }}
+            >
+              Past Runs
+            </h2>
 
-      <div className="space-y-2">
-        {jobs.map((job) => (
+            {jobs.length === 0 && (
+              <div style={{
+                textAlign: 'center', padding: '32px 16px',
+                color: '#8A9AAA', fontFamily: 'DM Sans, sans-serif', fontSize: '13px',
+              }}>
+                <div style={{ fontSize: '28px', marginBottom: '10px', opacity: 0.3 }}>📋</div>
+                <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: '12px', color: '#C8D1DA', marginBottom: '4px' }}>No runs yet</div>
+                Upload a property list above to get started.
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {jobs.map((job) => (
           <div key={job.job_id || job.id}>
           <div
             className="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
@@ -2148,15 +2246,16 @@ export default function AgentFinder() {
                   const fname = (job.filename || 'results').replace(/\.[^.]+$/, '')
                   if (fmt === 'csv') {
                     const COLS = [
-                      { header: 'Address',    get: r => r.address || '' },
-                      { header: 'Agent',      get: r => r.agent || r.agent_name || '' },
-                      { header: 'Brokerage',  get: r => r.brokerage || r.office || '' },
-                      { header: 'Phone',      get: r => r.phone || '' },
-                      { header: 'Email',      get: r => r.email || '' },
-                      { header: 'Status',     get: r => r.status || '' },
-                      { header: 'List Date',  get: r => r.list_date || '' },
-                      { header: 'DOM',        get: r => r.dom || r.days_on_market || '' },
-                      { header: 'Confidence', get: r => r.confidence != null ? (r.confidence > 1 ? r.confidence : Math.round(r.confidence * 100)) + '%' : '' },
+                      { header: 'Address',       get: r => r.address || r.original_address || '' },
+                      { header: 'Agent',         get: r => r.agent || r.agent_name || '' },
+                      { header: 'Brokerage',     get: r => r.brokerage || r.office || '' },
+                      { header: 'Phone',         get: r => r.phone || r.agent_phone || '' },
+                      { header: 'Email',         get: r => r.email || r.agent_email || '' },
+                      { header: 'Listing Price', get: r => r.listing_price || r.price || '' },
+                      { header: 'Status',        get: r => r.status || r.lookup_status || '' },
+                      { header: 'List Date',     get: r => r.list_date || '' },
+                      { header: 'DOM',           get: r => r.dom || r.days_on_market || '' },
+                      { header: 'Confidence',    get: r => r.confidence != null ? (r.confidence > 1 ? r.confidence : Math.round(r.confidence * 100)) + '%' : '' },
                     ]
                     const esc = v => `"${String(v).replace(/"/g, '""')}"`
                     const csv = COLS.map(c => c.header).join(',') + '\n' + rows.map(r => COLS.map(c => esc(c.get(r))).join(',')).join('\n')
@@ -2165,10 +2264,15 @@ export default function AgentFinder() {
                     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
                   } else {
                     const data = rows.map(r => ({
-                      Address: r.address || '', Agent: r.agent || r.agent_name || '',
-                      Brokerage: r.brokerage || r.office || '', Phone: r.phone || '',
-                      Email: r.email || '', Status: r.status || '',
-                      'List Date': r.list_date || '', DOM: r.dom || r.days_on_market || '',
+                      Address: r.address || r.original_address || '',
+                      Agent: r.agent || r.agent_name || '',
+                      Brokerage: r.brokerage || r.office || '',
+                      Phone: r.phone || r.agent_phone || '',
+                      Email: r.email || r.agent_email || '',
+                      'Listing Price': r.listing_price || r.price || '',
+                      Status: r.status || r.lookup_status || '',
+                      'List Date': r.list_date || '',
+                      DOM: r.dom || r.days_on_market || '',
                       Confidence: r.confidence != null ? (r.confidence > 1 ? r.confidence : Math.round(r.confidence * 100)) + '%' : '',
                     }))
                     const ws = XLSX.utils.json_to_sheet(data)
@@ -2224,7 +2328,7 @@ export default function AgentFinder() {
                 )
               })()}
               <button
-                onClick={() => handleDelete(job.job_id || job.id)}
+                onClick={() => setDeleteConfirmJob(job.job_id || job.id)}
                 className="inline-flex items-center gap-1.5 rounded-lg font-heading tracking-wider uppercase text-xs px-3 py-1.5 transition-all"
                 style={{ color: '#8A9AAA', border: '1px solid transparent' }}
                 onMouseEnter={e => {
@@ -2267,43 +2371,45 @@ export default function AgentFinder() {
                 <p style={{ color: '#C8D1DA', fontSize: '13px', textAlign: 'center', padding: '12px' }}>
                   No results found.
                 </p>
-              ) : (
-                <>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                        {['Address', 'Agent', 'Phone', 'Email', 'Status'].map(h => (
-                          <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: '#C8D1DA', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '10px' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(jobResults[job.job_id || job.id] || []).slice(0, 10).map((row, i) => (
-                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <td style={{ padding: '6px 10px', color: '#C8D1DA', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.address || '--'}</td>
-                          <td style={{ padding: '6px 10px', color: '#F4F7FA' }}>{row.agent || row.agent_name || '--'}</td>
-                          <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: '#F4F7FA' }}>{row.phone || '--'}</td>
-                          <td style={{ padding: '6px 10px', color: '#C8D1DA' }}>{row.email || '--'}</td>
-                          <td style={{ padding: '6px 10px' }}><StatusBadge status={row.status} /></td>
+              ) : (() => {
+                const rows = jobResults[job.job_id || job.id] || []
+                const preview = rows.slice(0, 10)
+                return (
+                  <>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                          {['Address', 'Agent', 'Phone', 'Email'].map(h => (
+                            <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: '#C8D1DA', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '10px' }}>{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {(jobResults[job.job_id || job.id] || []).length > 10 && (
-                    <p style={{ textAlign: 'center', marginTop: '8px', fontSize: '12px', color: '#C8D1DA' }}>
-                      +{(jobResults[job.job_id || job.id] || []).length - 10} more rows — download to see all
-                    </p>
-                  )}
-                </>
-              )}
+                      </thead>
+                      <tbody>
+                        {preview.map((row, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                            <td style={{ padding: '6px 10px', color: '#C8D1DA', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.original_address || row.address || '--'}</td>
+                            <td style={{ padding: '6px 10px', color: '#F4F7FA' }}>{row.agent_name || row.agent || '--'}</td>
+                            <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: '#F4F7FA' }}>{row.agent_phone || row.phone || '--'}</td>
+                            <td style={{ padding: '6px 10px', color: '#C8D1DA' }}>{row.agent_email || row.email || '--'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {rows.length > 10 && (
+                      <p style={{ textAlign: 'center', marginTop: '8px', fontSize: '12px', color: '#C8D1DA' }}>
+                        +{rows.length - 10} more — download to see all
+                      </p>
+                    )}
+                  </>
+                )
+              })()}
             </div>
           )}
           </div>
-        ))}
-      </div>
-    </GlassCard>
-  </motion.div>
-)}
+            ))}
+            </div>
+          </GlassCard>
+        </motion.div>
       </motion.div>
     </div>
   )

@@ -26,23 +26,21 @@ const navSections = [
     items: [
       { to: '/', icon: LanternIcon, label: 'Dashboard' },
       { to: '/community', icon: ShurikenIcon, label: 'Community' },
-      { to: '/leaderboard', icon: ToriiIcon, label: 'Leaderboard' },
     ],
   },
   {
     title: 'Lead Generation',
     items: [
       { to: '/agent-finder', icon: CompassIcon, label: 'Listing Agent Finder' },
+      { to: '/loi-sender', icon: InkBrushIcon, label: 'LOI Sender' },
       { to: '/lead-scrubbing', icon: ForgeHammerIcon, label: 'Lead Scrubbing' },
-      { to: '/bird-dog', icon: HawkIcon, label: 'Bird Dog Network' },
-      { to: '/boots-on-ground', icon: MapPin, label: 'Boots on Ground' },
+      { to: '/website-explainer', icon: ToriiIcon, label: 'Website Explainer' },
     ],
   },
   {
     title: 'Deal Management',
     items: [
       { to: '/underwriting', icon: AbacusIcon, label: 'Free Underwriting' },
-      { to: '/loi-generator', icon: InkBrushIcon, label: 'LOI Generator' },
       { to: '/contract-generator', icon: SealStampIcon, label: 'Contract Generator' },
       { to: '/find-buyers', icon: WarFanIcon, label: 'Find Buyers' },
     ],
@@ -52,7 +50,8 @@ const navSections = [
     items: [
       { to: '/scripts', icon: ScrollIcon, label: 'Scripts & Objections' },
       { to: '/direct-agent', icon: HawkIcon, label: 'Direct Agent Process' },
-      { to: '/website-explainer', icon: ToriiIcon, label: 'Website Explainer' },
+      { to: '/bird-dog', icon: HawkIcon, label: 'Bird Dog Network' },
+      { to: '/boots-on-ground', icon: MapPin, label: 'Boots on Ground' },
     ],
   },
 ]
