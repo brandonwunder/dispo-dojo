@@ -1,5 +1,6 @@
 """FSBO.com scraper — dedicated FSBO listing site with owner contact info."""
 
+import json
 import logging
 import re
 from typing import List, Optional
@@ -66,12 +67,31 @@ class FsboComScraper(FSBOBaseScraper):
         params = self._build_search_params(criteria, page)
         try:
             resp = await self._get(f"{BASE_URL}/search", params=params)
+            logger.debug("fsbo.com search page %d: status=%d len=%d",
+                         page, resp.status_code, len(resp.text))
             if resp.status_code != 200:
+                logger.info("fsbo.com: non-200 response on page %d: %d", page, resp.status_code)
                 return []
+
             soup = BeautifulSoup(resp.text, "lxml")
-            # IMPORTANT: Verify these selectors against the live site during implementation.
-            # Common patterns on FSBO.com:
-            links = soup.select("a[href*='/listing/']") or soup.select(".listing-card a") or soup.select("h2.listing-title a")
+
+            # Try multiple selector strategies
+            links = (
+                soup.select("a[href*='/listing/']")
+                or soup.select("a[href*='/property/']")
+                or soup.select(".listing-card a")
+                or soup.select(".property-card a")
+                or soup.select("[class*='listing'] a[href]")
+                or soup.select("[class*='property'] a[href]")
+            )
+
+            if not links:
+                logger.info("fsbo.com: no links found with HTML selectors on page %d — trying __NEXT_DATA__", page)
+                if soup.find("script", id="__NEXT_DATA__"):
+                    return self._extract_urls_from_nextdata(soup)
+                logger.info("fsbo.com: no __NEXT_DATA__ either — site may require JS rendering")
+                return []
+
             seen = set()
             result = []
             for a in links:
@@ -80,10 +100,42 @@ class FsboComScraper(FSBOBaseScraper):
                     full = href if href.startswith("http") else urljoin(BASE_URL, href)
                     seen.add(href)
                     result.append(full)
+            logger.debug("fsbo.com: found %d listing links on page %d", len(result), page)
             return result
         except Exception as e:
             logger.debug("fsbo.com search page %d failed: %s", page, e)
             return []
+
+    def _extract_urls_from_nextdata(self, soup: BeautifulSoup) -> List[str]:
+        """Extract listing URLs from Next.js __NEXT_DATA__ JSON if HTML is empty."""
+        script = soup.find("script", id="__NEXT_DATA__")
+        if not script:
+            return []
+        try:
+            data = json.loads(script.string)
+            urls: List[str] = []
+            self._find_listing_urls_in_json(data, urls, 0)
+            logger.info("fsbo.com: extracted %d listing URLs from __NEXT_DATA__", len(urls))
+            return urls[:50]
+        except Exception as e:
+            logger.debug("fsbo.com __NEXT_DATA__ parse failed: %s", e)
+            return []
+
+    def _find_listing_urls_in_json(self, node, urls: list, depth: int) -> None:
+        """Recursively search JSON for URLs containing '/listing/' or '/property/'."""
+        if depth > 8:
+            return
+        if isinstance(node, str):
+            if ("/listing/" in node or "/property/" in node) and len(node) < 300:
+                full = node if node.startswith("http") else urljoin(BASE_URL, node)
+                if full not in urls:
+                    urls.append(full)
+        elif isinstance(node, list):
+            for item in node:
+                self._find_listing_urls_in_json(item, urls, depth + 1)
+        elif isinstance(node, dict):
+            for val in node.values():
+                self._find_listing_urls_in_json(val, urls, depth + 1)
 
     def _build_search_params(self, criteria: FSBOSearchCriteria, page: int) -> dict:
         params: dict = {"page": page}

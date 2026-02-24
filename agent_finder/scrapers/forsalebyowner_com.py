@@ -1,5 +1,6 @@
 """ForSaleByOwner.com scraper — secondary dedicated FSBO site."""
 
+import json
 import logging
 import re
 from typing import List, Optional
@@ -58,21 +59,39 @@ class ForSaleByOwnerScraper(FSBOBaseScraper):
         search_url = self._build_search_url(criteria, page)
         try:
             resp = await self._get(search_url)
+            logger.debug("forsalebyowner.com page %d: status=%d url=%s len=%d",
+                         page, resp.status_code, search_url, len(resp.text))
             if resp.status_code != 200:
                 return []
+
             soup = BeautifulSoup(resp.text, "lxml")
-            # IMPORTANT: Verify selectors against live site during implementation
-            links = (soup.select("a[href*='/homes/']")
-                     or soup.select(".property-card a")
-                     or soup.select("h2 a"))
+
+            links = (
+                soup.select("a[href*='/homes/']")
+                or soup.select("a[href*='/listing/']")
+                or soup.select(".property-card a")
+                or soup.select(".listing-card a")
+                or soup.select("[class*='property'] a[href]")
+                or soup.select("[class*='listing'] a[href]")
+                or soup.select("h2 a")
+                or soup.select("h3 a")
+            )
+
+            if not links:
+                logger.info("forsalebyowner.com: no links found on page %d — trying __NEXT_DATA__", page)
+                if soup.find("script", id="__NEXT_DATA__"):
+                    return self._extract_urls_from_nextdata(soup)
+                return []
+
             seen = set()
             result = []
             for a in links:
                 href = a.get("href", "")
-                if href and "/homes/" in href and href not in seen:
+                if href and href not in seen:
                     full = href if href.startswith("http") else urljoin(BASE_URL, href)
                     seen.add(href)
                     result.append(full)
+            logger.debug("forsalebyowner.com: found %d listing links on page %d", len(result), page)
             return result
         except Exception as e:
             logger.debug("forsalebyowner.com page %d failed: %s", page, e)
@@ -86,6 +105,36 @@ class ForSaleByOwnerScraper(FSBOBaseScraper):
         city = parts[0].strip().lower().replace(" ", "-")
         state = parts[1].strip().lower() if len(parts) > 1 else ""
         return f"{BASE_URL}/homes/for-sale/{state}/{city}/?page={page}"
+
+    def _extract_urls_from_nextdata(self, soup: BeautifulSoup) -> List[str]:
+        """Extract listing URLs from Next.js __NEXT_DATA__ JSON."""
+        script = soup.find("script", id="__NEXT_DATA__")
+        if not script:
+            return []
+        try:
+            data = json.loads(script.string)
+            urls: List[str] = []
+            self._find_listing_urls_in_json(data, urls, 0)
+            logger.info("forsalebyowner.com: extracted %d URLs from __NEXT_DATA__", len(urls))
+            return urls[:50]
+        except Exception as e:
+            logger.debug("forsalebyowner.com __NEXT_DATA__ parse failed: %s", e)
+            return []
+
+    def _find_listing_urls_in_json(self, node, urls: list, depth: int) -> None:
+        if depth > 8:
+            return
+        if isinstance(node, str):
+            if "/homes/" in node and node.startswith("/") and len(node) < 300:
+                full = urljoin(BASE_URL, node)
+                if full not in urls:
+                    urls.append(full)
+        elif isinstance(node, list):
+            for item in node:
+                self._find_listing_urls_in_json(item, urls, depth + 1)
+        elif isinstance(node, dict):
+            for val in node.values():
+                self._find_listing_urls_in_json(val, urls, depth + 1)
 
     async def _scrape_listing(self, url: str, criteria: FSBOSearchCriteria) -> Optional[FSBOListing]:
         try:
