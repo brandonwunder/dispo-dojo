@@ -147,7 +147,11 @@ function BuyerListAdmin() {
                     <div><span className="text-text-dim font-heading uppercase tracking-wider">Deal Types</span><p className="text-parchment mt-0.5">{bb.dealTypes?.join(', ') || '—'}</p></div>
                     <div><span className="text-text-dim font-heading uppercase tracking-wider">Property Types</span><p className="text-parchment mt-0.5">{bb.propertyTypes?.join(', ') || '—'}</p></div>
                     <div><span className="text-text-dim font-heading uppercase tracking-wider">Close Timeline</span><p className="text-parchment mt-0.5">{bb.closeTimeline || '—'}</p></div>
-                    <div><span className="text-text-dim font-heading uppercase tracking-wider">Last Updated</span><p className="text-parchment mt-0.5">{bb.updatedAt ? new Date(bb.updatedAt).toLocaleDateString() : '—'}</p></div>
+                    <div><span className="text-text-dim font-heading uppercase tracking-wider">Last Updated</span><p className="text-parchment mt-0.5">{bb.updatedAt
+  ? (bb.updatedAt.toDate
+      ? bb.updatedAt.toDate().toLocaleDateString()
+      : new Date(bb.updatedAt).toLocaleDateString())
+  : '—'}</p></div>
                     {bb.notes && <div className="col-span-2"><span className="text-text-dim font-heading uppercase tracking-wider">Notes</span><p className="text-parchment mt-0.5">{bb.notes}</p></div>}
                   </div>
                 )}
