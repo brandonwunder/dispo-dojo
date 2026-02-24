@@ -4,6 +4,7 @@ import {
   Users, Crown, Rocket, Globe, Zap, Target, TrendingUp, ShieldCheck,
   Building2, Hotel, Home, Landmark, Lock, FileText, CheckCircle2, Upload, X,
 } from 'lucide-react'
+import jsPDF from 'jspdf'
 import WoodPanel from '../components/WoodPanel'
 
 // ─── Animation Variants ──────────────────────────────────────────────────────
@@ -112,6 +113,49 @@ const JV_CONTRACT_CLAUSES = [
   },
 ]
 
+// ─── JV PDF Generator ────────────────────────────────────────────────────────
+
+function generateJVPdf(name, date) {
+  const doc = new jsPDF()
+  doc.setFontSize(18)
+  doc.text('JOINT VENTURE AGREEMENT', 105, 30, { align: 'center' })
+  doc.setFontSize(11)
+  const lines = [
+    `This Joint Venture Agreement ("Agreement") is entered into as of ${date}.`,
+    '',
+    '1. Purpose. The parties agree to collaborate on the disposition of real estate',
+    '   properties through Dispo Dojo\'s buyer network, platforms, and resources.',
+    '',
+    '2. Responsibilities. The submitting party ("Deal Partner") will provide properties',
+    '   under contract. Dispo Dojo will market the property to its buyer network and',
+    '   facilitate the assignment or closing.',
+    '',
+    '3. Compensation. Assignment fees, JV splits, and closing costs will be agreed upon',
+    '   per deal prior to marketing.',
+    '',
+    '4. Confidentiality. Both parties agree to keep all buyer information, deal details,',
+    '   and financial terms strictly confidential.',
+    '',
+    '5. Term. This agreement remains in effect for the duration of the deal partnership',
+    '   and survives closing.',
+    '',
+    '6. Governing Law. This agreement is governed by the laws of the state in which',
+    '   the property is located.',
+  ]
+  let y = 50
+  lines.forEach((line) => { doc.text(line, 20, y); y += 7 })
+  y += 15
+  doc.setFontSize(12)
+  doc.text('Signed:', 20, y)
+  y += 10
+  doc.setFont(undefined, 'italic')
+  doc.text(name, 20, y)
+  doc.setFont(undefined, 'normal')
+  y += 8
+  doc.text(`Date: ${date}`, 20, y)
+  doc.save(`JV-Agreement-${name.replace(/\s+/g, '-')}.pdf`)
+}
+
 // ─── JV Modal Component ──────────────────────────────────────────────────────
 
 function JVModal({ show, onClose }) {
@@ -150,16 +194,26 @@ function JVModal({ show, onClose }) {
 
   async function handleSubmitDeal() {
     setSubmitting(true)
-    // Placeholder: Discord webhook + file upload will be wired in next task
-    console.log('[JV Modal] Submit deal — Discord webhook placeholder', { sigName, contractFile })
-    await new Promise((r) => setTimeout(r, 1500))
+    const webhookUrl = import.meta.env.VITE_DISCORD_JV_WEBHOOK
+    if (webhookUrl) {
+      try {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: `**New JV Deal Submitted**\n**Signed by:** ${sigName}\n**Date:** ${today}\n**Contract uploaded:** ${contractFile.name}`,
+          }),
+        })
+      } catch (err) {
+        console.error('Discord webhook failed:', err)
+      }
+    }
     setSubmitting(false)
     setSubmitted(true)
   }
 
   function handleDownloadPDF() {
-    // Placeholder: PDF generation will be wired in next task
-    console.log('[JV Modal] Download signed JV agreement PDF — placeholder', { sigName, date: today })
+    generateJVPdf(sigName, today)
   }
 
   if (!show) return null
