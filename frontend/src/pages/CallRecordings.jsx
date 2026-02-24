@@ -1,3 +1,114 @@
+import { motion } from 'framer-motion'
+import { Lock, Video } from 'lucide-react'
+import WoodPanel from '../components/WoodPanel'
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } },
+}
+
+const CATEGORIES = [
+  {
+    title: 'Sellers in Arrears',
+    desc: 'Navigating late payments and pre-foreclosure sensitivity — urgency framing without applying pressure.',
+  },
+  {
+    title: 'VA Entitlement Questions',
+    desc: "Explaining entitlement restoration and how Sub-To preserves the seller's VA eligibility for future use.",
+  },
+  {
+    title: '"What if I want to buy again?"',
+    desc: 'Handling the future purchase objection — how Sub-To affects DTI vs. the deed, and realistic refi paths.',
+  },
+  {
+    title: 'Price Objection',
+    desc: "Seller expects retail. Bridging to net proceeds reality without being confrontational.",
+  },
+  {
+    title: '"I need to think about it"',
+    desc: 'Re-engagement framing and follow-up cadence that keeps deals alive without being pushy.',
+  },
+  {
+    title: 'Agent Pushback',
+    desc: 'When listing agents resist creative offers — how to keep them engaged and on your side.',
+  },
+  {
+    title: 'Title Company Concerns',
+    desc: 'Addressing the due-on-sale clause and how experienced title companies handle Sub-To transactions.',
+  },
+  {
+    title: 'Spouse / Family Member Involvement',
+    desc: 'Navigating second decision-maker dynamics — getting everyone on the same page without losing the deal.',
+  },
+]
+
 export default function CallRecordings() {
-  return <div className="text-parchment p-8 font-heading">Call Recordings — Coming Soon</div>
+  return (
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="max-w-[900px] mx-auto"
+    >
+      {/* Header */}
+      <motion.div variants={itemVariants} className="mb-6">
+        <div className="flex items-center gap-4 mb-3">
+          <div className="hanko-seal w-12 h-12 rounded-full flex items-center justify-center">
+            <Video size={24} className="text-white" />
+          </div>
+          <div>
+            <h1 className="font-display text-3xl tracking-[0.08em] text-parchment brush-underline">
+              Call Recordings
+            </h1>
+            <p className="text-text-dim text-base mt-1 font-body">
+              Real calls organized by scenario — study the patterns, not just the scripts
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="katana-line my-4" />
+
+      {/* Category Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {CATEGORIES.map((cat, idx) => (
+          <motion.div key={idx} variants={itemVariants}>
+            <WoodPanel className="h-full opacity-70">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-white/5 border border-gold-dim/15 flex items-center justify-center shrink-0">
+                  <Lock size={15} className="text-text-dim" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h3 className="font-heading text-sm text-parchment tracking-wide">{cat.title}</h3>
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-heading tracking-wider uppercase"
+                      style={{
+                        background: 'rgba(0,198,255,0.08)',
+                        border: '1px solid rgba(0,198,255,0.2)',
+                        color: '#00C6FF',
+                      }}
+                    >
+                      Coming Soon
+                    </span>
+                  </div>
+                  <p className="text-text-dim text-xs leading-relaxed font-body">{cat.desc}</p>
+                </div>
+              </div>
+            </WoodPanel>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Footer note */}
+      <motion.p variants={itemVariants} className="text-text-muted text-xs text-center mt-8 font-body">
+        We'll be adding recordings as we collect strong examples. Check back regularly.
+      </motion.p>
+    </motion.div>
+  )
 }
