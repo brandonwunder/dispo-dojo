@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, MapPin, Send, Search, MessageSquare, LayoutDashboard, Monitor, Calculator, FileSignature, HandCoins, Footprints, PawPrint, House, MessageCircle, DollarSign, BarChart3 } from 'lucide-react'
+import { LogOut, MapPin, Send, Search, MessageSquare, LayoutDashboard, Monitor, Calculator, FileSignature, HandCoins, Footprints, PawPrint, House, MessageCircle, DollarSign, BarChart3, Briefcase, Target, Video, ChevronDown } from 'lucide-react'
 import {
   LanternIcon,
   CompassIcon,
@@ -26,6 +26,7 @@ const navSections = [
     items: [
       { to: '/', icon: LayoutDashboard, label: 'JV Dashboard' },
       { to: '/community', icon: MessageSquare, label: 'Message Board' },
+      { to: '/live-deals', icon: Briefcase, label: 'Live Deals' },
     ],
   },
   {
@@ -34,7 +35,13 @@ const navSections = [
       { to: '/lead-scrubbing', icon: Search, label: 'Finding Leads' },
       { to: '/agent-finder', icon: CompassIcon, label: 'Find Agent Emails' },
       { to: '/loi-sender', icon: Send, label: 'LOI Sender' },
+    ],
+  },
+  {
+    title: 'Sales Tools',
+    items: [
       { to: '/website-explainer', icon: Monitor, label: 'Subject-To Explainer' },
+      { to: '/offer-comparison', icon: BarChart3, label: 'Offer Comparison' },
     ],
   },
   {
@@ -43,6 +50,7 @@ const navSections = [
       { to: '/underwriting', icon: Calculator, label: 'Free Underwriting' },
       { to: '/contract-generator', icon: FileSignature, label: 'Contract Generator' },
       { to: '/find-buyers', icon: HandCoins, label: 'Find Buyers' },
+      { to: '/buy-boxes', icon: Target, label: 'Buy Boxes' },
     ],
   },
   {
@@ -53,6 +61,7 @@ const navSections = [
       { to: '/bird-dog', icon: DollarSign, label: 'Bird Dog Network' },
       { to: '/boots-on-ground', icon: Footprints, label: 'Boots on Ground' },
       { to: '/rent-comps', icon: BarChart3, label: 'Rent Comps' },
+      { to: '/call-recordings', icon: Video, label: 'Call Recordings' },
     ],
   },
 ]
@@ -62,6 +71,16 @@ const adminSection = {
   items: [
     { to: '/admin', icon: MonomiEyeIcon, label: 'Admin Panel' },
   ],
+}
+
+function getSectionForPath(sections, pathname) {
+  for (const section of sections) {
+    if (!section.title) continue
+    if (section.items.some(item => item.to !== '/' && pathname.startsWith(item.to))) {
+      return section.title
+    }
+  }
+  return null
 }
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -74,18 +93,65 @@ export default function Sidebar({ isOpen, onClose }) {
     ? [navSections[0], adminSection, ...navSections.slice(1)]
     : navSections
 
+  // Track which titled section is expanded (only one at a time)
+  const [expandedSection, setExpandedSection] = useState(
+    () => getSectionForPath(sections, location.pathname)
+  )
+
+  // Auto-expand the section containing the active route on navigation
+  useEffect(() => {
+    const active = getSectionForPath(sections, location.pathname)
+    if (active) setExpandedSection(active)
+  }, [location.pathname])
+
   const name = user?.name || 'Guest'
-  const initials = name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
     if (onClose) onClose()
   }, [location.pathname])
+
+  const toggleSection = (title) => {
+    setExpandedSection(prev => prev === title ? null : title)
+  }
+
+  const NavItem = ({ item }) => (
+    <NavLink key={item.to} to={item.to} end={item.to === '/'}>
+      {({ isActive }) => (
+        <motion.div
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-sm mb-0.5 transition-colors relative ${
+            isActive
+              ? 'bg-[rgba(0,198,255,0.08)]'
+              : 'hover:bg-[rgba(0,198,255,0.05)]'
+          }`}
+          whileHover={{ x: 6 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+          style={{ touchAction: 'pan-y' }}
+        >
+          {isActive && (
+            <div
+              className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full"
+              style={{
+                background: 'linear-gradient(180deg, #00C6FF, #0E5A88, #00C6FF)',
+                boxShadow: '0 0 14px rgba(0,198,255,0.5), 0 0 28px rgba(0,198,255,0.2)',
+              }}
+            />
+          )}
+          <item.icon
+            size={20}
+            className={isActive ? 'text-[#00C6FF]' : 'text-text-dim'}
+          />
+          <span
+            className={`font-heading text-sm tracking-wide ${
+              isActive ? 'text-[#00C6FF]' : 'text-text-dim'
+            }`}
+          >
+            {item.label}
+          </span>
+        </motion.div>
+      )}
+    </NavLink>
+  )
 
   const sidebarContent = (
     <>
@@ -99,58 +165,94 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Navigation sections */}
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-4" style={{ touchAction: 'pan-y' }}>
-        {sections.map((section) => (
-          <div key={section.title || 'top'} className="mb-4">
-            {section.title && (
-              <>
-                <div className="px-3 py-2 text-[10px] font-heading tracking-[0.2em] uppercase text-[#C8D1DA]/40">
-                  {section.title}
-                </div>
-                <div className="mx-3 katana-line mb-2" />
-              </>
-            )}
+        {sections.map((section) => {
+          const isCollapsible = !!section.title
+          const isExpanded = !isCollapsible || expandedSection === section.title
+          // Highlight section header if any child is active
+          const hasActiveChild = section.items.some(
+            item => item.to !== '/' && location.pathname.startsWith(item.to)
+          )
 
-            {section.items.map((item) => (
-              <NavLink key={item.to} to={item.to} end={item.to === '/'}>
-                {({ isActive }) => (
-                  <motion.div
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-sm mb-0.5 transition-colors relative ${
-                      isActive
-                        ? 'bg-[rgba(0,198,255,0.08)]'
-                        : 'hover:bg-[rgba(0,198,255,0.05)]'
-                    }`}
-                    whileHover={{ x: 6 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                    style={{ touchAction: 'pan-y' }}
+          return (
+            <div key={section.title || 'top'} className="mb-1 mt-3 first:mt-0">
+              {isCollapsible && (
+                <button
+                  onClick={() => toggleSection(section.title)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-sm group transition-colors hover:bg-[rgba(0,198,255,0.04)]"
+                >
+                  <span
+                    className="text-[10px] font-heading tracking-[0.2em] uppercase transition-colors"
+                    style={{
+                      color: '#00C6FF',
+                      textShadow: isExpanded
+                        ? '0 0 8px rgba(0,198,255,0.8), 0 0 20px rgba(0,198,255,0.4)'
+                        : '0 0 6px rgba(0,198,255,0.4)',
+                      opacity: isExpanded ? 1 : 0.7,
+                    }}
                   >
-                    {/* Active glow strip */}
-                    {isActive && (
-                      <div
-                        className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full"
-                        style={{
-                          background: 'linear-gradient(180deg, #00C6FF, #0E5A88, #00C6FF)',
-                          boxShadow: '0 0 14px rgba(0,198,255,0.5), 0 0 28px rgba(0,198,255,0.2)',
-                        }}
-                      />
-                    )}
-                    <item.icon
-                      size={20}
-                      className={isActive ? 'text-[#00C6FF]' : 'text-text-dim'}
+                    {section.title}
+                  </span>
+                  <motion.div
+                    animate={{ rotate: isExpanded ? 180 : 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  >
+                    <ChevronDown
+                      size={13}
+                      style={{ color: '#00C6FF', opacity: isExpanded ? 0.8 : 0.4 }}
                     />
-                    <span
-                      className={`font-heading text-sm tracking-wide ${
-                        isActive ? 'text-[#00C6FF]' : 'text-text-dim'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
+                  </motion.div>
+                </button>
+              )}
+
+              {isCollapsible && (
+                <div
+                  className="mx-3 katana-line"
+                  style={{ marginBottom: isExpanded ? '6px' : '4px', opacity: isExpanded ? 1 : 0.4, transition: 'opacity 0.2s' }}
+                />
+              )}
+
+              <AnimatePresence initial={false}>
+                {isExpanded && (
+                  <motion.div
+                    key="items"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div className={isCollapsible ? 'pb-2' : 'mb-4'}>
+                      {section.items.map((item) => (
+                        <NavItem key={item.to} item={item} />
+                      ))}
+                    </div>
                   </motion.div>
                 )}
-              </NavLink>
-            ))}
-          </div>
-        ))}
+              </AnimatePresence>
+            </div>
+          )
+        })}
       </nav>
+
+      {/* Floating logo */}
+      <div className="flex justify-center py-4 shrink-0">
+        <div className="relative">
+          {/* Glow orb behind logo */}
+          <div
+            className="absolute inset-0 rounded-full blur-2xl"
+            style={{
+              background: 'radial-gradient(ellipse, rgba(0,198,255,0.18) 0%, rgba(14,90,136,0.10) 60%, transparent 100%)',
+              transform: 'scale(1.6)',
+            }}
+          />
+          <img
+            src="/dispo-dojo-logo.png"
+            alt="Dispo Dojo"
+            className="relative w-20 h-20 object-contain drop-shadow-lg"
+            style={{ animation: 'logoFloat 6s ease-in-out infinite' }}
+          />
+        </div>
+      </div>
 
       {/* User info at bottom */}
       <div className="px-4 py-4 border-t border-[rgba(0,198,255,0.1)] flex items-center gap-3">
