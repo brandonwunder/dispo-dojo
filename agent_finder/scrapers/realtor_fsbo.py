@@ -41,25 +41,30 @@ class RealtorFSBOScraper(FSBOBaseScraper):
         try:
             from homeharvest import scrape_property
         except ImportError:
-            logger.info("homeharvest library not installed, skipping realtor_fsbo")
+            logger.warning("homeharvest library not installed, skipping realtor_fsbo")
             return []
 
         location = criteria.location
         if criteria.location_type == "zip":
             location = criteria.location.split(",")[0].strip()
 
+        logger.debug("realtor_fsbo: searching location=%r", location)
         results = []
         try:
-            df = scrape_property(location=location, listing_type="for_sale")
+            df = scrape_property(location=location, listing_type="for_sale", past_days=60)
             if df is None or df.empty:
+                logger.info("realtor_fsbo: homeharvest returned empty DataFrame for %r", location)
                 return []
+            logger.info("realtor_fsbo: homeharvest returned %d rows before FSBO filter", len(df))
 
             for _, row in df.iterrows():
                 listing = self._row_to_listing(row, criteria)
                 if listing:
                     results.append(listing)
+
+            logger.info("realtor_fsbo: %d listings after FSBO filter", len(results))
         except Exception as e:
-            logger.info("homeharvest search failed for '%s': %s", location, e)
+            logger.warning("homeharvest search failed for %r: %s", location, e)
 
         return results
 
@@ -67,18 +72,29 @@ class RealtorFSBOScraper(FSBOBaseScraper):
         import pandas as pd
 
         def safe(val) -> str:
-            if val is None or pd.isna(val):
+            if val is None:
                 return ""
+            try:
+                if pd.isna(val):
+                    return ""
+            except (TypeError, ValueError):
+                pass
             s = str(val).strip()
-            return "" if s.lower() in ("nan", "none", "<na>", "na") else s
+            return "" if s.lower() in ("nan", "none", "<na>", "na", "nat") else s
 
-        # For FSBO filter: skip listings where a professional agent is clearly named
-        # (We keep rows where agent info is empty — those are likely FSBO)
+        # FSBO filter: only skip when there's definitive evidence of a professional MLS listing
+        # (named agent + brokerage + MLS agent ID — all three together)
         agent_name_raw = safe(row.get("agent_name") or row.get("list_agent_name", ""))
-        # Heuristic: if it has a named agent AND a brokerage, likely not FSBO
         broker_raw = safe(row.get("broker_name") or row.get("brokerage", ""))
-        if agent_name_raw and broker_raw and len(agent_name_raw) > 3 and len(broker_raw) > 3:
-            return None  # Skip — has a real estate agent
+        agent_mls_id = safe(row.get("agent_mls_id", ""))
+
+        is_mls_listing = (
+            len(agent_name_raw) > 3
+            and len(broker_raw) > 3
+            and len(agent_mls_id) > 0
+        )
+        if is_mls_listing:
+            return None
 
         address = safe(row.get("full_street_line") or row.get("street_address", ""))
         if not address:
@@ -116,11 +132,10 @@ class RealtorFSBOScraper(FSBOBaseScraper):
         if criteria.max_days_on_market is not None and dom is not None and dom > criteria.max_days_on_market:
             return None
 
-        # Contact info — for FSBO on Realtor.com, seller contact sometimes visible
+        agent_email = safe(row.get("agent_email") or row.get("list_agent_email", ""))
         phone = clean_phone(safe(row.get("agent_phone") or row.get("list_agent_phone", "")))
-        email = clean_email(safe(row.get("agent_email") or row.get("list_agent_email", "")))
+        email = clean_email(agent_email)
         owner_name = clean_name(agent_name_raw) if agent_name_raw else None
-
         listing_url = safe(row.get("property_url") or row.get("url", ""))
 
         full_address = f"{address}, {city}, {state} {zip_code}".strip().strip(",")
@@ -131,7 +146,8 @@ class RealtorFSBOScraper(FSBOBaseScraper):
             price=price, beds=beds, baths=baths,
             sqft=None, property_type=None, days_on_market=dom,
             owner_name=owner_name, phone=phone or None, email=email or None,
-            listing_url=listing_url, source="realtor",
+            listing_url=listing_url,
+            source="realtor_fsbo",
             contact_status="none",
         )
         listing.contact_status = listing.compute_contact_status()
