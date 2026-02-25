@@ -1,55 +1,69 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  MapPin, CheckCircle, Send, Clock, Plus, Edit3, XCircle, Briefcase, FileText, Star, MessageCircle,
+  MapPin, CheckCircle, Send, Clock, ChevronDown, ChevronUp,
+  Home, AlertTriangle, DollarSign, TrendingUp, Users, FileText,
 } from 'lucide-react'
 import {
   collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp,
-  doc, updateDoc, getDocs,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { incrementStat } from '../lib/userProfile'
 import GlassPanel from '../components/GlassPanel'
-import ProfileSetupModal from '../components/birddog/ProfileSetupModal'
-import CreatePostModal from '../components/birddog/CreatePostModal'
-import ApplyModal from '../components/birddog/ApplyModal'
-import FilterBar from '../components/birddog/FilterBar'
-import BirdDogCard from '../components/birddog/BirdDogCard'
-import JobCard from '../components/birddog/JobCard'
-import MessagePanel from '../components/birddog/MessagePanel'
-import ReviewForm from '../components/birddog/ReviewForm'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const STATUS_STYLE = {
-  pending:   { label: 'Pending Review', color: '#F6C445' },
-  qualified: { label: 'Qualified',      color: '#00C6FF' },
-  working:   { label: 'In Progress',    color: '#A855F7' },
-  closed:    { label: 'Closed',         color: '#10b981' },
-  rejected:  { label: 'Not Qualified',  color: '#E53935' },
+const STATUS_STYLES = {
+  submitted:              { label: 'Submitted',              color: '#9CA3AF' },
+  under_review:           { label: 'Under Review',           color: '#00C6FF' },
+  contacting_seller:      { label: 'Contacting Seller',      color: '#0E5A88' },
+  seller_interested:      { label: 'Seller Interested',      color: '#00D9FF' },
+  underwriting:           { label: 'Underwriting',           color: '#F6C445' },
+  offer_made:             { label: 'Offer Made',             color: '#FF9500' },
+  under_contract:         { label: 'Under Contract',         color: '#7F00FF' },
+  closed_paid:            { label: 'Closed / Paid',          color: '#10B981' },
+  seller_not_interested:  { label: 'Seller Not Interested',  color: '#E53935' },
+  seller_declined_offer:  { label: 'Seller Declined Offer',  color: '#E53935' },
 }
 
-const HOW_FOUND_OPTIONS = [
-  'Driving for Dollars',
-  'Door-Knocking',
-  'Cold Call',
-  'Referral',
+const CONDITION_OPTIONS = [
+  'Distressed',
+  'Vacant',
+  'Pre-Foreclosure',
+  'Probate',
+  'Tired Landlord',
   'Other',
 ]
 
-const VALID_CRITERIA = [
-  'Owner is motivated / distressed to sell',
-  'Property is NOT currently listed on MLS',
-  'Owner is open to below-market or creative offer',
-  'Owner contact info has been confirmed',
-]
+const EMPTY_LEAD_FORM = {
+  propertyAddress: '',
+  ownerName: '',
+  ownerContact: '',
+  propertyCondition: '',
+  askingPrice: '',
+  dealReason: '',
+}
 
-const PAYOUT_STEPS = [
-  { num: '01', text: 'Submit your lead below' },
-  { num: '02', text: 'Our team reviews within 24–48 hours' },
-  { num: '03', text: 'If qualified, we work the deal' },
-  { num: '04', text: 'You earn $500–$2,000 on close' },
+const HOW_IT_WORKS = [
+  {
+    step: 1,
+    icon: Home,
+    title: 'Find a Deal',
+    desc: 'Spot distressed, vacant, or off-market properties in your area.',
+  },
+  {
+    step: 2,
+    icon: Send,
+    title: 'Submit the Lead',
+    desc: 'Fill out our quick form with the property details and owner info.',
+  },
+  {
+    step: 3,
+    icon: DollarSign,
+    title: 'Get Paid',
+    desc: 'If we close the deal, you earn a bird-dog fee. Simple as that.',
+  },
 ]
 
 const inputCls =
@@ -58,327 +72,336 @@ const inputCls =
 const labelCls =
   'block text-[10px] font-heading font-semibold tracking-widest uppercase text-text-dim mb-1'
 
-const EMPTY_FORM = {
-  address: '',
-  ownerName: '',
-  ownerPhone: '',
-  ownerEmail: '',
-  howFound: '',
-  summary: '',
-}
-
-const TABS = [
-  { id: 'find-birddogs', label: 'Find Bird Dogs' },
-  { id: 'find-jobs', label: 'Find Jobs' },
-  { id: 'my-activity', label: 'My Activity' },
-]
-
-// ─── Animation variants ───────────────────────────────────────────────────────
-
 const containerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } },
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+  },
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 18 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } },
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } },
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── HeroExplainer ───────────────────────────────────────────────────────────
 
-function SectionDivider() {
+function HeroExplainer({ showCta, onCtaClick }) {
   return (
-    <div className="my-4 h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.07)] to-transparent" />
-  )
-}
+    <section className="relative w-full overflow-hidden">
+      {/* Background image */}
+      <div
+        className="absolute inset-0 -z-20 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/bird-dog-bg.png')" }}
+      />
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-bg/40 via-bg/70 to-bg" />
 
-function LeftColumn() {
-  return (
-    <motion.div
-      className="flex flex-col gap-4"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {/* Card 1 — What is a Bird Dog */}
-      <motion.div variants={itemVariants}>
-        <GlassPanel className="p-5">
-          <h2 className="font-heading font-semibold text-base tracking-wider mb-3" style={{ color: '#F6C445' }}>
-            What is a Bird Dog?
-          </h2>
-          <p className="text-sm text-text-dim leading-relaxed font-body">
-            A bird dog is someone who scouts properties and brings leads to experienced investors.
-            You do the legwork — finding motivated sellers who aren't listed anywhere — and we handle
-            the deal. When it closes, you get paid.
-          </p>
-          <p className="text-sm text-text-dim leading-relaxed font-body mt-2">
-            No license needed. No capital required. Just a good lead and we take it from there.
-          </p>
+      <div className="relative max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
+        {/* Icon */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="flex justify-center mb-6"
+        >
+          <div className="relative">
+            <MapPin
+              size={48}
+              className="text-cyan"
+              style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.5))' }}
+            />
+          </div>
+        </motion.div>
 
-          <SectionDivider />
+        {/* Title */}
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="font-display text-4xl md:text-5xl text-parchment mb-3"
+          style={{ letterSpacing: '-0.03em' }}
+        >
+          Bird Dog for Dispo Dojo
+        </motion.h1>
 
-          <p className={labelCls}>Valid Lead Criteria</p>
-          <ul className="flex flex-col gap-2.5 mt-2">
-            {VALID_CRITERIA.map((item) => (
-              <li key={item} className="flex items-start gap-2.5">
-                <CheckCircle
-                  size={15}
-                  className="mt-0.5 shrink-0 text-cyan"
-                />
-                <span className="text-xs text-text-dim leading-snug font-body">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </GlassPanel>
-      </motion.div>
+        {/* Subtitle */}
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="font-heading text-lg md:text-xl text-text-dim mb-10 tracking-wide"
+        >
+          Find deals. Submit leads. Get paid.
+        </motion.p>
 
-      {/* Card 2 — How Payouts Work */}
-      <motion.div variants={itemVariants}>
-        <GlassPanel className="p-5">
-          <h2 className="font-heading font-semibold text-base tracking-wider mb-4" style={{ color: '#F6C445' }}>
-            How Payouts Work
-          </h2>
-          <ol className="flex flex-col gap-3">
-            {PAYOUT_STEPS.map((step) => (
-              <li key={step.num} className="flex items-start gap-3">
-                <span className="font-heading font-bold text-xs tracking-widest shrink-0 mt-0.5 text-gold">
-                  {step.num}
-                </span>
-                <span className="text-sm text-text-dim leading-snug font-body">{step.text}</span>
-              </li>
-            ))}
-          </ol>
-        </GlassPanel>
-      </motion.div>
-    </motion.div>
-  )
-}
+        {/* What is Bird Dogging? */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="mb-8"
+        >
+          <GlassPanel className="p-6 md:p-8 text-left max-w-2xl mx-auto">
+            <h2 className="font-heading text-lg font-semibold text-gold mb-3 tracking-wide uppercase">
+              What is Bird Dogging?
+            </h2>
+            <p className="font-body text-sm text-text-dim leading-relaxed" style={{ lineHeight: '1.7' }}>
+              A bird dog is someone who finds potential real estate deals and passes them along to
+              investors. You don't need a license, capital, or experience — just sharp eyes and local
+              knowledge. When you spot a distressed, vacant, or off-market property, submit it here.
+              If our team closes the deal, you earn a bird-dog fee. It's the easiest way to break into
+              real estate and start getting paid for your hustle.
+            </p>
+          </GlassPanel>
+        </motion.div>
 
-function SubmissionForm({ firebaseUid, profile, user }) {
-  const [form, setForm] = useState(EMPTY_FORM)
-  const [agreed, setAgreed] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState({})
-  const [success, setSuccess] = useState(false)
+        {/* How It Works */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mb-10"
+        >
+          <GlassPanel className="p-6 md:p-8 max-w-3xl mx-auto">
+            <h2 className="font-heading text-lg font-semibold text-gold mb-6 tracking-wide uppercase text-center">
+              How It Works
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {HOW_IT_WORKS.map((item) => {
+                const Icon = item.icon
+                return (
+                  <div key={item.step} className="flex flex-col items-center text-center">
+                    <div
+                      className="w-14 h-14 rounded-full flex items-center justify-center mb-3"
+                      style={{
+                        background: 'rgba(0,198,255,0.1)',
+                        border: '1px solid rgba(0,198,255,0.2)',
+                      }}
+                    >
+                      <Icon size={24} className="text-cyan" />
+                    </div>
+                    <div
+                      className="font-heading text-xs font-bold tracking-widest uppercase text-cyan mb-1"
+                    >
+                      Step {item.step}
+                    </div>
+                    <h3 className="font-heading text-base font-semibold text-parchment mb-1">
+                      {item.title}
+                    </h3>
+                    <p className="font-body text-xs text-text-dim leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          </GlassPanel>
+        </motion.div>
 
-  function set(field, value) {
-    setForm((prev) => ({ ...prev, [field]: value }))
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }))
-  }
-
-  function validate() {
-    const errs = {}
-    if (!form.address.trim())    errs.address   = 'Required'
-    if (!form.ownerName.trim())  errs.ownerName = 'Required'
-    if (!form.ownerPhone.trim()) errs.ownerPhone = 'Required'
-    if (!form.howFound)          errs.howFound  = 'Required'
-    if (!form.summary.trim())    errs.summary   = 'Required'
-    if (!agreed)                 errs.agreed    = 'You must confirm the lead meets the criteria'
-    return errs
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    const errs = validate()
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs)
-      return
-    }
-
-    setLoading(true)
-    try {
-      await addDoc(collection(db, 'bird_dog_leads'), {
-        ...form,
-        userId: firebaseUid,
-        authorName: profile?.displayName || user?.name || 'Unknown',
-        status: 'pending',
-        createdAt: serverTimestamp(),
-      })
-
-      await incrementStat(firebaseUid, 'birdDogLeads')
-
-      setForm(EMPTY_FORM)
-      setAgreed(false)
-      setErrors({})
-      setSuccess(true)
-      setTimeout(() => setSuccess(false), 4000)
-    } catch (err) {
-      console.error('Bird dog submit error:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-    >
-      <GlassPanel className="p-5">
-        <h2 className="font-heading font-semibold text-base tracking-wider mb-4" style={{ color: '#F6C445' }}>
-          Submit a Lead
-        </h2>
-
-        <AnimatePresence>
-          {success && (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.3 }}
-              className="mb-4 px-4 py-3 rounded-sm border border-emerald-500/30 bg-emerald-500/8 text-sm text-emerald-400 flex items-center gap-2"
+        {/* CTA */}
+        {showCta && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+          >
+            <button
+              onClick={onCtaClick}
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg font-heading font-bold text-base uppercase tracking-wider text-white cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+              style={{
+                background: 'linear-gradient(135deg, #E53935 0%, #B3261E 100%)',
+                boxShadow: '0 0 30px rgba(229,57,53,0.4), 0 0 60px rgba(229,57,53,0.15)',
+              }}
             >
-              <CheckCircle size={14} />
-              Lead submitted! Our team will review within 24–48 hours.
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <MapPin size={18} />
+              Become a Bird Dog
+            </button>
+          </motion.div>
+        )}
+      </div>
+    </section>
+  )
+}
 
-        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-          {/* Property Address */}
+// ─── SignupForm ───────────────────────────────────────────────────────────────
+
+function SignupForm({ onComplete, user }) {
+  const [form, setForm] = useState({
+    name: user?.name || '',
+    phone: '',
+    email: user?.email || '',
+    market: '',
+    experienceLevel: 'beginner',
+    pitch: '',
+  })
+  const [errors, setErrors] = useState({})
+  const [submitting, setSubmitting] = useState(false)
+
+  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }))
+
+  const validate = () => {
+    const e = {}
+    if (!form.name.trim()) e.name = 'Required'
+    if (!form.phone.trim()) e.phone = 'Required'
+    if (!form.email.trim()) e.email = 'Required'
+    if (!form.market.trim()) e.market = 'Required'
+    if (!form.pitch.trim()) e.pitch = 'Required'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!validate()) return
+    setSubmitting(true)
+    try {
+      await onComplete({
+        registered: true,
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        market: form.market.trim(),
+        experienceLevel: form.experienceLevel,
+        pitch: form.pitch.trim(),
+        registeredAt: new Date().toISOString(),
+      })
+    } catch (err) {
+      console.error('Signup failed:', err)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const expLevels = ['beginner', 'intermediate', 'pro']
+
+  return (
+    <motion.div
+      id="signup-form"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-xl mx-auto px-4 py-10"
+    >
+      <GlassPanel className="p-6 md:p-8">
+        <h2 className="font-heading text-xl font-bold text-gold mb-1 tracking-wide uppercase text-center">
+          Sign Up as a Bird Dog
+        </h2>
+        <p className="font-body text-xs text-text-dim text-center mb-6">
+          Fill out the form below to start submitting leads and earning fees.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name */}
           <div>
-            <label className={labelCls}>Property Address *</label>
+            <label className={labelCls}>Full Name *</label>
             <input
               type="text"
               className={inputCls}
-              placeholder="123 Main St, City, State 00000"
-              value={form.address}
-              onChange={(e) => set('address', e.target.value)}
+              placeholder="Your full name"
+              value={form.name}
+              onChange={(e) => set('name', e.target.value)}
             />
-            {errors.address && (
-              <p className="mt-1 text-[10px] text-[#E53935]">{errors.address}</p>
-            )}
+            {errors.name && <p className="text-crimson text-xs mt-1">{errors.name}</p>}
           </div>
 
-          {/* Owner Name + Phone */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>Owner Name *</label>
-              <input
-                type="text"
-                className={inputCls}
-                placeholder="John Smith"
-                value={form.ownerName}
-                onChange={(e) => set('ownerName', e.target.value)}
-              />
-              {errors.ownerName && (
-                <p className="mt-1 text-[10px] text-[#E53935]">{errors.ownerName}</p>
-              )}
-            </div>
-            <div>
-              <label className={labelCls}>Owner Phone *</label>
-              <input
-                type="tel"
-                className={inputCls}
-                placeholder="(555) 000-0000"
-                value={form.ownerPhone}
-                onChange={(e) => set('ownerPhone', e.target.value)}
-              />
-              {errors.ownerPhone && (
-                <p className="mt-1 text-[10px] text-[#E53935]">{errors.ownerPhone}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Owner Email */}
+          {/* Phone */}
           <div>
-            <label className={labelCls}>Owner Email <span className="normal-case text-text-muted">(optional)</span></label>
+            <label className={labelCls}>Phone Number *</label>
+            <input
+              type="tel"
+              className={inputCls}
+              placeholder="(555) 123-4567"
+              value={form.phone}
+              onChange={(e) => set('phone', e.target.value)}
+            />
+            {errors.phone && <p className="text-crimson text-xs mt-1">{errors.phone}</p>}
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className={labelCls}>Email *</label>
             <input
               type="email"
               className={inputCls}
-              placeholder="owner@email.com"
-              value={form.ownerEmail}
-              onChange={(e) => set('ownerEmail', e.target.value)}
+              placeholder="you@email.com"
+              value={form.email}
+              onChange={(e) => set('email', e.target.value)}
             />
+            {errors.email && <p className="text-crimson text-xs mt-1">{errors.email}</p>}
           </div>
 
-          {/* How did you find it */}
+          {/* Market */}
           <div>
-            <label className={labelCls}>How did you find it? *</label>
-            <select
-              className={inputCls + ' cursor-pointer'}
-              value={form.howFound}
-              onChange={(e) => set('howFound', e.target.value)}
-            >
-              <option value="" disabled>Select a method...</option>
-              {HOW_FOUND_OPTIONS.map((opt) => (
-                <option key={opt} value={opt} className="bg-[#0B0F14]">{opt}</option>
-              ))}
-            </select>
-            {errors.howFound && (
-              <p className="mt-1 text-[10px] text-[#E53935]">{errors.howFound}</p>
-            )}
-          </div>
-
-          {/* Situation Summary */}
-          <div>
-            <label className={labelCls}>Situation Summary *</label>
-            <textarea
-              className={inputCls + ' h-24 resize-none'}
-              placeholder="Describe the seller's situation, why they're motivated, condition of the property, asking price or ARV estimate..."
-              value={form.summary}
-              onChange={(e) => set('summary', e.target.value)}
+            <label className={labelCls}>Your Market / Area *</label>
+            <input
+              type="text"
+              className={inputCls}
+              placeholder="e.g. Dallas-Fort Worth, TX"
+              value={form.market}
+              onChange={(e) => set('market', e.target.value)}
             />
-            {errors.summary && (
-              <p className="mt-1 text-[10px] text-[#E53935]">{errors.summary}</p>
-            )}
+            {errors.market && <p className="text-crimson text-xs mt-1">{errors.market}</p>}
           </div>
 
-          {/* Agree checkbox */}
+          {/* Experience Level */}
           <div>
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <div className="relative mt-0.5 shrink-0">
-                <input
-                  type="checkbox"
-                  className="sr-only"
-                  checked={agreed}
-                  onChange={(e) => {
-                    setAgreed(e.target.checked)
-                    if (errors.agreed) setErrors((prev) => ({ ...prev, agreed: null }))
-                  }}
-                />
-                <div
-                  className={[
-                    'w-4 h-4 rounded-sm border flex items-center justify-center transition-colors',
-                    agreed
-                      ? 'border-gold bg-gold/15'
-                      : 'border-gold-dim/20 bg-transparent',
-                    'group-hover:border-gold/50',
-                  ].join(' ')}
+            <label className={labelCls}>Experience Level</label>
+            <div className="flex gap-2 mt-1">
+              {expLevels.map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  onClick={() => set('experienceLevel', lvl)}
+                  className={`px-4 py-2 rounded-sm text-xs font-heading font-semibold uppercase tracking-wider cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan ${
+                    form.experienceLevel === lvl
+                      ? 'bg-cyan/20 text-cyan border border-cyan/40'
+                      : 'bg-black/20 text-text-muted border border-gold-dim/10 hover:border-gold-dim/30'
+                  }`}
                 >
-                  {agreed && (
-                    <CheckCircle size={10} className="text-gold" />
-                  )}
-                </div>
-              </div>
-              <span className="text-xs text-text-dim leading-snug font-body">
-                I confirm this lead meets the criteria above and the owner has been contacted
+                  {lvl}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Pitch */}
+          <div>
+            <label className={labelCls}>Why do you want to bird dog? *</label>
+            <textarea
+              className={`${inputCls} resize-none h-24`}
+              placeholder="Tell us about yourself and why you'd be a great bird dog..."
+              maxLength={280}
+              value={form.pitch}
+              onChange={(e) => set('pitch', e.target.value)}
+            />
+            <div className="flex justify-between mt-1">
+              {errors.pitch && <p className="text-crimson text-xs">{errors.pitch}</p>}
+              <span className="text-[10px] text-text-muted ml-auto">
+                {form.pitch.length}/280
               </span>
-            </label>
-            {errors.agreed && (
-              <p className="mt-1 text-[10px] text-[#E53935] ml-7">{errors.agreed}</p>
-            )}
+            </div>
           </div>
 
           {/* Submit */}
           <button
             type="submit"
-            disabled={loading}
-            className={[
-              'mt-1 flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-heading font-semibold tracking-wider text-white',
-              'bg-[#E53935] border border-[#E53935]/40',
-              'hover:bg-[#ef5350] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E53935]/60',
-              'active:scale-[0.98]',
-              'transition-colors',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-              'shadow-[0_4px_20px_rgba(229,57,53,0.25)]',
-            ].join(' ')}
+            disabled={submitting}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg font-heading font-bold text-sm uppercase tracking-wider text-white cursor-pointer transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+            style={{
+              background: 'linear-gradient(135deg, #E53935 0%, #B3261E 100%)',
+              boxShadow: '0 0 24px rgba(229,57,53,0.3)',
+            }}
           >
-            <Send size={14} />
-            {loading ? 'Submitting...' : 'Submit Lead'}
+            {submitting ? (
+              <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <CheckCircle size={16} />
+                Register & Start Submitting
+              </>
+            )}
           </button>
         </form>
       </GlassPanel>
@@ -386,948 +409,518 @@ function SubmissionForm({ firebaseUid, profile, user }) {
   )
 }
 
+// ─── StatsBar ────────────────────────────────────────────────────────────────
+
+function StatsBar({ leads }) {
+  const total = leads.length
+  const rejectedStatuses = ['seller_not_interested', 'seller_declined_offer']
+  const active = leads.filter(
+    (l) => !rejectedStatuses.includes(l.status) && l.status !== 'closed_paid'
+  ).length
+  const closed = leads.filter((l) => l.status === 'closed_paid').length
+  const decidedLeads = leads.filter(
+    (l) => l.status === 'closed_paid' || rejectedStatuses.includes(l.status)
+  )
+  const rate = decidedLeads.length > 0 ? Math.round((closed / decidedLeads.length) * 100) : 0
+
+  const stats = [
+    { label: 'Total Leads', value: total, color: '#00C6FF', icon: FileText },
+    { label: 'In Pipeline', value: active, color: '#F6C445', icon: TrendingUp },
+    { label: 'Closed Deals', value: closed, color: '#10B981', icon: DollarSign },
+    { label: 'Acceptance Rate', value: `${rate}%`, color: '#7F00FF', icon: Users },
+  ]
+
+  return (
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"
+    >
+      {stats.map((s) => {
+        const Icon = s.icon
+        return (
+          <motion.div key={s.label} variants={itemVariants}>
+            <GlassPanel className="p-4 text-center">
+              <Icon
+                size={20}
+                className="mx-auto mb-2"
+                style={{ color: s.color, filter: `drop-shadow(0 0 6px ${s.color}40)` }}
+              />
+              <div
+                className="font-heading text-2xl font-bold"
+                style={{ color: s.color }}
+              >
+                {s.value}
+              </div>
+              <div className="font-body text-[10px] text-text-muted uppercase tracking-wider mt-0.5">
+                {s.label}
+              </div>
+            </GlassPanel>
+          </motion.div>
+        )
+      })}
+    </motion.div>
+  )
+}
+
+// ─── SubmitLeadForm ──────────────────────────────────────────────────────────
+
+function SubmitLeadForm({ firebaseUid, profile, user }) {
+  const [form, setForm] = useState({ ...EMPTY_LEAD_FORM })
+  const [submitting, setSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [errors, setErrors] = useState({})
+
+  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }))
+
+  const validate = () => {
+    const e = {}
+    if (!form.propertyAddress.trim()) e.propertyAddress = 'Required'
+    if (!form.ownerName.trim()) e.ownerName = 'Required'
+    if (!form.ownerContact.trim()) e.ownerContact = 'Required'
+    if (!form.propertyCondition) e.propertyCondition = 'Required'
+    if (!form.dealReason.trim()) e.dealReason = 'Required'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!validate()) return
+    setSubmitting(true)
+    try {
+      const displayName = profile?.birdDogProfile?.name || user?.name || 'Unknown'
+      await addDoc(collection(db, 'bird_dog_leads'), {
+        userId: firebaseUid,
+        submitterName: displayName,
+        propertyAddress: form.propertyAddress.trim(),
+        ownerName: form.ownerName.trim(),
+        ownerContact: form.ownerContact.trim(),
+        propertyCondition: form.propertyCondition,
+        askingPrice: form.askingPrice ? Number(form.askingPrice) : null,
+        dealReason: form.dealReason.trim(),
+        status: 'submitted',
+        payout: null,
+        submittedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+      await incrementStat(firebaseUid, 'birdDogLeads')
+      setForm({ ...EMPTY_LEAD_FORM })
+      setErrors({})
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 3000)
+    } catch (err) {
+      console.error('Lead submission failed:', err)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+      className="mb-8"
+    >
+      <GlassPanel className="p-6 md:p-8">
+        <h2 className="font-heading text-lg font-bold text-gold mb-1 tracking-wide uppercase">
+          Submit a Lead
+        </h2>
+        <p className="font-body text-xs text-text-dim mb-5">
+          Found a potential deal? Fill out the details below.
+        </p>
+
+        {/* Success toast */}
+        <AnimatePresence>
+          {showSuccess && (
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              className="flex items-center gap-2 px-4 py-3 rounded-lg mb-5"
+              style={{
+                background: 'rgba(16,185,129,0.15)',
+                border: '1px solid rgba(16,185,129,0.3)',
+              }}
+            >
+              <CheckCircle size={16} className="text-green-400" />
+              <span className="font-body text-sm text-green-300">
+                Lead submitted successfully! We'll review it shortly.
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Property Address */}
+          <div>
+            <label className={labelCls}>Property Address *</label>
+            <input
+              type="text"
+              className={inputCls}
+              placeholder="123 Main St, City, State ZIP"
+              value={form.propertyAddress}
+              onChange={(e) => set('propertyAddress', e.target.value)}
+            />
+            {errors.propertyAddress && (
+              <p className="text-crimson text-xs mt-1">{errors.propertyAddress}</p>
+            )}
+          </div>
+
+          {/* Owner Name + Owner Contact (side by side on md) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Owner Name *</label>
+              <input
+                type="text"
+                className={inputCls}
+                placeholder="John Doe"
+                value={form.ownerName}
+                onChange={(e) => set('ownerName', e.target.value)}
+              />
+              {errors.ownerName && (
+                <p className="text-crimson text-xs mt-1">{errors.ownerName}</p>
+              )}
+            </div>
+            <div>
+              <label className={labelCls}>Owner Contact (Phone / Email) *</label>
+              <input
+                type="text"
+                className={inputCls}
+                placeholder="(555) 987-6543 or email"
+                value={form.ownerContact}
+                onChange={(e) => set('ownerContact', e.target.value)}
+              />
+              {errors.ownerContact && (
+                <p className="text-crimson text-xs mt-1">{errors.ownerContact}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Condition + Asking Price (side by side on md) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Property Condition *</label>
+              <select
+                className={`${inputCls} cursor-pointer`}
+                value={form.propertyCondition}
+                onChange={(e) => set('propertyCondition', e.target.value)}
+              >
+                <option value="">Select condition...</option>
+                {CONDITION_OPTIONS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {errors.propertyCondition && (
+                <p className="text-crimson text-xs mt-1">{errors.propertyCondition}</p>
+              )}
+            </div>
+            <div>
+              <label className={labelCls}>Asking Price (optional)</label>
+              <input
+                type="number"
+                className={inputCls}
+                placeholder="e.g. 150000"
+                value={form.askingPrice}
+                onChange={(e) => set('askingPrice', e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Deal Reason */}
+          <div>
+            <label className={labelCls}>Why is this a good deal? *</label>
+            <textarea
+              className={`${inputCls} resize-none h-20`}
+              placeholder="Owner is motivated, property needs work, below market value, etc."
+              value={form.dealReason}
+              onChange={(e) => set('dealReason', e.target.value)}
+            />
+            {errors.dealReason && (
+              <p className="text-crimson text-xs mt-1">{errors.dealReason}</p>
+            )}
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg font-heading font-bold text-sm uppercase tracking-wider text-white cursor-pointer transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan"
+            style={{
+              background: 'linear-gradient(135deg, #E53935 0%, #B3261E 100%)',
+              boxShadow: '0 0 24px rgba(229,57,53,0.3)',
+            }}
+          >
+            {submitting ? (
+              <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <Send size={16} />
+                Submit Lead
+              </>
+            )}
+          </button>
+        </form>
+      </GlassPanel>
+    </motion.div>
+  )
+}
+
+// ─── StatusBadge ─────────────────────────────────────────────────────────────
+
 function StatusBadge({ status }) {
-  const s = STATUS_STYLE[status] || STATUS_STYLE.pending
+  const style = STATUS_STYLES[status] || { label: status, color: '#9CA3AF' }
   return (
     <span
-      className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-widest"
+      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-heading font-semibold uppercase tracking-wider whitespace-nowrap"
       style={{
-        color: s.color,
-        backgroundColor: `${s.color}18`,
-        border: `1px solid ${s.color}33`,
+        color: style.color,
+        background: `${style.color}18`,
+        border: `1px solid ${style.color}30`,
       }}
     >
-      {s.label}
+      {style.label}
     </span>
   )
 }
 
-function MySubmissions({ firebaseUid }) {
-  const [leads, setLeads] = useState([])
-  const [loading, setLoading] = useState(true)
+// ─── LeadsPipeline ───────────────────────────────────────────────────────────
 
+function LeadsPipeline({ leads, loading }) {
+  const [expandedId, setExpandedId] = useState(null)
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <span className="inline-block w-8 h-8 border-2 border-cyan/30 border-t-cyan rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (leads.length === 0) {
+    return (
+      <GlassPanel className="p-8 text-center">
+        <Clock size={32} className="mx-auto mb-3 text-text-muted" />
+        <p className="font-heading text-sm text-text-dim">
+          No leads submitted yet. Use the form above to submit your first lead!
+        </p>
+      </GlassPanel>
+    )
+  }
+
+  return (
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-2"
+    >
+      <h2 className="font-heading text-lg font-bold text-gold mb-3 tracking-wide uppercase">
+        Your Leads
+      </h2>
+      {leads.map((lead) => {
+        const isExpanded = expandedId === lead.id
+        const date = lead.submittedAt?.toDate
+          ? lead.submittedAt.toDate().toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })
+          : '—'
+
+        return (
+          <motion.div key={lead.id} variants={itemVariants}>
+            <GlassPanel className="overflow-hidden">
+              {/* Main row — clickable */}
+              <button
+                type="button"
+                onClick={() => setExpandedId(isExpanded ? null : lead.id)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer hover:bg-white/[0.03] transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-cyan"
+              >
+                <Home size={16} className="text-cyan shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-heading text-sm font-semibold text-parchment truncate">
+                    {lead.propertyAddress}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="font-body text-xs text-text-muted truncate">
+                      {lead.ownerName}
+                    </span>
+                    <span className="text-text-muted/40">·</span>
+                    <span className="font-body text-xs text-text-muted">
+                      {lead.propertyCondition}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="font-body text-[10px] text-text-muted hidden sm:inline">
+                    {date}
+                  </span>
+                  <StatusBadge status={lead.status} />
+                  {isExpanded ? (
+                    <ChevronUp size={14} className="text-text-muted" />
+                  ) : (
+                    <ChevronDown size={14} className="text-text-muted" />
+                  )}
+                </div>
+              </button>
+
+              {/* Expanded details */}
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    className="overflow-hidden"
+                  >
+                    <div
+                      className="px-4 pb-4 pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3"
+                      style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
+                    >
+                      <div>
+                        <span className={labelCls}>Owner Contact</span>
+                        <p className="font-body text-sm text-parchment">
+                          {lead.ownerContact || '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className={labelCls}>Asking Price</span>
+                        <p className="font-body text-sm text-parchment">
+                          {lead.askingPrice
+                            ? `$${Number(lead.askingPrice).toLocaleString()}`
+                            : 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className={labelCls}>Submitted</span>
+                        <p className="font-body text-sm text-parchment">{date}</p>
+                      </div>
+                      <div className="sm:col-span-3">
+                        <span className={labelCls}>Deal Reason</span>
+                        <p className="font-body text-sm text-text-dim leading-relaxed">
+                          {lead.dealReason || '—'}
+                        </p>
+                      </div>
+                      {lead.payout != null && (
+                        <div className="sm:col-span-3">
+                          <span className={labelCls}>Payout</span>
+                          <p className="font-heading text-lg font-bold text-green-400">
+                            ${Number(lead.payout).toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </GlassPanel>
+          </motion.div>
+        )
+      })}
+    </motion.div>
+  )
+}
+
+// ─── Main Page Component ─────────────────────────────────────────────────────
+
+export default function BirdDog() {
+  const { user, profile, firebaseReady, updateProfile } = useAuth()
+  const signupRef = useRef(null)
+  const [leads, setLeads] = useState([])
+  const [leadsLoading, setLeadsLoading] = useState(true)
+
+  const isRegistered = profile?.birdDogProfile?.registered === true
+  const firebaseUid = user?.firebaseUid
+
+  // Real-time leads listener
   useEffect(() => {
-    if (!firebaseUid) {
-      setLoading(false)
+    if (!firebaseUid || !isRegistered) {
+      setLeads([])
+      setLeadsLoading(false)
       return
     }
 
     const q = query(
       collection(db, 'bird_dog_leads'),
       where('userId', '==', firebaseUid),
-      orderBy('createdAt', 'desc'),
+      orderBy('submittedAt', 'desc')
     )
 
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setLeads(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-        setLoading(false)
+        const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        setLeads(items)
+        setLeadsLoading(false)
       },
       (err) => {
-        console.error('Bird dog listener error:', err)
-        setLoading(false)
-      },
+        console.error('Leads listener error:', err)
+        setLeadsLoading(false)
+      }
     )
 
-    return () => unsub()
-  }, [firebaseUid])
+    return unsub
+  }, [firebaseUid, isRegistered])
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-    >
-      <GlassPanel className="p-5">
-        <h2 className="font-heading font-semibold text-base tracking-wider" style={{ color: '#F6C445' }}>
-          My Submissions
-        </h2>
-
-        <SectionDivider />
-
-        {loading && (
-          <div className="flex items-center justify-center py-10">
-            <div
-              className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
-            />
-          </div>
-        )}
-
-        {!loading && leads.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-            <Clock size={24} className="text-text-dim/25" />
-            <p className="text-xs text-text-dim/40 font-body">No submissions yet</p>
-          </div>
-        )}
-
-        {!loading && leads.length > 0 && (
-          <AnimatePresence initial={false}>
-            <div className="flex flex-col gap-2.5">
-              {leads.map((lead, i) => (
-                <motion.div
-                  key={lead.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04, duration: 0.3 }}
-                  className="p-3 rounded-sm bg-black/30 border border-[rgba(255,255,255,0.07)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <p
-                      className="text-xs font-heading font-semibold text-parchment truncate flex-1 max-w-[calc(100%-100px)]"
-                      title={lead.address}
-                    >
-                      {lead.address || '—'}
-                    </p>
-                    <StatusBadge status={lead.status} />
-                  </div>
-                  <p className="text-[11px] text-text-dim/50 truncate font-body">
-                    {lead.ownerName}
-                    {lead.howFound ? ` · ${lead.howFound}` : ''}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </AnimatePresence>
-        )}
-      </GlassPanel>
-    </motion.div>
-  )
-}
-
-// ─── Tab Components ──────────────────────────────────────────────────────────
-
-function FindBirdDogsTab() {
-  const [posts, setPosts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({ location: '', methods: [], availableOnly: false })
-
-  useEffect(() => {
-    const q = query(
-      collection(db, 'bird_dog_posts'),
-      where('postType', '==', 'bird_dog'),
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc'),
-    )
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-        setLoading(false)
-      },
-      (err) => {
-        console.error('Bird dog posts listener error:', err)
-        setLoading(false)
-      },
-    )
-    return () => unsub()
-  }, [])
-
-  // Client-side filtering
-  const filtered = posts.filter((post) => {
-    if (filters.location) {
-      const loc = filters.location.toLowerCase()
-      if (!post.area?.some((a) => a.toLowerCase().includes(loc))) return false
-    }
-    if (filters.methods?.length > 0) {
-      if (!filters.methods.some((m) => post.methods?.includes(m))) return false
-    }
-    if (filters.availableOnly && post.availability !== 'available' && post.availability !== 'now') return false
-    return true
-  })
-
-  return (
-    <div>
-      <FilterBar type="bird_dog" filters={filters} onFilterChange={setFilters} />
-
-      {loading && (
-        <div className="flex items-center justify-center py-16">
-          <div
-            className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
-            style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
-          />
-        </div>
-      )}
-
-      {!loading && filtered.length === 0 && (
-        <GlassPanel className="p-8 text-center">
-          <p className="text-text-dim/50 font-body text-sm">
-            No bird dogs available yet. Be the first to post!
-          </p>
-        </GlassPanel>
-      )}
-
-      {!loading && filtered.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((post) => (
-            <BirdDogCard key={post.id} post={post} />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function FindJobsTab({ currentUserId, profile, firebaseUid }) {
-  const [posts, setPosts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({ location: '', taskType: '', urgency: '' })
-  const [applyPost, setApplyPost] = useState(null)
-
-  useEffect(() => {
-    const q = query(
-      collection(db, 'bird_dog_posts'),
-      where('postType', '==', 'job'),
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc'),
-    )
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-        setLoading(false)
-      },
-      (err) => {
-        console.error('Job posts listener error:', err)
-        setLoading(false)
-      },
-    )
-    return () => unsub()
-  }, [])
-
-  // Client-side filtering
-  const filtered = posts.filter((post) => {
-    if (filters.location) {
-      const loc = filters.location.toLowerCase()
-      if (!post.area?.some((a) => a.toLowerCase().includes(loc))) return false
-    }
-    if (filters.taskType) {
-      if (post.taskType !== filters.taskType) return false
-    }
-    if (filters.urgency) {
-      if (post.urgency !== filters.urgency) return false
-    }
-    return true
-  })
-
-  return (
-    <div>
-      <FilterBar type="job" filters={filters} onFilterChange={setFilters} />
-
-      {loading && (
-        <div className="flex items-center justify-center py-16">
-          <div
-            className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
-            style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
-          />
-        </div>
-      )}
-
-      {!loading && filtered.length === 0 && (
-        <GlassPanel className="p-8 text-center">
-          <p className="text-text-dim/50 font-body text-sm">
-            No jobs posted yet. Be the first to post!
-          </p>
-        </GlassPanel>
-      )}
-
-      {!loading && filtered.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((post) => (
-            <JobCard
-              key={post.id}
-              post={post}
-              currentUserId={currentUserId}
-              onApply={(p) => setApplyPost(p)}
-            />
-          ))}
-        </div>
-      )}
-
-      <ApplyModal
-        isOpen={!!applyPost}
-        onClose={() => setApplyPost(null)}
-        post={applyPost}
-        profile={profile}
-        firebaseUid={firebaseUid}
-      />
-    </div>
-  )
-}
-
-// ─── My Activity Sub-sections ─────────────────────────────────────────────────
-
-const POST_STATUS_STYLE = {
-  active:      { label: 'Active',      color: '#00C6FF' },
-  in_progress: { label: 'In Progress', color: '#A855F7' },
-  completed:   { label: 'Completed',   color: '#10b981' },
-  closed:      { label: 'Closed',      color: '#6B7280' },
-}
-
-const APP_STATUS_STYLE = {
-  pending:  { label: 'Pending',  color: '#F6C445' },
-  accepted: { label: 'Accepted', color: '#10b981' },
-  passed:   { label: 'Passed',   color: '#E53935' },
-}
-
-function formatDate(timestamp) {
-  if (!timestamp) return ''
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function PostStatusBadge({ status }) {
-  const s = POST_STATUS_STYLE[status] || POST_STATUS_STYLE.active
-  return (
-    <span
-      className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-widest"
-      style={{
-        color: s.color,
-        backgroundColor: `${s.color}18`,
-        border: `1px solid ${s.color}33`,
-      }}
-    >
-      {s.label}
-    </span>
-  )
-}
-
-function AppStatusBadge({ status }) {
-  const s = APP_STATUS_STYLE[status] || APP_STATUS_STYLE.pending
-  return (
-    <span
-      className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-widest"
-      style={{
-        color: s.color,
-        backgroundColor: `${s.color}18`,
-        border: `1px solid ${s.color}33`,
-      }}
-    >
-      {s.label}
-    </span>
-  )
-}
-
-function MyPostsSection({ firebaseUid, onCreatePost }) {
-  const [posts, setPosts] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!firebaseUid) {
-      setLoading(false)
-      return
-    }
-
-    const q = query(
-      collection(db, 'bird_dog_posts'),
-      where('userId', '==', firebaseUid),
-      orderBy('createdAt', 'desc'),
-    )
-
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-        setLoading(false)
-      },
-      (err) => {
-        console.error('My posts listener error:', err)
-        setLoading(false)
-      },
-    )
-
-    return () => unsub()
-  }, [firebaseUid])
-
-  async function handleClosePost(postId) {
-    try {
-      await updateDoc(doc(db, 'bird_dog_posts', postId), { status: 'closed' })
-    } catch (err) {
-      console.error('Error closing post:', err)
-    }
+  const scrollToSignup = () => {
+    signupRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-    >
-      <GlassPanel className="p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-heading font-semibold text-base tracking-wider" style={{ color: '#F6C445' }}>
-            My Posts
-          </h3>
-          <button
-            onClick={onCreatePost}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-heading font-semibold tracking-wider text-white bg-[#E53935] border border-[#E53935]/40 hover:bg-[#ef5350] active:scale-[0.98] transition-colors shadow-[0_4px_16px_rgba(229,57,53,0.2)]"
-          >
-            <Plus size={12} />
-            Create New Post
-          </button>
-        </div>
-
-        <SectionDivider />
-
-        {loading && (
-          <div className="flex items-center justify-center py-10">
-            <div
-              className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
-            />
-          </div>
-        )}
-
-        {!loading && posts.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-            <FileText size={24} className="text-text-dim/25" />
-            <p className="text-xs text-text-dim/40 font-body">You haven&apos;t created any posts yet</p>
-          </div>
-        )}
-
-        {!loading && posts.length > 0 && (
-          <div className="flex flex-col gap-2.5">
-            {posts.map((post, i) => (
-              <motion.div
-                key={post.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04, duration: 0.3 }}
-                className="p-3 rounded-sm bg-black/30 border border-[rgba(255,255,255,0.07)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
-              >
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {/* Post type badge */}
-                    <span
-                      className="inline-block px-2 py-0.5 rounded-full text-[9px] font-heading font-semibold tracking-widest shrink-0"
-                      style={{
-                        color: post.postType === 'bird_dog' ? '#00C6FF' : '#F6C445',
-                        backgroundColor: post.postType === 'bird_dog' ? 'rgba(0,198,255,0.12)' : 'rgba(246,196,69,0.12)',
-                        border: `1px solid ${post.postType === 'bird_dog' ? 'rgba(0,198,255,0.25)' : 'rgba(246,196,69,0.25)'}`,
-                      }}
-                    >
-                      {post.postType === 'bird_dog' ? 'Bird Dog' : 'Job'}
-                    </span>
-                    <p className="text-xs font-heading font-semibold text-parchment truncate" title={post.title}>
-                      {post.title || '—'}
-                    </p>
-                  </div>
-                  <PostStatusBadge status={post.status} />
-                </div>
-
-                <div className="flex items-center gap-3 mb-2">
-                  {post.postType === 'job' && post.applicants?.length > 0 && (
-                    <span className="text-[11px] text-text-dim/50 font-body">
-                      {post.applicants.length} applicant{post.applicants.length !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                  <span className="text-[11px] text-text-dim/40 font-body">
-                    {formatDate(post.createdAt)}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {/* placeholder noop */}}
-                    className="flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-heading font-semibold tracking-wider text-text-dim border border-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] hover:text-parchment active:scale-[0.97] transition-colors"
-                  >
-                    <Edit3 size={10} />
-                    Edit
-                  </button>
-                  {post.status !== 'closed' && (
-                    <button
-                      onClick={() => handleClosePost(post.id)}
-                      className="flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-heading font-semibold tracking-wider border active:scale-[0.97] transition-colors"
-                      style={{
-                        color: '#E53935',
-                        borderColor: 'rgba(229,57,53,0.25)',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(229,57,53,0.5)' }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(229,57,53,0.25)' }}
-                    >
-                      <XCircle size={10} />
-                      Close Post
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </GlassPanel>
-    </motion.div>
-  )
-}
-
-function MyApplicationsSection({ firebaseUid, onOpenMessages }) {
-  const [applications, setApplications] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!firebaseUid) {
-      setLoading(false)
-      return
-    }
-
-    const q = query(
-      collection(db, 'bird_dog_posts'),
-      where('postType', '==', 'job'),
-      orderBy('createdAt', 'desc'),
-    )
-
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        const allPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-        // Filter to posts where current user has applied
-        const myApps = allPosts.filter(
-          (post) => post.applicants?.some((a) => a.userId === firebaseUid)
-        )
-        setApplications(myApps)
-        setLoading(false)
-      },
-      (err) => {
-        console.error('My applications listener error:', err)
-        setLoading(false)
-      },
-    )
-
-    return () => unsub()
-  }, [firebaseUid])
-
-  function getUserAppStatus(post) {
-    const entry = post.applicants?.find((a) => a.userId === firebaseUid)
-    return entry?.status || 'pending'
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
-    >
-      <GlassPanel className="p-5">
-        <h3 className="font-heading font-semibold text-base tracking-wider mb-4" style={{ color: '#F6C445' }}>
-          My Applications
-        </h3>
-
-        <SectionDivider />
-
-        {loading && (
-          <div className="flex items-center justify-center py-10">
-            <div
-              className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
-            />
-          </div>
-        )}
-
-        {!loading && applications.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-            <Briefcase size={24} className="text-text-dim/25" />
-            <p className="text-xs text-text-dim/40 font-body">You haven&apos;t applied to any jobs yet.</p>
-          </div>
-        )}
-
-        {!loading && applications.length > 0 && (
-          <div className="flex flex-col gap-2.5">
-            {applications.map((post, i) => {
-              const appStatus = getUserAppStatus(post)
-              return (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04, duration: 0.3 }}
-                  className="p-3 rounded-sm bg-black/30 border border-[rgba(255,255,255,0.07)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <p className="text-xs font-heading font-semibold text-parchment truncate flex-1" title={post.title}>
-                      {post.title || '—'}
-                    </p>
-                    <AppStatusBadge status={appStatus} />
-                  </div>
-
-                  <p className="text-[11px] text-text-dim/50 font-body mb-2">
-                    Posted by {post.authorName || 'Unknown'}
-                  </p>
-
-                  {appStatus === 'accepted' && (
-                    <button
-                      onClick={() => onOpenMessages?.()}
-                      className="text-[10px] font-heading font-semibold tracking-wider hover:underline transition-colors active:scale-[0.97]"
-                      style={{ color: '#00C6FF' }}
-                    >
-                      Open Messages
-                    </button>
-                  )}
-
-                  {post.area?.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {post.area.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-2 py-0.5 rounded-full text-[9px] font-heading tracking-widest"
-                          style={{
-                            color: '#00C6FF',
-                            backgroundColor: 'rgba(0,198,255,0.08)',
-                            border: '1px solid rgba(0,198,255,0.15)',
-                          }}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </motion.div>
-              )
-            })}
-          </div>
-        )}
-      </GlassPanel>
-    </motion.div>
-  )
-}
-
-function PendingReviewsSection({ firebaseUid, profile }) {
-  const [pendingReviews, setPendingReviews] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!firebaseUid) {
-      setLoading(false)
-      return
-    }
-
-    // Listen to completed job posts where user is a participant
-    const q = query(
-      collection(db, 'bird_dog_posts'),
-      where('status', '==', 'completed'),
-    )
-
-    const unsub = onSnapshot(
-      q,
-      async (snap) => {
-        const allCompleted = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-
-        // Filter to posts where user is either owner or accepted applicant
-        const myCompleted = allCompleted.filter((post) => {
-          const isOwner = post.userId === firebaseUid
-          const isAccepted = post.applicants?.some(
-            (a) => a.userId === firebaseUid && a.status === 'accepted',
-          )
-          return isOwner || isAccepted
-        })
-
-        // For each completed post, check if user already left a review
-        const pending = []
-        for (const post of myCompleted) {
-          const reviewQ = query(
-            collection(db, 'bird_dog_reviews'),
-            where('jobPostId', '==', post.id),
-            where('reviewerId', '==', firebaseUid),
-          )
-          const reviewSnap = await getDocs(reviewQ)
-          if (reviewSnap.empty) {
-            // Determine who to review
-            const isOwner = post.userId === firebaseUid
-            if (isOwner) {
-              // Review each accepted applicant
-              const accepted = post.applicants?.filter((a) => a.status === 'accepted') || []
-              for (const app of accepted) {
-                pending.push({
-                  post,
-                  otherUserId: app.userId,
-                  otherUserName: app.name || 'Applicant',
-                  reviewerRole: 'investor',
-                })
-              }
-            } else {
-              // Review the post owner
-              pending.push({
-                post,
-                otherUserId: post.userId,
-                otherUserName: post.authorName || 'Investor',
-                reviewerRole: 'bird_dog',
-              })
-            }
-          }
-        }
-
-        setPendingReviews(pending)
-        setLoading(false)
-      },
-      (err) => {
-        console.error('Pending reviews listener error:', err)
-        setLoading(false)
-      },
-    )
-
-    return () => unsub()
-  }, [firebaseUid])
-
-  function handleReviewComplete(postId, otherUserId) {
-    // Remove completed review from the list
-    setPendingReviews((prev) =>
-      prev.filter((r) => !(r.post.id === postId && r.otherUserId === otherUserId)),
-    )
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.16, ease: [0.25, 0.46, 0.45, 0.94] }}
-    >
-      <GlassPanel className="p-5">
-        <h3 className="font-heading font-semibold text-base tracking-wider mb-4" style={{ color: '#F6C445' }}>
-          Pending Reviews
-        </h3>
-
-        <SectionDivider />
-
-        {loading && (
-          <div className="flex items-center justify-center py-10">
-            <div
-              className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
-            />
-          </div>
-        )}
-
-        {!loading && pendingReviews.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-            <Star size={24} className="text-text-dim/25" />
-            <p className="text-xs text-text-dim/40 font-body">No pending reviews</p>
-          </div>
-        )}
-
-        {!loading && pendingReviews.length > 0 && (
-          <div className="flex flex-col gap-3">
-            {pendingReviews.map((item, i) => (
-              <ReviewForm
-                key={`${item.post.id}-${item.otherUserId}`}
-                post={item.post}
-                otherUserId={item.otherUserId}
-                otherUserName={item.otherUserName}
-                firebaseUid={firebaseUid}
-                reviewerRole={item.reviewerRole}
-                reviewerName={profile?.displayName || 'Unknown'}
-                onComplete={() => handleReviewComplete(item.post.id, item.otherUserId)}
-              />
-            ))}
-          </div>
-        )}
-      </GlassPanel>
-    </motion.div>
-  )
-}
-
-function MyActivityTab({ firebaseUid, profile, user, onCreatePost, onOpenMessages }) {
-  const { firebaseReady } = useAuth()
-
-  return (
-    <div className="flex flex-col gap-5">
-      {/* Section 1: My Posts */}
-      <MyPostsSection firebaseUid={firebaseUid} onCreatePost={onCreatePost} />
-
-      {/* Section 2: My Applications */}
-      <MyApplicationsSection firebaseUid={firebaseUid} onOpenMessages={onOpenMessages} />
-
-      {/* Section 3: Pending Reviews */}
-      <PendingReviewsSection firebaseUid={firebaseUid} profile={profile} />
-
-      {/* Section 4: Lead Submissions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.24, ease: [0.25, 0.46, 0.45, 0.94] }}
-      >
-        <h3 className="font-heading font-semibold text-base tracking-wider mb-4" style={{ color: '#F6C445' }}>
-          Lead Submissions
-        </h3>
-      </motion.div>
-
-      {firebaseReady ? (
-        <SubmissionForm firebaseUid={firebaseUid} profile={profile} user={user} />
-      ) : (
-        <GlassPanel className="p-5">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="w-6 h-6 rounded-full border-2 animate-spin mx-auto mb-3" style={{ borderColor: 'rgba(0,198,255,0.3)', borderTopColor: '#00C6FF' }} />
-              <p className="text-xs text-text-dim/40 font-body">Connecting...</p>
-            </div>
-          </div>
-        </GlassPanel>
-      )}
-      <MySubmissions firebaseUid={firebaseUid} />
-    </div>
-  )
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-export default function BirdDog() {
-  const { user, profile, firebaseReady, updateProfile } = useAuth()
-  const firebaseUid = user?.firebaseUid
-  const [activeTab, setActiveTab] = useState('find-birddogs')
-  const [showProfileModal, setShowProfileModal] = useState(false)
-  const [showPostModal, setShowPostModal] = useState(false)
-  const [showMessages, setShowMessages] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
-
-  // ─── Unread message count listener ────────────────────────────────────────
-  useEffect(() => {
-    if (!firebaseUid) return
-    const q = query(
-      collection(db, 'bird_dog_threads'),
-      where('participants', 'array-contains', firebaseUid),
-    )
-    const unsub = onSnapshot(q, (snap) => {
-      const count = snap.docs.filter((d) => d.data().unreadBy?.includes(firebaseUid)).length
-      setUnreadCount(count)
-    })
-    return () => unsub()
-  }, [firebaseUid])
-
-  function handleCreatePost() {
-    if (!profile?.birdDogProfile) {
-      setShowProfileModal(true)
-    } else {
-      setShowPostModal(true)
-    }
-  }
-
-  async function handleProfileComplete(profileData) {
+  const handleSignup = async (profileData) => {
     await updateProfile({ birdDogProfile: profileData })
-    setShowProfileModal(false)
-    setShowPostModal(true)
   }
 
   return (
-    <>
-      {/* Background Image */}
+    <main className="relative min-h-screen">
+      {/* Background image layer */}
       <div
-        className="fixed inset-0 -z-20 bg-center bg-no-repeat"
-        style={{
-          backgroundImage: 'url(/bird-dog-bg.png)',
-          backgroundSize: '120%',
-          backgroundPosition: 'center 20%',
-        }}
+        className="fixed inset-0 -z-20 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/bird-dog-bg.png')" }}
       />
-      <div
-        className="fixed inset-0 -z-10"
-        style={{
-          background: `
-            radial-gradient(ellipse 80% 60% at 50% 30%, rgba(11,15,20,0.45) 0%, rgba(11,15,20,0.7) 55%, rgba(11,15,20,0.92) 100%),
-            linear-gradient(180deg, rgba(11,15,20,0.35) 0%, rgba(11,15,20,0.6) 40%, rgba(11,15,20,0.9) 100%)
-          `,
-        }}
+      {/* Gradient overlay */}
+      <div className="fixed inset-0 -z-10 bg-gradient-to-b from-bg/60 via-bg/85 to-bg" />
+
+      {/* Hero — always visible */}
+      <HeroExplainer
+        showCta={firebaseReady && !isRegistered}
+        onCtaClick={scrollToSignup}
       />
 
-      <div className="min-h-screen px-6 py-16 relative z-10">
-      {/* ── Header ─────────────────────────────────────── */}
-      <motion.div
-        className="mb-8"
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-      >
-        <div className="text-center mb-8 max-w-[680px] mx-auto">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
-              <MapPin size={36} style={{ color: '#00C6FF' }} />
-            </div>
-            <h1
-              className="font-display text-4xl"
-              style={{
-                color: '#F4F7FA',
-                textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
-              }}
-            >
-              Bird Dog Network
-            </h1>
+      {/* Content below hero */}
+      <div className="relative">
+        {/* Loading state */}
+        {!firebaseReady && (
+          <div className="flex justify-center py-20">
+            <span className="inline-block w-8 h-8 border-2 border-cyan/30 border-t-cyan rounded-full animate-spin" />
           </div>
-          <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
-            Connect with bird dogs and investors in your market.
-          </p>
-        </div>
-      </motion.div>
+        )}
 
-      {/* ── Tab bar + content ──────────────────────────── */}
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex gap-1 border-b border-[rgba(0,198,255,0.12)]">
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={[
-                  'relative px-4 py-2.5 font-heading text-xs tracking-widest uppercase transition-colors',
-                  activeTab === tab.id ? 'text-cyan' : 'text-text-dim hover:text-parchment',
-                ].join(' ')}
-              >
-                {tab.label}
-                {activeTab === tab.id && (
-                  <motion.div
-                    layoutId="bird-dog-tab"
-                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00C6FF]"
-                  />
-                )}
-              </button>
-            ))}
+        {/* Signup form — if not registered */}
+        {firebaseReady && !isRegistered && (
+          <div ref={signupRef}>
+            <SignupForm onComplete={handleSignup} user={user} />
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowMessages(!showMessages)}
-              className="relative p-2 rounded-sm text-text-dim hover:text-cyan transition-colors active:scale-95"
-            >
-              <MessageCircle size={20} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#E53935] text-white text-[9px] font-heading font-bold flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={handleCreatePost}
-              className="flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-heading font-semibold tracking-wider text-white bg-[#E53935] border border-[#E53935]/40 hover:bg-[#ef5350] active:scale-[0.98] transition-colors shadow-[0_4px_20px_rgba(229,57,53,0.25)]"
-            >
-              <Plus size={14} />
-              Create Post
-            </button>
-          </div>
-        </div>
+        )}
 
-        {/* Tab content */}
-        {activeTab === 'find-birddogs' && <FindBirdDogsTab />}
-        {activeTab === 'find-jobs' && <FindJobsTab currentUserId={firebaseUid} profile={profile} firebaseUid={firebaseUid} />}
-        {activeTab === 'my-activity' && (
-          <MyActivityTab firebaseUid={firebaseUid} profile={profile} user={user} onCreatePost={handleCreatePost} onOpenMessages={() => setShowMessages(true)} />
+        {/* Dashboard — if registered */}
+        {firebaseReady && isRegistered && (
+          <div className="max-w-3xl mx-auto px-4 pb-20 pt-4">
+            <StatsBar leads={leads} />
+            <SubmitLeadForm
+              firebaseUid={firebaseUid}
+              profile={profile}
+              user={user}
+            />
+            <LeadsPipeline leads={leads} loading={leadsLoading} />
+          </div>
         )}
       </div>
-    </div>
-
-      <ProfileSetupModal
-        isOpen={showProfileModal}
-        onClose={() => setShowProfileModal(false)}
-        onComplete={handleProfileComplete}
-      />
-
-      <CreatePostModal
-        isOpen={showPostModal}
-        onClose={() => setShowPostModal(false)}
-        profile={profile}
-        firebaseUid={firebaseUid}
-      />
-
-      <MessagePanel
-        isOpen={showMessages}
-        onClose={() => setShowMessages(false)}
-        firebaseUid={firebaseUid}
-        profile={profile}
-      />
-    </>
+    </main>
   )
 }
