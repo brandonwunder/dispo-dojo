@@ -4,7 +4,6 @@ import { Target, CheckCircle2 } from 'lucide-react'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
-import WoodPanel from '../components/WoodPanel'
 
 const containerVariants = {
   hidden: {},
@@ -102,180 +101,244 @@ export default function BuyBoxes() {
         </div>
       </motion.div>
 
-      <div className="katana-line my-4" />
+      <div className="h-[1px] my-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left — Form */}
+        {/* Left -- Form */}
         <motion.div variants={itemVariants}>
-          <WoodPanel headerBar="Your Buy Box Criteria">
-            <div className="space-y-4">
-              <div>
-                <label className={labelCls}>Markets / States</label>
-                <input
-                  className={inputCls}
-                  value={markets}
-                  onChange={(e) => setMarkets(e.target.value)}
-                  placeholder="TX, FL, Phoenix AZ, Nashville TN"
-                />
-                <p className="text-text-muted text-xs mt-1 font-body">Comma-separated states or metro areas</p>
-              </div>
-
-              <div>
-                <label className={labelCls}>Property Types</label>
-                <div className="flex flex-wrap gap-2">
-                  {PROPERTY_TYPES.map((pt) => (
-                    <button
-                      key={pt}
-                      onClick={() => toggleItem(propertyTypes, setPropertyTypes, pt)}
-                      className={`px-3 py-1.5 rounded-sm text-xs font-heading tracking-wide transition-colors duration-150 ${
-                        propertyTypes.includes(pt)
-                          ? 'bg-gold/15 border border-gold-dim/40 text-gold'
-                          : 'bg-white/5 border border-white/10 text-text-dim hover:border-white/20'
-                      }`}
-                    >
-                      {pt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Min Price</label>
-                  <input className={inputCls} type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="50000" />
-                </div>
-                <div>
-                  <label className={labelCls}>Max Price</label>
-                  <input className={inputCls} type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="300000" />
-                </div>
-              </div>
-
-              <div>
-                <label className={labelCls}>Deal Types</label>
-                <div className="flex flex-wrap gap-2">
-                  {DEAL_TYPES.map((dt) => (
-                    <button
-                      key={dt}
-                      onClick={() => toggleItem(dealTypes, setDealTypes, dt)}
-                      className={`px-3 py-1.5 rounded-sm text-xs font-heading tracking-wide transition-colors duration-150 ${
-                        dealTypes.includes(dt)
-                          ? 'bg-cyan/10 border border-cyan/35 text-cyan'
-                          : 'bg-white/5 border border-white/10 text-text-dim hover:border-white/20'
-                      }`}
-                    >
-                      {dt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className={labelCls}>Preferred Close Timeline</label>
-                <input className={inputCls} value={closeTimeline} onChange={(e) => setCloseTimeline(e.target.value)} placeholder="14–30 days" />
-              </div>
-
-              <div>
-                <label className={labelCls}>Additional Notes</label>
-                <textarea
-                  className={inputCls + ' resize-none'}
-                  rows={3}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any other criteria, deal preferences, or deal-breakers..."
-                />
-              </div>
-
-              <button
-                onClick={handleSubmit}
-                disabled={saving}
-                className="w-full py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-colors duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] disabled:opacity-40 flex items-center justify-center gap-2"
-              >
-                {saving ? (
-                  <motion.div
-                    className="w-4 h-4 border-2 border-parchment/30 border-t-parchment rounded-full"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  />
-                ) : justSaved ? (
-                  <><CheckCircle2 size={16} /> Saved!</>
-                ) : (
-                  'Save My Buy Box'
-                )}
-              </button>
+          <div
+            className="rounded-sm border border-gold-dim/20 overflow-hidden"
+            style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
+          >
+            {/* Accent line */}
+            <div
+              className="h-[2px]"
+              style={{ background: 'linear-gradient(90deg, transparent, #00C6FF, transparent)' }}
+            />
+            {/* Header bar */}
+            <div className="px-5 py-3 border-b border-gold-dim/15">
+              <span className="font-heading text-gold text-sm tracking-widest uppercase">Your Buy Box Criteria</span>
             </div>
-          </WoodPanel>
+            <div className="p-5">
+              <div className="space-y-4">
+                <div>
+                  <label className={labelCls}>Markets / States</label>
+                  <input
+                    className={inputCls}
+                    value={markets}
+                    onChange={(e) => setMarkets(e.target.value)}
+                    placeholder="TX, FL, Phoenix AZ, Nashville TN"
+                  />
+                  <p className="text-text-muted text-xs mt-1 font-body">Comma-separated states or metro areas</p>
+                </div>
+
+                <div>
+                  <label className={labelCls}>Property Types</label>
+                  <div className="flex flex-wrap gap-2">
+                    {PROPERTY_TYPES.map((pt) => (
+                      <button
+                        key={pt}
+                        onClick={() => toggleItem(propertyTypes, setPropertyTypes, pt)}
+                        className={`px-3 py-1.5 rounded-sm text-xs font-heading tracking-wide transition-colors duration-150 ${
+                          propertyTypes.includes(pt)
+                            ? 'border text-gold'
+                            : 'bg-white/5 border border-white/10 text-text-dim hover:border-white/20'
+                        }`}
+                        style={propertyTypes.includes(pt) ? {
+                          background: 'rgba(246,196,69,0.12)',
+                          borderColor: 'rgba(246,196,69,0.35)',
+                        } : undefined}
+                      >
+                        {pt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Min Price</label>
+                    <input className={inputCls} type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="50000" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Max Price</label>
+                    <input className={inputCls} type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="300000" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelCls}>Deal Types</label>
+                  <div className="flex flex-wrap gap-2">
+                    {DEAL_TYPES.map((dt) => (
+                      <button
+                        key={dt}
+                        onClick={() => toggleItem(dealTypes, setDealTypes, dt)}
+                        className={`px-3 py-1.5 rounded-sm text-xs font-heading tracking-wide transition-colors duration-150 ${
+                          dealTypes.includes(dt)
+                            ? 'border text-cyan'
+                            : 'bg-white/5 border border-white/10 text-text-dim hover:border-white/20'
+                        }`}
+                        style={dealTypes.includes(dt) ? {
+                          background: 'rgba(0,198,255,0.1)',
+                          borderColor: 'rgba(0,198,255,0.35)',
+                        } : undefined}
+                      >
+                        {dt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelCls}>Preferred Close Timeline</label>
+                  <input className={inputCls} value={closeTimeline} onChange={(e) => setCloseTimeline(e.target.value)} placeholder="14-30 days" />
+                </div>
+
+                <div>
+                  <label className={labelCls}>Additional Notes</label>
+                  <textarea
+                    className={inputCls + ' resize-none'}
+                    rows={3}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Any other criteria, deal preferences, or deal-breakers..."
+                  />
+                </div>
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={saving}
+                  className="w-full py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-colors duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  {saving ? (
+                    <motion.div
+                      className="w-4 h-4 border-2 border-parchment/30 border-t-parchment rounded-full"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    />
+                  ) : justSaved ? (
+                    <><CheckCircle2 size={16} /> Saved!</>
+                  ) : (
+                    'Save My Buy Box'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </motion.div>
 
-        {/* Right — Saved summary */}
+        {/* Right -- Saved summary */}
         <motion.div variants={itemVariants}>
           {saved ? (
-            <WoodPanel headerBar="Your Criteria on File" glow>
-              <div className="space-y-3">
-                {saved.markets?.length > 0 && (
-                  <div>
-                    <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Markets</span>
-                    <p className="text-parchment text-sm font-body mt-0.5">{saved.markets.join(', ')}</p>
-                  </div>
-                )}
-                {saved.propertyTypes?.length > 0 && (
-                  <div>
-                    <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Property Types</span>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {saved.propertyTypes.map((pt) => (
-                        <span key={pt} className="px-2 py-0.5 rounded-full text-[11px] font-heading bg-gold/10 border border-gold-dim/25 text-gold">{pt}</span>
-                      ))}
+            <div
+              className="rounded-sm border border-gold-dim/20 overflow-hidden"
+              style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
+            >
+              {/* Accent line */}
+              <div
+                className="h-[2px]"
+                style={{ background: 'linear-gradient(90deg, transparent, #F6C445, transparent)' }}
+              />
+              {/* Header bar */}
+              <div className="px-5 py-3 border-b border-gold-dim/15">
+                <span className="font-heading text-gold text-sm tracking-widest uppercase">Your Criteria on File</span>
+              </div>
+              <div className="p-5">
+                <div className="space-y-3">
+                  {saved.markets?.length > 0 && (
+                    <div>
+                      <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Markets</span>
+                      <p className="text-parchment text-sm font-body mt-0.5">{saved.markets.join(', ')}</p>
                     </div>
-                  </div>
-                )}
-                {(saved.minPrice || saved.maxPrice) && (
-                  <div>
-                    <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Price Range</span>
-                    <p className="text-parchment text-sm font-body mt-0.5">
-                      ${Number(saved.minPrice || 0).toLocaleString()} – ${Number(saved.maxPrice || 0).toLocaleString()}
+                  )}
+                  {saved.propertyTypes?.length > 0 && (
+                    <div>
+                      <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Property Types</span>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {saved.propertyTypes.map((pt) => (
+                          <span
+                            key={pt}
+                            className="px-2 py-0.5 rounded-full text-[11px] font-heading text-gold"
+                            style={{
+                              background: 'rgba(246,196,69,0.1)',
+                              border: '1px solid rgba(246,196,69,0.25)',
+                            }}
+                          >
+                            {pt}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {(saved.minPrice || saved.maxPrice) && (
+                    <div>
+                      <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Price Range</span>
+                      <p className="text-parchment text-sm font-body mt-0.5">
+                        ${Number(saved.minPrice || 0).toLocaleString()} – ${Number(saved.maxPrice || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                  {saved.dealTypes?.length > 0 && (
+                    <div>
+                      <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Deal Types</span>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {saved.dealTypes.map((dt) => (
+                          <span
+                            key={dt}
+                            className="px-2 py-0.5 rounded-full text-[11px] font-heading text-cyan"
+                            style={{
+                              background: 'rgba(0,198,255,0.1)',
+                              border: '1px solid rgba(0,198,255,0.25)',
+                            }}
+                          >
+                            {dt}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {saved.closeTimeline && (
+                    <div>
+                      <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Close Timeline</span>
+                      <p className="text-parchment text-sm font-body mt-0.5">{saved.closeTimeline}</p>
+                    </div>
+                  )}
+                  {saved.notes && (
+                    <div>
+                      <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Notes</span>
+                      <p className="text-text-dim text-sm leading-relaxed font-body mt-0.5">{saved.notes}</p>
+                    </div>
+                  )}
+                  {saved.updatedAt && (
+                    <p className="text-text-muted text-xs font-body mt-4">
+                      Last updated {new Date(saved.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
-                  </div>
-                )}
-                {saved.dealTypes?.length > 0 && (
-                  <div>
-                    <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Deal Types</span>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {saved.dealTypes.map((dt) => (
-                        <span key={dt} className="px-2 py-0.5 rounded-full text-[11px] font-heading bg-cyan/10 border border-cyan/25 text-cyan">{dt}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {saved.closeTimeline && (
-                  <div>
-                    <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Close Timeline</span>
-                    <p className="text-parchment text-sm font-body mt-0.5">{saved.closeTimeline}</p>
-                  </div>
-                )}
-                {saved.notes && (
-                  <div>
-                    <span className="text-xs font-heading text-text-dim tracking-widest uppercase">Notes</span>
-                    <p className="text-text-dim text-sm leading-relaxed font-body mt-0.5">{saved.notes}</p>
-                  </div>
-                )}
-                {saved.updatedAt && (
-                  <p className="text-text-muted text-xs font-body mt-4">
-                    Last updated {new Date(saved.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </p>
-                )}
-              </div>
-            </WoodPanel>
-          ) : (
-            <WoodPanel>
-              <div className="text-center py-10">
-                <div className="hanko-seal w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Target size={24} className="text-white" />
+                  )}
                 </div>
-                <h3 className="font-heading text-base text-gold tracking-wide mb-2">No Buy Box on File</h3>
-                <p className="text-text-dim text-xs font-body leading-relaxed">
-                  Fill out the form and save your criteria. We'll notify you when a deal matches.
-                </p>
               </div>
-            </WoodPanel>
+            </div>
+          ) : (
+            <div
+              className="rounded-sm border border-gold-dim/20 overflow-hidden"
+              style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
+            >
+              {/* Accent line */}
+              <div
+                className="h-[2px]"
+                style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }}
+              />
+              <div className="p-5">
+                <div className="text-center py-10">
+                  <div className="w-14 h-14 rounded-full bg-gold/10 border border-gold-dim/25 flex items-center justify-center mx-auto mb-4">
+                    <Target size={24} className="text-gold" />
+                  </div>
+                  <h3 className="font-heading text-base text-gold tracking-wide mb-2">No Buy Box on File</h3>
+                  <p className="text-text-dim text-xs font-body leading-relaxed">
+                    Fill out the form and save your criteria. We'll notify you when a deal matches.
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
         </motion.div>
       </div>
