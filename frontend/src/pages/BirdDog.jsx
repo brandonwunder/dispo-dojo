@@ -10,6 +10,7 @@ import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { incrementStat } from '../lib/userProfile'
 import GlassPanel from '../components/GlassPanel'
+import ProfileSetupModal from '../components/birddog/ProfileSetupModal'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -530,12 +531,24 @@ function MyActivityTab({ firebaseUid, profile, user }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BirdDog() {
-  const { user, profile, firebaseReady } = useAuth()
+  const { user, profile, firebaseReady, updateProfile } = useAuth()
   const firebaseUid = user?.firebaseUid
   const [activeTab, setActiveTab] = useState('find-birddogs')
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showPostModal, setShowPostModal] = useState(false)
 
   function handleCreatePost() {
-    // Will check for birdDogProfile and show onboarding modal — built in Task 2
+    if (!profile?.birdDogProfile) {
+      setShowProfileModal(true)
+    } else {
+      setShowPostModal(true)
+    }
+  }
+
+  async function handleProfileComplete(profileData) {
+    await updateProfile({ birdDogProfile: profileData })
+    setShowProfileModal(false)
+    setShowPostModal(true)
   }
 
   return (
@@ -628,6 +641,12 @@ export default function BirdDog() {
         )}
       </div>
     </div>
+
+      <ProfileSetupModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        onComplete={handleProfileComplete}
+      />
     </>
   )
 }
