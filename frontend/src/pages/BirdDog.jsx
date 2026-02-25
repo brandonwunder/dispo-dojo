@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  MapPin, CheckCircle, Send, Clock, Plus,
+  MapPin, CheckCircle, Send, Clock, Plus, Edit3, XCircle, Briefcase, FileText, Star,
 } from 'lucide-react'
 import {
   collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp,
+  doc, updateDoc,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
@@ -653,11 +654,388 @@ function FindJobsTab({ currentUserId, profile, firebaseUid }) {
   )
 }
 
-function MyActivityTab({ firebaseUid, profile, user }) {
+// ─── My Activity Sub-sections ─────────────────────────────────────────────────
+
+const POST_STATUS_STYLE = {
+  active:      { label: 'Active',      color: '#00C6FF' },
+  in_progress: { label: 'In Progress', color: '#A855F7' },
+  completed:   { label: 'Completed',   color: '#10b981' },
+  closed:      { label: 'Closed',      color: '#6B7280' },
+}
+
+const APP_STATUS_STYLE = {
+  pending:  { label: 'Pending',  color: '#F6C445' },
+  accepted: { label: 'Accepted', color: '#10b981' },
+  passed:   { label: 'Passed',   color: '#E53935' },
+}
+
+function formatDate(timestamp) {
+  if (!timestamp) return ''
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function PostStatusBadge({ status }) {
+  const s = POST_STATUS_STYLE[status] || POST_STATUS_STYLE.active
+  return (
+    <span
+      className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-widest"
+      style={{
+        color: s.color,
+        backgroundColor: `${s.color}18`,
+        border: `1px solid ${s.color}33`,
+      }}
+    >
+      {s.label}
+    </span>
+  )
+}
+
+function AppStatusBadge({ status }) {
+  const s = APP_STATUS_STYLE[status] || APP_STATUS_STYLE.pending
+  return (
+    <span
+      className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-widest"
+      style={{
+        color: s.color,
+        backgroundColor: `${s.color}18`,
+        border: `1px solid ${s.color}33`,
+      }}
+    >
+      {s.label}
+    </span>
+  )
+}
+
+function MyPostsSection({ firebaseUid, onCreatePost }) {
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!firebaseUid) {
+      setLoading(false)
+      return
+    }
+
+    const q = query(
+      collection(db, 'bird_dog_posts'),
+      where('userId', '==', firebaseUid),
+      orderBy('createdAt', 'desc'),
+    )
+
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+        setLoading(false)
+      },
+      (err) => {
+        console.error('My posts listener error:', err)
+        setLoading(false)
+      },
+    )
+
+    return () => unsub()
+  }, [firebaseUid])
+
+  async function handleClosePost(postId) {
+    try {
+      await updateDoc(doc(db, 'bird_dog_posts', postId), { status: 'closed' })
+    } catch (err) {
+      console.error('Error closing post:', err)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+    >
+      <GlassPanel className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-heading font-semibold text-base tracking-wider" style={{ color: '#F6C445' }}>
+            My Posts
+          </h3>
+          <button
+            onClick={onCreatePost}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-heading font-semibold tracking-wider text-white bg-[#E53935] border border-[#E53935]/40 hover:bg-[#ef5350] active:scale-[0.98] transition-colors shadow-[0_4px_16px_rgba(229,57,53,0.2)]"
+          >
+            <Plus size={12} />
+            Create New Post
+          </button>
+        </div>
+
+        <SectionDivider />
+
+        {loading && (
+          <div className="flex items-center justify-center py-10">
+            <div
+              className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
+              style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
+            />
+          </div>
+        )}
+
+        {!loading && posts.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+            <FileText size={24} className="text-text-dim/25" />
+            <p className="text-xs text-text-dim/40 font-body">You haven&apos;t created any posts yet</p>
+          </div>
+        )}
+
+        {!loading && posts.length > 0 && (
+          <div className="flex flex-col gap-2.5">
+            {posts.map((post, i) => (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04, duration: 0.3 }}
+                className="p-3 rounded-sm bg-black/30 border border-[rgba(255,255,255,0.07)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
+              >
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {/* Post type badge */}
+                    <span
+                      className="inline-block px-2 py-0.5 rounded-full text-[9px] font-heading font-semibold tracking-widest shrink-0"
+                      style={{
+                        color: post.postType === 'bird_dog' ? '#00C6FF' : '#F6C445',
+                        backgroundColor: post.postType === 'bird_dog' ? 'rgba(0,198,255,0.12)' : 'rgba(246,196,69,0.12)',
+                        border: `1px solid ${post.postType === 'bird_dog' ? 'rgba(0,198,255,0.25)' : 'rgba(246,196,69,0.25)'}`,
+                      }}
+                    >
+                      {post.postType === 'bird_dog' ? 'Bird Dog' : 'Job'}
+                    </span>
+                    <p className="text-xs font-heading font-semibold text-parchment truncate" title={post.title}>
+                      {post.title || '—'}
+                    </p>
+                  </div>
+                  <PostStatusBadge status={post.status} />
+                </div>
+
+                <div className="flex items-center gap-3 mb-2">
+                  {post.postType === 'job' && post.applicants?.length > 0 && (
+                    <span className="text-[11px] text-text-dim/50 font-body">
+                      {post.applicants.length} applicant{post.applicants.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                  <span className="text-[11px] text-text-dim/40 font-body">
+                    {formatDate(post.createdAt)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {/* placeholder noop */}}
+                    className="flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-heading font-semibold tracking-wider text-text-dim border border-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] hover:text-parchment active:scale-[0.97] transition-colors"
+                  >
+                    <Edit3 size={10} />
+                    Edit
+                  </button>
+                  {post.status !== 'closed' && (
+                    <button
+                      onClick={() => handleClosePost(post.id)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-heading font-semibold tracking-wider border active:scale-[0.97] transition-colors"
+                      style={{
+                        color: '#E53935',
+                        borderColor: 'rgba(229,57,53,0.25)',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(229,57,53,0.5)' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(229,57,53,0.25)' }}
+                    >
+                      <XCircle size={10} />
+                      Close Post
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </GlassPanel>
+    </motion.div>
+  )
+}
+
+function MyApplicationsSection({ firebaseUid }) {
+  const [applications, setApplications] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!firebaseUid) {
+      setLoading(false)
+      return
+    }
+
+    const q = query(
+      collection(db, 'bird_dog_posts'),
+      where('postType', '==', 'job'),
+      orderBy('createdAt', 'desc'),
+    )
+
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const allPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        // Filter to posts where current user has applied
+        const myApps = allPosts.filter(
+          (post) => post.applicants?.some((a) => a.userId === firebaseUid)
+        )
+        setApplications(myApps)
+        setLoading(false)
+      },
+      (err) => {
+        console.error('My applications listener error:', err)
+        setLoading(false)
+      },
+    )
+
+    return () => unsub()
+  }, [firebaseUid])
+
+  function getUserAppStatus(post) {
+    const entry = post.applicants?.find((a) => a.userId === firebaseUid)
+    return entry?.status || 'pending'
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+    >
+      <GlassPanel className="p-5">
+        <h3 className="font-heading font-semibold text-base tracking-wider mb-4" style={{ color: '#F6C445' }}>
+          My Applications
+        </h3>
+
+        <SectionDivider />
+
+        {loading && (
+          <div className="flex items-center justify-center py-10">
+            <div
+              className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
+              style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
+            />
+          </div>
+        )}
+
+        {!loading && applications.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+            <Briefcase size={24} className="text-text-dim/25" />
+            <p className="text-xs text-text-dim/40 font-body">You haven&apos;t applied to any jobs yet.</p>
+          </div>
+        )}
+
+        {!loading && applications.length > 0 && (
+          <div className="flex flex-col gap-2.5">
+            {applications.map((post, i) => {
+              const appStatus = getUserAppStatus(post)
+              return (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.04, duration: 0.3 }}
+                  className="p-3 rounded-sm bg-black/30 border border-[rgba(255,255,255,0.07)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <p className="text-xs font-heading font-semibold text-parchment truncate flex-1" title={post.title}>
+                      {post.title || '—'}
+                    </p>
+                    <AppStatusBadge status={appStatus} />
+                  </div>
+
+                  <p className="text-[11px] text-text-dim/50 font-body mb-2">
+                    Posted by {post.authorName || 'Unknown'}
+                  </p>
+
+                  {appStatus === 'accepted' && (
+                    <button
+                      onClick={() => {/* placeholder for Task 8 messaging */}}
+                      className="text-[10px] font-heading font-semibold tracking-wider"
+                      style={{ color: '#00C6FF' }}
+                    >
+                      Open Messages
+                    </button>
+                  )}
+
+                  {post.area?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {post.area.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 rounded-full text-[9px] font-heading tracking-widest"
+                          style={{
+                            color: '#00C6FF',
+                            backgroundColor: 'rgba(0,198,255,0.08)',
+                            border: '1px solid rgba(0,198,255,0.15)',
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )
+            })}
+          </div>
+        )}
+      </GlassPanel>
+    </motion.div>
+  )
+}
+
+function PendingReviewsSection() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.16, ease: [0.25, 0.46, 0.45, 0.94] }}
+    >
+      <GlassPanel className="p-5">
+        <h3 className="font-heading font-semibold text-base tracking-wider mb-4" style={{ color: '#F6C445' }}>
+          Pending Reviews
+        </h3>
+
+        <SectionDivider />
+
+        <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+          <Star size={24} className="text-text-dim/25" />
+          <p className="text-xs text-text-dim/40 font-body">No pending reviews</p>
+        </div>
+      </GlassPanel>
+    </motion.div>
+  )
+}
+
+function MyActivityTab({ firebaseUid, profile, user, onCreatePost }) {
   const { firebaseReady } = useAuth()
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Section 1: My Posts */}
+      <MyPostsSection firebaseUid={firebaseUid} onCreatePost={onCreatePost} />
+
+      {/* Section 2: My Applications */}
+      <MyApplicationsSection firebaseUid={firebaseUid} />
+
+      {/* Section 3: Pending Reviews (placeholder for Task 9) */}
+      <PendingReviewsSection />
+
+      {/* Section 4: Lead Submissions */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.24, ease: [0.25, 0.46, 0.45, 0.94] }}
+      >
+        <h3 className="font-heading font-semibold text-base tracking-wider mb-4" style={{ color: '#F6C445' }}>
+          Lead Submissions
+        </h3>
+      </motion.div>
+
       {firebaseReady ? (
         <SubmissionForm firebaseUid={firebaseUid} profile={profile} user={user} />
       ) : (
@@ -784,7 +1162,7 @@ export default function BirdDog() {
         {activeTab === 'find-birddogs' && <FindBirdDogsTab />}
         {activeTab === 'find-jobs' && <FindJobsTab currentUserId={firebaseUid} profile={profile} firebaseUid={firebaseUid} />}
         {activeTab === 'my-activity' && (
-          <MyActivityTab firebaseUid={firebaseUid} profile={profile} user={user} />
+          <MyActivityTab firebaseUid={firebaseUid} profile={profile} user={user} onCreatePost={handleCreatePost} />
         )}
       </div>
     </div>
