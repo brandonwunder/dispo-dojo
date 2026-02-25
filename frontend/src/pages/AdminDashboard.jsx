@@ -294,11 +294,23 @@ export default function AdminDashboard() {
   const statValues = [users.length, thisWeekCount, todayCount]
 
   return (
+    <>
+    {/* Background Image */}
+    <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+      <img
+        src="/admin-bg.png"
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ opacity: 0.15 }}
+      />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(11,15,20,0.92) 0%, rgba(11,15,20,0.97) 100%)' }} />
+    </div>
+
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="max-w-[1200px] mx-auto"
+      className="max-w-[1200px] mx-auto relative z-10"
     >
       {/* Header */}
       <div className="mb-8">
@@ -556,5 +568,6 @@ export default function AdminDashboard() {
       {/* Buyer List tab */}
       {activeTab === 'buyer-list' && <BuyerListAdmin />}
     </motion.div>
+    </>
   )
 }

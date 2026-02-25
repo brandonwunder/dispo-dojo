@@ -225,11 +225,22 @@ export default function LeadScrubbing() {
 
   return (
     <>
+      {/* Background Image */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        <img
+          src="/finding-leads-bg.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 0.15 }}
+        />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(11,15,20,0.92) 0%, rgba(11,15,20,0.97) 100%)' }} />
+      </div>
+
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-[1000px] mx-auto relative"
+        className="max-w-[1000px] mx-auto relative z-10"
       >
         {/* Forge Fire Glow */}
         <div

@@ -4,7 +4,7 @@ import {
   Shield, Upload, X, FileText, ChevronDown, ChevronLeft, ChevronRight,
   DollarSign, Home, ClipboardList, FolderOpen, CheckCircle2,
   Building2, Landmark, MapPin, BedDouble, Bath, Ruler, Calendar,
-  Zap, Droplets, Wrench
+  Zap, Droplets, Wrench, ImagePlus, Link
 } from 'lucide-react'
 
 /* ─── Animation Variants ───────────────────────────────────────────────────── */
@@ -305,6 +305,8 @@ function WizardModal({ dealType, onClose }) {
   const [disclosures, setDisclosures] = useState([])
   const [mortgageStatement, setMortgageStatement] = useState([])
   const [additionalDocs, setAdditionalDocs] = useState([])
+  const [propertyPhotos, setPropertyPhotos] = useState([])
+  const [googleDriveLink, setGoogleDriveLink] = useState('')
 
   const set = useCallback((key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value })), [])
   const setDirect = useCallback((key, val) => setForm((f) => ({ ...f, [key]: val })), [])
@@ -327,6 +329,8 @@ function WizardModal({ dealType, onClose }) {
     const payload = {
       dealType: isSub2 ? 'sub2' : 'cash',
       ...form,
+      propertyPhotos: propertyPhotos.map((f) => f.name),
+      googleDriveLink,
       disclosures: disclosures.map((f) => f.name),
       mortgageStatement: mortgageStatement.map((f) => f.name),
       additionalDocs: additionalDocs.map((f) => f.name),
@@ -646,6 +650,67 @@ function WizardModal({ dealType, onClose }) {
 
   const renderStep3 = () => (
     <div className="space-y-6">
+      {/* ── Property Photos (REQUIRED) ── */}
+      <div>
+        <div
+          className="rounded-sm border px-4 py-3 mb-4 flex items-start gap-3"
+          style={{
+            borderColor: 'rgba(229,57,53,0.4)',
+            background: 'linear-gradient(135deg, rgba(229,57,53,0.08) 0%, rgba(246,196,69,0.06) 100%)',
+          }}
+        >
+          <div className="shrink-0 mt-0.5 flex items-center justify-center w-8 h-8 rounded-sm bg-crimson/15 border border-crimson/30">
+            <ImagePlus size={16} className="text-crimson-bright" />
+          </div>
+          <div>
+            <p className="text-sm font-heading text-crimson-bright tracking-wide uppercase font-semibold">
+              Property Photos Required
+            </p>
+            <p className="text-xs text-text-dim mt-1 leading-relaxed">
+              We cannot underwrite a deal without property photos. Upload images below or provide a Google Drive link.
+            </p>
+          </div>
+        </div>
+
+        <FileDropZone
+          label="Property Photos"
+          required
+          note="Upload photos of the property exterior, interior, and any areas of concern"
+          files={propertyPhotos}
+          setFiles={setPropertyPhotos}
+          accept=".jpg,.jpeg,.png,.heic,.webp"
+        />
+
+        {/* OR divider */}
+        <div className="flex items-center gap-4 my-5">
+          <div className="flex-1 h-px bg-gold-dim/20" />
+          <span className="text-xs font-heading text-text-dim tracking-widest uppercase">or</span>
+          <div className="flex-1 h-px bg-gold-dim/20" />
+        </div>
+
+        {/* Google Drive Link */}
+        <div>
+          <label className={labelClass}>
+            <span className="flex items-center gap-1.5">
+              <Link size={12} className="text-cyan" />
+              Google Drive Link
+            </span>
+          </label>
+          <input
+            type="url"
+            placeholder="https://drive.google.com/drive/folders/..."
+            value={googleDriveLink}
+            onChange={(e) => setGoogleDriveLink(e.target.value)}
+            className={inputClass}
+          />
+          <p className="text-xs text-text-muted mt-1.5">
+            Paste a shared Google Drive folder link with your property photos
+          </p>
+        </div>
+      </div>
+
+      <div className="border-t border-gold-dim/10" />
+
       {/* Disclosures */}
       <FileDropZone
         label="Seller Disclosures"
@@ -781,6 +846,17 @@ function WizardModal({ dealType, onClose }) {
           </h4>
           <GlassCard className="px-4 py-3">
             <ReviewRow
+              label="Property Photos"
+              value={
+                propertyPhotos.length > 0
+                  ? `${propertyPhotos.length} photo${propertyPhotos.length !== 1 ? 's' : ''} uploaded`
+                  : 'None uploaded'
+              }
+            />
+            {googleDriveLink.trim() && (
+              <ReviewRow label="Drive Link" value={googleDriveLink.trim()} />
+            )}
+            <ReviewRow
               label="Disclosures"
               value={disclosures.length > 0 ? disclosures.map((f) => f.name).join(', ') : 'None'}
             />
@@ -900,12 +976,12 @@ function WizardModal({ dealType, onClose }) {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!agreed}
+              disabled={!agreed || (propertyPhotos.length === 0 && !googleDriveLink.trim())}
               className={`
                 flex items-center gap-2 px-6 py-2.5 rounded-sm font-heading text-xs tracking-wider uppercase
                 transition-colors duration-200
                 ${
-                  agreed
+                  agreed && (propertyPhotos.length > 0 || googleDriveLink.trim())
                     ? 'text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson shadow-[0_0_24px_rgba(229,57,53,0.35)]'
                     : 'text-text-muted bg-white/5 border border-gold-dim/15 cursor-not-allowed opacity-50'
                 }
@@ -929,11 +1005,22 @@ export default function Underwriting() {
 
   return (
     <>
+      {/* Background Image */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        <img
+          src="/underwriting-bg.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 0.15 }}
+        />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(11,15,20,0.92) 0%, rgba(11,15,20,0.97) 100%)' }} />
+      </div>
+
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-[900px] mx-auto"
+        className="max-w-[900px] mx-auto relative z-10"
       >
         {/* Hero header */}
         <motion.div variants={itemVariants}>
