@@ -135,9 +135,10 @@ function DetailModal({ deal, onClose, onInquire }) {
       exit={{ opacity: 0 }}
     >
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm border border-gold-dim/25"
-        style={{ background: 'linear-gradient(180deg, #111B24 0%, #0B0F14 100%)' }}
+      <WoodPanel
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        noPad
+        glow
         initial={{ opacity: 0, scale: 0.92, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.92, y: 30 }}
@@ -256,7 +257,7 @@ function DetailModal({ deal, onClose, onInquire }) {
             <Send size={14} /> Inquire About This Deal
           </button>
         </div>
-      </motion.div>
+      </WoodPanel>
     </motion.div>
   )
 }
@@ -300,9 +301,10 @@ function InquiryModal({ deal, onClose }) {
       exit={{ opacity: 0 }}
     >
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        className="relative z-10 w-full max-w-md rounded-sm border border-gold-dim/30 overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, #111B24 0%, #0B0F14 100%)' }}
+      <WoodPanel
+        className="w-full max-w-md"
+        noPad
+        glow
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -391,7 +393,7 @@ function InquiryModal({ deal, onClose }) {
             </div>
           )}
         </div>
-      </motion.div>
+      </WoodPanel>
     </motion.div>
   )
 }
@@ -402,17 +404,14 @@ function DealCard({ deal, onClick }) {
   const s = DEAL_TYPE_STYLES[deal.dealType] || DEAL_TYPE_STYLES['cash']
 
   return (
-    <motion.div
+    <WoodPanel
       variants={itemVariants}
-      whileHover={{ y: -6 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-      className="cursor-pointer group"
+      hover
+      glow
+      noPad
       onClick={onClick}
+      className="cursor-pointer group"
     >
-      <div
-        className="rounded-sm border border-gold-dim/20 overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-      >
         {/* Property Image */}
         <div className="relative h-48 overflow-hidden">
           <img
@@ -467,8 +466,7 @@ function DealCard({ deal, onClick }) {
             More Details <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform duration-200" />
           </button>
         </div>
-      </div>
-    </motion.div>
+    </WoodPanel>
   )
 }
 

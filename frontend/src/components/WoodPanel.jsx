@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 
 export default function WoodPanel({
   children, className = '', hover = false, onClick, glow = false,
-  variant = 'default', withBrackets = true, withRope = false, headerBar,
+  variant = 'default', withBrackets = true, withRope = false, headerBar, noPad = false,
   ...rest
 }) {
   const variantClasses = {
@@ -33,7 +33,7 @@ export default function WoodPanel({
           <div className="metal-bracket bottom-right" />
         </>
       )}
-      <div className="relative z-10 p-5">
+      <div className={`relative z-10 ${noPad ? '' : 'p-5'}`}>
         {children}
       </div>
     </motion.div>

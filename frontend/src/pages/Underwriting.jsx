@@ -6,6 +6,7 @@ import {
   Building2, Landmark, MapPin, BedDouble, Bath, Ruler, Calendar,
   Zap, Droplets, Wrench, ImagePlus, Link
 } from 'lucide-react'
+import WoodPanel from '../components/WoodPanel'
 
 /* ─── Animation Variants ───────────────────────────────────────────────────── */
 
@@ -42,12 +43,9 @@ const labelClass =
 
 function GlassCard({ children, className = '' }) {
   return (
-    <div
-      className={`rounded-sm border border-gold-dim/20 overflow-hidden ${className}`}
-      style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-    >
+    <WoodPanel glow noPad className={className}>
       {children}
-    </div>
+    </WoodPanel>
   )
 }
 
@@ -893,9 +891,10 @@ function WizardModal({ dealType, onClose }) {
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <motion.div
-        className="relative z-10 w-full max-w-xl max-h-[90vh] flex flex-col rounded-sm border border-gold-dim/25 overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, #111B24 0%, #0B0F14 100%)' }}
+      <WoodPanel
+        glow
+        noPad
+        className="w-full max-w-xl max-h-[90vh] flex flex-col"
         initial={{ opacity: 0, scale: 0.92, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.92, y: 30 }}
@@ -991,7 +990,7 @@ function WizardModal({ dealType, onClose }) {
             </button>
           )}
         </div>
-      </motion.div>
+      </WoodPanel>
     </motion.div>
   )
 }

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import * as XLSX from 'xlsx'
 import ShurikenLoader from '../components/ShurikenLoader'
 import { CompassIcon } from '../components/icons/index'
+import WoodPanel from '../components/WoodPanel'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -138,43 +139,9 @@ function DonutRing({ found, partial, cached, notFound, total }) {
 // ─── Glass Card ──────────────────────────────────────────────────────────────
 function GlassCard({ children, maxWidth = '680px' }) {
   return (
-    <div
-      style={{
-        maxWidth,
-        marginLeft: 'auto',
-        marginRight: 'auto',
-        marginBottom: '24px',
-        background: 'rgba(11, 15, 20, 0.58)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
-        border: '1px solid rgba(0, 198, 255, 0.12)',
-        borderRadius: '16px',
-        boxShadow:
-          '0 24px 48px -12px rgba(0,0,0,0.7), ' +
-          '0 0 0 1px rgba(0,198,255,0.06), ' +
-          'inset 0 1px 0 rgba(255,255,255,0.04), ' +
-          'inset 0 0 40px rgba(0,198,255,0.03)',
-        position: 'relative',
-        overflow: 'visible',
-      }}
-    >
-      {/* Top accent line — clipped inside its own overlay so border-radius is respected */}
-      <div style={{ position: 'absolute', inset: 0, borderRadius: '16px', overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '2px',
-            background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.5), transparent)',
-          }}
-        />
-      </div>
-      <div style={{ padding: '24px', position: 'relative', zIndex: 1 }}>
-        {children}
-      </div>
-    </div>
+    <WoodPanel glow className="mx-auto mb-6" style={{ maxWidth }}>
+      {children}
+    </WoodPanel>
   )
 }
 
