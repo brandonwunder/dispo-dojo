@@ -404,13 +404,19 @@ function DealCard({ deal, onClick }) {
   const s = DEAL_TYPE_STYLES[deal.dealType] || DEAL_TYPE_STYLES['cash']
 
   return (
-    <WoodPanel
+    <motion.div
       variants={itemVariants}
-      hover
-      glow
-      noPad
+      whileHover={{ y: -4, boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(0,198,255,0.1)' }}
+      whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="cursor-pointer group"
+      className="cursor-pointer group rounded-2xl border overflow-hidden"
+      style={{
+        background: 'rgba(11,15,20,0.45)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+        borderColor: 'rgba(255,255,255,0.07)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
+      }}
     >
         {/* Property Image */}
         <div className="relative h-48 overflow-hidden">
@@ -466,7 +472,7 @@ function DealCard({ deal, onClick }) {
             More Details <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform duration-200" />
           </button>
         </div>
-    </WoodPanel>
+    </motion.div>
   )
 }
 
