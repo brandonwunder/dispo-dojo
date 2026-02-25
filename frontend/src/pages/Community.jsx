@@ -228,27 +228,27 @@ export default function Community() {
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: 'url(/community-bg.png)',
+            backgroundImage: 'url(/message-board-bg.png)',
             backgroundSize: 'cover',
             backgroundPosition: 'center 25%',
             backgroundRepeat: 'no-repeat',
           }}
         />
-        {/* Layer 1: Heavy darkening for readability — panels feel solid */}
+        {/* Layer 1: Soft vignette — lets center image show through */}
         <div
           className="absolute inset-0"
           style={{
             background: `
-              radial-gradient(ellipse 90% 70% at 50% 40%, rgba(11,15,20,0.80) 0%, rgba(11,15,20,0.92) 55%, rgba(11,15,20,0.98) 100%),
-              linear-gradient(180deg, rgba(11,15,20,0.75) 0%, rgba(11,15,20,0.90) 40%, rgba(11,15,20,0.98) 100%)
+              radial-gradient(ellipse 80% 60% at 50% 40%, rgba(11,15,20,0.45) 0%, rgba(11,15,20,0.70) 55%, rgba(11,15,20,0.88) 100%),
+              linear-gradient(180deg, rgba(11,15,20,0.40) 0%, rgba(11,15,20,0.60) 50%, rgba(11,15,20,0.85) 100%)
             `,
           }}
         />
-        {/* Layer 2: Full-width darkening */}
+        {/* Layer 2: Side darkening for sidebar/panel contrast */}
         <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(to right, rgba(11,15,20,0.98) 0%, rgba(11,15,20,0.85) 30%, rgba(11,15,20,0.70) 60%, rgba(11,15,20,0.85) 80%, rgba(11,15,20,0.98) 100%)',
+            background: 'linear-gradient(to right, rgba(11,15,20,0.95) 0%, rgba(11,15,20,0.55) 25%, rgba(11,15,20,0.35) 50%, rgba(11,15,20,0.55) 75%, rgba(11,15,20,0.95) 100%)',
           }}
         />
         {/* Layer 3: Bottom fade to page bg */}
@@ -359,7 +359,7 @@ export default function Community() {
       </aside>
 
       {/* -- CENTER: Message feed ----------------------------------- */}
-      <main className="flex min-w-0 flex-1 flex-col" style={{ background: 'rgba(17,27,36,0.85)' }}>
+      <main className="flex min-w-0 flex-1 flex-col" style={{ background: 'rgba(17,27,36,0.55)' }}>
         {/* Channel header */}
         <ChannelHeader
           channelId={activeChannel}
