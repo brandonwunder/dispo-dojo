@@ -495,7 +495,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#0B0F14]">
+    <div className="h-screen relative overflow-hidden bg-[#0B0F14]">
 
       {/* Layer 0: Background photo with cinematic zoom */}
       <div
@@ -598,13 +598,13 @@ export default function Login() {
       </div>
 
       {/* ═══ Layer 10: HERO SECTION ═══ */}
-      <div className="relative z-[10] min-h-screen flex flex-col items-center justify-center p-4 text-center">
+      <div className="relative z-[10] h-screen flex flex-col items-center justify-center p-4 text-center overflow-hidden">
 
         {/* Company Logo — 3x large */}
         <motion.img
           src="/dispo-dojo-logo.png"
           alt="Dispo Dojo"
-          className="h-48 md:h-60 w-auto object-contain mb-6"
+          className="h-28 sm:h-40 md:h-60 w-auto object-contain mb-3 sm:mb-6 shrink-0"
           style={{
             filter: 'drop-shadow(0 0 36px rgba(246,196,69,0.55)) drop-shadow(0 0 80px rgba(246,196,69,0.25))',
             animation: 'logoFloat 3s ease-in-out infinite',
@@ -630,7 +630,7 @@ export default function Login() {
 
         {/* Subtitle */}
         <motion.p
-          className="font-heading text-[#C8D1DA] tracking-[0.15em] uppercase mt-5 px-6 max-w-2xl"
+          className="font-heading text-[#C8D1DA] tracking-[0.15em] uppercase mt-3 sm:mt-5 px-6 max-w-2xl shrink-0"
           style={{
             fontSize: 'clamp(0.7rem, 1.8vw, 1.1rem)',
             textShadow: '0 2px 12px rgba(0,0,0,0.6)',
@@ -642,13 +642,33 @@ export default function Login() {
         >
           WE PROVIDE ALL THE TOOLS AND SUPPORT YOU NEED
           <br className="hidden sm:block" />
-          {' '}TO SUCCEED IN WHOLESALING FOR FREE!
+          {' '}TO SUCCEED IN WHOLESALING{' '}
+          <span className="relative inline-block">
+            FOR FREE!
+            <svg
+              className="absolute -bottom-1 left-0 w-full"
+              viewBox="0 0 120 8"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="none"
+              style={{ height: '6px' }}
+            >
+              <path
+                d="M2 5.5C12 2.5 28 1.5 42 3.5C56 5.5 72 6 85 4C98 2 110 3 118 4.5"
+                stroke="#E53935"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ filter: 'drop-shadow(0 0 4px rgba(229,57,53,0.5))' }}
+              />
+            </svg>
+          </span>
         </motion.p>
 
         {/* CTA Button */}
         <motion.button
           onClick={() => setShowLoginModal(true)}
-          className="mt-10 px-10 py-4 text-white font-heading font-bold tracking-[0.2em] uppercase rounded-lg text-lg md:text-xl cursor-pointer"
+          className="mt-6 sm:mt-10 px-8 sm:px-10 py-3 sm:py-4 text-white font-heading font-bold tracking-[0.2em] uppercase rounded-lg text-base sm:text-lg md:text-xl cursor-pointer shrink-0"
           style={{
             background: 'linear-gradient(135deg, #E53935, #B3261E)',
             boxShadow: '0 0 30px rgba(229, 57, 53, 0.4), 0 0 60px rgba(229, 57, 53, 0.15)',
