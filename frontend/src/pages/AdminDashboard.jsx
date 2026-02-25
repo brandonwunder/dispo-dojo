@@ -296,14 +296,22 @@ export default function AdminDashboard() {
   return (
     <>
     {/* Background Image */}
-    <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-      <img
-        src="/admin-bg.png"
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ opacity: 0.15 }}
+    <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 2 }}>
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'url(/admin-bg.png)',
+          backgroundSize: '120%',
+          backgroundPosition: 'center 30%',
+          backgroundRepeat: 'no-repeat',
+        }}
       />
-      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(11,15,20,0.92) 0%, rgba(11,15,20,0.97) 100%)' }} />
+      <div className="absolute inset-0" style={{
+        background: `
+          radial-gradient(ellipse 80% 60% at 50% 30%, rgba(11,15,20,0.3) 0%, rgba(11,15,20,0.6) 55%, rgba(11,15,20,0.88) 100%),
+          linear-gradient(180deg, rgba(11,15,20,0.25) 0%, rgba(11,15,20,0.5) 40%, rgba(11,15,20,0.85) 100%)
+        `,
+      }} />
     </div>
 
     <motion.div
