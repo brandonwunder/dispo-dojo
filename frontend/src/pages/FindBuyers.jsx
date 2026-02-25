@@ -539,6 +539,66 @@ export default function FindBuyers() {
           </p>
         </motion.div>
 
+        {/* ═══ Active Buyer Database ═══ */}
+        <motion.div className="mb-8" variants={cardVariants}>
+          <h2 className="font-heading text-lg tracking-wide mb-5 text-center uppercase" style={{ color: '#F6C445' }}>
+            Active Buyer Database
+          </h2>
+
+          <GlassPanel className="overflow-hidden relative">
+            {/* Blurred table */}
+            <div className="blur-[6px] pointer-events-none select-none">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-gold-dim/15" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">Name</th>
+                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">State</th>
+                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">Buy Box</th>
+                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase hidden sm:table-cell">Property Types</th>
+                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase hidden sm:table-cell">Last Active</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {FAKE_BUYERS.map((buyer, i) => (
+                    <tr
+                      key={i}
+                      className={`border-b border-gold-dim/8 ${i % 2 === 0 ? 'bg-black/10' : 'bg-black/5'}`}
+                    >
+                      <td className="px-3 py-2 text-parchment font-body">{buyer.name}</td>
+                      <td className="px-3 py-2 text-text-dim font-body">{buyer.state}</td>
+                      <td className="px-3 py-2 text-gold font-body">{buyer.buyBox}</td>
+                      <td className="px-3 py-2 text-text-dim hidden sm:table-cell font-body">{buyer.types}</td>
+                      <td className="px-3 py-2 text-text-dim hidden sm:table-cell font-body">{buyer.lastActive}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Lock overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(11,15,20,0.55)' }}>
+              <div className="w-14 h-14 rounded-full bg-black/60 border border-gold-dim/30 flex items-center justify-center mb-4">
+                <Lock size={24} className="text-gold" />
+              </div>
+              <h3 className="font-heading text-base tracking-wide mb-2 text-center px-4" style={{ color: '#F6C445' }}>
+                Buyer List Access Requires a Signed JV Agreement
+              </h3>
+              <p className="text-text-dim text-xs mb-5 text-center px-4 font-body">
+                Submit a deal under contract to unlock our full buyer network
+              </p>
+              <button
+                onClick={() => setShowJVModal(true)}
+                className="px-6 py-2.5 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-colors duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)]"
+              >
+                Submit a Deal
+              </button>
+            </div>
+          </GlassPanel>
+        </motion.div>
+
+        {/* ═══ Divider ═══ */}
+        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.15), transparent)' }} />
+
         {/* ═══ 2. Advantage Banner ═══ */}
         <motion.div className="mb-8" variants={cardVariants}>
           <GlassPanel className="p-5">
@@ -654,69 +714,6 @@ export default function FindBuyers() {
             ))}
           </div>
         </motion.div>
-
-        {/* ═══ Divider ═══ */}
-        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.15), transparent)' }} />
-
-        {/* ═══ 5. Blurred Buyer Data Table ═══ */}
-        <motion.div className="mb-8" variants={cardVariants}>
-          <h2 className="font-heading text-lg tracking-wide mb-5 text-center uppercase" style={{ color: '#F6C445' }}>
-            Active Buyer Database
-          </h2>
-
-          <GlassPanel className="overflow-hidden relative">
-            {/* Blurred table */}
-            <div className="blur-[6px] pointer-events-none select-none">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-gold-dim/15" style={{ background: 'rgba(0,0,0,0.3)' }}>
-                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">Name</th>
-                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">State</th>
-                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">Buy Box</th>
-                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase hidden sm:table-cell">Property Types</th>
-                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase hidden sm:table-cell">Last Active</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {FAKE_BUYERS.map((buyer, i) => (
-                    <tr
-                      key={i}
-                      className={`border-b border-gold-dim/8 ${i % 2 === 0 ? 'bg-black/10' : 'bg-black/5'}`}
-                    >
-                      <td className="px-3 py-2 text-parchment font-body">{buyer.name}</td>
-                      <td className="px-3 py-2 text-text-dim font-body">{buyer.state}</td>
-                      <td className="px-3 py-2 text-gold font-body">{buyer.buyBox}</td>
-                      <td className="px-3 py-2 text-text-dim hidden sm:table-cell font-body">{buyer.types}</td>
-                      <td className="px-3 py-2 text-text-dim hidden sm:table-cell font-body">{buyer.lastActive}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Lock overlay */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(11,15,20,0.55)' }}>
-              <div className="w-14 h-14 rounded-full bg-black/60 border border-gold-dim/30 flex items-center justify-center mb-4">
-                <Lock size={24} className="text-gold" />
-              </div>
-              <h3 className="font-heading text-base tracking-wide mb-2 text-center px-4" style={{ color: '#F6C445' }}>
-                Buyer List Access Requires a Signed JV Agreement
-              </h3>
-              <p className="text-text-dim text-xs mb-5 text-center px-4 font-body">
-                Submit a deal under contract to unlock our full buyer network
-              </p>
-              <button
-                onClick={() => setShowJVModal(true)}
-                className="px-6 py-2.5 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-colors duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)]"
-              >
-                Submit a Deal
-              </button>
-            </div>
-          </GlassPanel>
-        </motion.div>
-
-        {/* ═══ Divider ═══ */}
-        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.15), transparent)' }} />
 
         {/* ═══ 6. Bottom CTA ═══ */}
         <motion.div variants={cardVariants}>

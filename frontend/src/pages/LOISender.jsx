@@ -800,11 +800,11 @@ function TemplateStep({ leads, onComplete, onBack, user }) {
   const sampleLead = leads[0] || {}
 
   useEffect(() => {
-    if (!user?.uid) return
-    getDocs(query(collection(db, 'loi_templates', user.uid, 'templates'), orderBy('createdAt', 'desc')))
+    if (!user?.firebaseUid) return
+    getDocs(query(collection(db, 'loi_templates', user.firebaseUid, 'templates'), orderBy('createdAt', 'desc')))
       .then(snap => setSavedTemplates(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
       .catch(() => {})
-  }, [user?.uid])
+  }, [user?.firebaseUid])
 
   function insertField(fieldKey) {
     const ta = refs[activeField]?.current
@@ -820,10 +820,10 @@ function TemplateStep({ leads, onComplete, onBack, user }) {
   }
 
   async function saveTemplate() {
-    if (!templateName.trim() || !user?.uid) return
+    if (!templateName.trim() || !user?.firebaseUid) return
     setSaving(true)
     try {
-      const ref = doc(collection(db, 'loi_templates', user.uid, 'templates'))
+      const ref = doc(collection(db, 'loi_templates', user.firebaseUid, 'templates'))
       await setDoc(ref, { name: templateName.trim(), ...template, createdAt: serverTimestamp() })
       setSavedTemplates(prev => [{ id: ref.id, name: templateName.trim(), ...template }, ...prev])
       setTemplateName('')
@@ -1410,8 +1410,8 @@ function SendStep({ leads, setLeads, template, campaignId, user, onBack }) {
         }
       }
 
-      if (campaignId && user?.uid) {
-        updateDoc(doc(db, 'loi_campaigns', user.uid, 'campaigns', campaignId), {
+      if (campaignId && user?.firebaseUid) {
+        updateDoc(doc(db, 'loi_campaigns', user.firebaseUid, 'campaigns', campaignId), {
           leads: currentLeads,
           sentCount: currentLeads.filter(l => l._status === 'sent').length,
           status: 'sending',
@@ -1427,8 +1427,8 @@ function SendStep({ leads, setLeads, template, campaignId, user, onBack }) {
     if (allDone && !pausedRef.current) {
       setSending(false)
       setCampaignComplete(true)
-      if (campaignId && user?.uid) {
-        updateDoc(doc(db, 'loi_campaigns', user.uid, 'campaigns', campaignId), { status: 'complete' }).catch(() => {})
+      if (campaignId && user?.firebaseUid) {
+        updateDoc(doc(db, 'loi_campaigns', user.firebaseUid, 'campaigns', campaignId), { status: 'complete' }).catch(() => {})
       }
     }
   }
@@ -1873,13 +1873,13 @@ export default function LOISender() {
 
   // ── Load past campaigns ──────────────────────────────────────────────────
   useEffect(() => {
-    if (!user?.uid) return
+    if (!user?.firebaseUid) return
     setLoadingHistory(true)
-    getDocs(query(collection(db, 'loi_campaigns', user.uid, 'campaigns'), orderBy('createdAt', 'desc')))
+    getDocs(query(collection(db, 'loi_campaigns', user.firebaseUid, 'campaigns'), orderBy('createdAt', 'desc')))
       .then(snap => setPastCampaigns(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
       .catch(() => {})
       .finally(() => setLoadingHistory(false))
-  }, [user?.uid])
+  }, [user?.firebaseUid])
 
   async function handleUploadComplete(data, name) {
     setRawData(data)
@@ -1900,9 +1900,9 @@ export default function LOISender() {
   }
 
   async function handlePreviewComplete() {
-    if (!user?.uid) { setStep(5); return }
+    if (!user?.firebaseUid) { setStep(5); return }
     try {
-      const ref = doc(collection(db, 'loi_campaigns', user.uid, 'campaigns'))
+      const ref = doc(collection(db, 'loi_campaigns', user.firebaseUid, 'campaigns'))
       await setDoc(ref, {
         fileName, leads, template, columnMap,
         status: 'ready', sentCount: 0, totalCount: leads.length,

@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, MessageSquare, Heart, Award, Calendar,
-  X, Plus, Save, CheckCircle, Binoculars, TrendingUp,
+  X, Plus, Save, CheckCircle, Binoculars, TrendingUp, Target, Pencil,
 } from 'lucide-react'
 import useUserProfile from '../hooks/useUserProfile'
 import { useAuth } from '../context/AuthContext'
@@ -613,6 +613,111 @@ export default function CommunityProfile() {
               <span className="mt-0.5 text-[10px] text-text-dim/40">{item.label}</span>
             </motion.div>
           ))}
+        </div>
+
+        {/* Buy Box section */}
+        <div className={`${cardClass} px-6 py-5`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-gold/60" />
+              <h3 className="text-[10px] font-heading font-semibold uppercase tracking-widest text-text-dim/40">
+                Buy Box
+              </h3>
+            </div>
+            {isOwnProfile && profile.buyBox && (
+              <button
+                onClick={() => navigate('/buy-boxes')}
+                className="flex items-center gap-1 text-[10px] font-heading tracking-wider uppercase text-cyan/70 hover:text-cyan transition-colors duration-150"
+              >
+                <Pencil className="h-3 w-3" />
+                Edit
+              </button>
+            )}
+          </div>
+
+          {profile.buyBox ? (
+            <div className="space-y-3">
+              {profile.buyBox.markets?.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-text-dim/40 uppercase tracking-wider font-heading mb-1">Markets</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {profile.buyBox.markets.map((m) => (
+                      <span key={m} className="px-2 py-0.5 text-xs font-body text-parchment bg-white/[0.06] border border-white/[0.08] rounded-sm">
+                        {m}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(profile.buyBox.minPrice || profile.buyBox.maxPrice) ? (
+                <div>
+                  <p className="text-[10px] text-text-dim/40 uppercase tracking-wider font-heading mb-1">Price Range</p>
+                  <p className="text-sm font-body text-gold">
+                    ${(profile.buyBox.minPrice || 0).toLocaleString()} – ${(profile.buyBox.maxPrice || 0).toLocaleString()}
+                  </p>
+                </div>
+              ) : null}
+
+              {profile.buyBox.propertyTypes?.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-text-dim/40 uppercase tracking-wider font-heading mb-1">Property Types</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {profile.buyBox.propertyTypes.map((t) => (
+                      <span key={t} className="px-2 py-0.5 text-xs font-body text-cyan bg-[#00C6FF]/[0.08] border border-[#00C6FF]/[0.15] rounded-sm">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {profile.buyBox.dealTypes?.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-text-dim/40 uppercase tracking-wider font-heading mb-1">Deal Types</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {profile.buyBox.dealTypes.map((d) => (
+                      <span key={d} className="px-2 py-0.5 text-xs font-body text-gold bg-[#F6C445]/[0.08] border border-[#F6C445]/[0.15] rounded-sm">
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {profile.buyBox.closeTimeline && (
+                <div>
+                  <p className="text-[10px] text-text-dim/40 uppercase tracking-wider font-heading mb-1">Close Timeline</p>
+                  <p className="text-xs font-body text-text-dim">{profile.buyBox.closeTimeline}</p>
+                </div>
+              )}
+
+              {profile.buyBox.notes && (
+                <div>
+                  <p className="text-[10px] text-text-dim/40 uppercase tracking-wider font-heading mb-1">Notes</p>
+                  <p className="text-xs font-body text-text-dim leading-relaxed">{profile.buyBox.notes}</p>
+                </div>
+              )}
+
+              {profile.buyBox.updatedAt && (
+                <p className="text-[9px] text-text-dim/25 pt-1">
+                  Last updated {formatDate(profile.buyBox.updatedAt)}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-xs text-text-dim/40 font-body">No buy box submitted yet</p>
+              {isOwnProfile && (
+                <button
+                  onClick={() => navigate('/buy-boxes')}
+                  className="mt-2 text-xs font-heading tracking-wider uppercase text-cyan hover:text-cyan/80 transition-colors duration-150"
+                >
+                  Set Up Your Buy Box
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Badges section */}

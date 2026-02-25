@@ -38,8 +38,8 @@ export default function BuyBoxes() {
   const [notes, setNotes] = useState('')
 
   useEffect(() => {
-    if (!user?.uid) return
-    getDoc(doc(db, 'users', user.uid)).then((snap) => {
+    if (!user?.firebaseUid) return
+    getDoc(doc(db, 'users', user.firebaseUid)).then((snap) => {
       if (snap.exists() && snap.data().buyBox) {
         const bb = snap.data().buyBox
         setSaved(bb)
@@ -52,14 +52,14 @@ export default function BuyBoxes() {
         setNotes(bb.notes || '')
       }
     })
-  }, [user?.uid])
+  }, [user?.firebaseUid])
 
   function toggleItem(list, setList, item) {
     setList((prev) => prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item])
   }
 
   async function handleSubmit() {
-    if (!user?.uid) return
+    if (!user?.firebaseUid) return
     setSaving(true)
     const buyBox = {
       markets: markets.split(',').map((s) => s.trim()).filter(Boolean),
@@ -71,7 +71,7 @@ export default function BuyBoxes() {
       notes,
       updatedAt: new Date().toISOString(),
     }
-    await updateDoc(doc(db, 'users', user.uid), { buyBox })
+    await updateDoc(doc(db, 'users', user.firebaseUid), { buyBox })
     setSaved(buyBox)
     setSaving(false)
     setJustSaved(true)
