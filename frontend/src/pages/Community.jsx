@@ -22,29 +22,45 @@ import useUnreadTracking from '../hooks/useUnreadTracking'
 import useSearch from '../hooks/useSearch'
 
 // Components
-import ChannelHero from '../components/community/ChannelHero'
+import ChannelCategory from '../components/community/ChannelCategory'
+import ChannelHeader from '../components/community/ChannelHeader'
+import MemberList from '../components/community/MemberList'
 import MessageBubble from '../components/community/MessageBubble'
 import MessageInput from '../components/community/MessageInput'
 import TypingIndicator from '../components/community/TypingIndicator'
 import PinnedMessagesBar from '../components/community/PinnedMessagesBar'
-import OnlineUsersList from '../components/community/OnlineUsersList'
 import ProfileCard from '../components/community/ProfileCard'
-import Leaderboard from '../components/community/Leaderboard'
 import DMList from '../components/community/DMList'
 import DMConversation from '../components/community/DMConversation'
 import NewDMModal from '../components/community/NewDMModal'
-import NotificationBell from '../components/community/NotificationBell'
-import SearchBar from '../components/community/SearchBar'
 import MessageSkeleton from '../components/community/MessageSkeleton'
 
 /* -- constants ------------------------------------------------ */
-const CHANNELS = [
-  { id: 'general', name: 'General', desc: 'Hang out and chat with the community' },
-  { id: 'wins', name: 'Wins', desc: 'Share your wins and celebrate together' },
-  { id: 'deal-talk', name: 'Deal Talk', desc: 'Discuss deals, comps, and strategy' },
-  { id: 'questions', name: 'Questions', desc: 'Ask anything and get help' },
-  { id: 'resources', name: 'Resources', desc: 'Share useful links and tools' },
+const CHANNEL_CATEGORIES = [
+  {
+    label: 'Community',
+    channels: [
+      { id: 'general', name: 'General', desc: 'Hang out and chat with the community' },
+      { id: 'wins', name: 'Wins', desc: 'Share your wins and celebrate together' },
+    ],
+  },
+  {
+    label: 'Deal Room',
+    channels: [
+      { id: 'deal-talk', name: 'Deal Talk', desc: 'Discuss deals, comps, and strategy' },
+      { id: 'resources', name: 'Resources', desc: 'Share useful links and tools' },
+    ],
+  },
+  {
+    label: 'Help & Learning',
+    channels: [
+      { id: 'questions', name: 'Questions', desc: 'Ask anything and get help' },
+    ],
+  },
 ]
+
+// Keep flat array for hook lookups
+const CHANNELS = CHANNEL_CATEGORIES.flatMap((cat) => cat.channels)
 
 const QUICK_REACTIONS = ['\u{1F44D}','\u{1F525}','\u{1F4AF}','\u{1F602}','\u2764\uFE0F','\u{1F3AF}']
 
@@ -87,6 +103,7 @@ export default function Community() {
 
   // New state
   const [showMembers, setShowMembers] = useState(false)
+  const [showPinned, setShowPinned] = useState(false)
   const [viewMode, setViewMode] = useState('channel') // 'channel' | 'dm'
   const [activeDMId, setActiveDMId] = useState(null)
   const [showNewDM, setShowNewDM] = useState(false)
@@ -248,101 +265,60 @@ export default function Community() {
 
       {/* -- LEFT: Channel sidebar ---------------------------------- */}
       <aside
-        className="flex w-[260px] xl:w-[280px] shrink-0 flex-col h-full relative"
+        className="flex w-[240px] shrink-0 flex-col h-full relative"
         style={{
-          background: 'linear-gradient(180deg, #0B0F14 0%, #0E1820 30%, #090D12 70%, #0B0F14 100%)',
-          borderRight: '1px solid rgba(0, 198, 255, 0.08)',
+          background: '#0E1317',
+          borderRight: '1px solid rgba(0,198,255,0.06)',
         }}
       >
-        {/* Branding dock */}
-        <div className="px-4 pt-5 pb-3 flex-shrink-0">
-          <div className="flex items-center gap-3 mb-1">
-            {/* Hanko seal */}
+        {/* Server header */}
+        <div className="px-3 pt-4 pb-3 shrink-0">
+          <div className="flex items-center gap-2.5">
             <div
-              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0"
               style={{
                 background: 'linear-gradient(135deg, #0E5A88 0%, #00C6FF 100%)',
                 fontFamily: 'var(--font-display, serif)',
                 color: '#F4F7FA',
-                boxShadow: '0 0 12px -4px rgba(0,198,255,0.5)',
-                letterSpacing: '0.02em',
+                boxShadow: '0 0 12px -4px rgba(0,198,255,0.4)',
+                borderRadius: '12px',
               }}
             >
               DD
             </div>
-            <div>
-              <div className="text-sm font-bold text-[#F4F7FA]" style={{ fontFamily: 'var(--font-heading, sans-serif)', letterSpacing: '0.04em' }}>
-                Dispo Dojo
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-[#8A9AAA]" style={{ fontFamily: 'var(--font-body, sans-serif)' }}>Message Board</span>
-                <span className="flex items-center gap-1 text-[10px] text-green-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                  {onlineUsers.length} online
-                </span>
-                <span className="text-[10px]" style={{ color: 'rgba(200,209,218,0.4)' }}>
-                  · {allUsers.length} members
-                </span>
-              </div>
-            </div>
+            <span
+              className="text-[15px] font-bold"
+              style={{ fontFamily: 'var(--font-heading, sans-serif)', color: '#F4F7FA' }}
+            >
+              Dispo Dojo
+            </span>
           </div>
-          {/* Katana divider */}
-          <div className="h-px mt-3" style={{
-            background: 'linear-gradient(90deg, transparent, #00C6FF, #0E5A88, #00C6FF, transparent)',
-            opacity: 0.4,
-            boxShadow: '0 0 8px rgba(0,198,255,0.2)',
-          }} />
+          <div className="mt-3 h-px" style={{ background: 'rgba(0,198,255,0.06)' }} />
         </div>
 
-        {/* Channel list */}
-        <div className="flex-1 overflow-y-auto px-2 pb-2">
-          {/* Section header */}
-          <div className="px-2 py-2 text-[10px] font-bold text-[#8A9AAA] tracking-[0.12em] uppercase"
-            style={{ fontFamily: 'var(--font-heading, sans-serif)' }}
-          >
-            Channels
-          </div>
-
-          {CHANNELS.map((ch) => {
-            const isActive = activeChannel === ch.id
-            const hasUnread = unreadTracking.channelReadState && !unreadTracking.channelReadState[ch.id] && ch.id !== activeChannel
-            return (
-              <button
-                key={ch.id}
-                onClick={() => switchChannel(ch.id)}
-                className="w-full flex items-center justify-between rounded-lg mb-0.5 group transition-colors duration-150"
-                style={{
-                  background: isActive ? 'rgba(0,198,255,0.08)' : 'transparent',
-                  borderLeft: isActive ? '3px solid #00C6FF' : '3px solid transparent',
-                  padding: isActive ? '8px 12px 8px 9px' : '8px 12px',
-                }}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="text-sm font-mono flex-shrink-0"
-                    style={{ color: isActive ? '#00C6FF' : '#8A9AAA' }}
-                  >
-                    #
-                  </span>
-                  <span
-                    className="text-sm truncate"
-                    style={{
-                      fontFamily: 'var(--font-body, sans-serif)',
-                      color: isActive ? '#00C6FF' : '#8A9AAA',
-                    }}
-                  >
-                    {ch.name}
-                  </span>
-                </div>
-                {hasUnread && (
-                  <span className="flex-shrink-0 h-2 w-2 rounded-full bg-[#00C6FF] shadow-[0_0_4px_rgba(0,198,255,0.5)]" />
-                )}
-              </button>
-            )
-          })}
+        {/* Channel categories */}
+        <div className="flex-1 overflow-y-auto px-1 pb-2">
+          {CHANNEL_CATEGORIES.map((cat) => (
+            <ChannelCategory
+              key={cat.label}
+              label={cat.label}
+              channels={cat.channels}
+              activeChannel={activeChannel}
+              unreadChannels={
+                unreadTracking.channelReadState
+                  ? Object.fromEntries(
+                      cat.channels
+                        .filter((ch) => !unreadTracking.channelReadState[ch.id] && ch.id !== activeChannel)
+                        .map((ch) => [ch.id, true])
+                    )
+                  : {}
+              }
+              onSelectChannel={switchChannel}
+            />
+          ))}
         </div>
 
-        {/* Direct Messages list */}
+        {/* Direct Messages */}
         <DMList
           conversations={conversations}
           currentUid={currentUid}
@@ -351,51 +327,33 @@ export default function Community() {
           onNewDM={() => setShowNewDM(true)}
         />
 
-        {/* Online users */}
-        <OnlineUsersList onlineUsers={onlineUsers} currentUid={currentUid} profilesMap={profilesMap} />
-
-        {/* Leaderboard */}
-        <Leaderboard leaders={leaders} />
-
         {/* User dock */}
-        <div className="flex-shrink-0 px-3 pb-3 pt-2">
-          <div className="h-px mb-3" style={{
-            background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.3), transparent)',
-          }} />
-          <div className="flex items-center gap-3 group">
-            {/* Avatar */}
-            <div className="relative flex-shrink-0">
+        <div className="shrink-0 px-3 pb-3 pt-2" style={{ borderTop: '1px solid rgba(0,198,255,0.06)' }}>
+          <div className="flex items-center gap-2.5 group">
+            <div className="relative shrink-0">
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold overflow-hidden"
                 style={{
                   background: 'linear-gradient(135deg, #0E5A88 0%, #00C6FF 100%)',
                   fontFamily: 'var(--font-heading, sans-serif)',
                   color: '#F4F7FA',
-                  boxShadow: '0 0 10px -3px rgba(0,198,255,0.4)',
-                  border: '2px solid rgba(0,198,255,0.2)',
+                  border: '2px solid rgba(0,198,255,0.15)',
                 }}
               >
                 {initials(displayName)}
               </div>
-              {/* Online status dot */}
               <span
                 className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
-                style={{
-                  background: '#22C55E',
-                  borderColor: '#0B0F14',
-                  boxShadow: '0 0 6px rgba(34,197,94,0.6)',
-                }}
+                style={{ background: '#22C55E', borderColor: '#0E1317' }}
               />
             </div>
-            {/* Name + role */}
             <div className="flex-1 min-w-0">
-              <div className="text-sm text-[#F4F7FA] truncate" style={{ fontFamily: 'var(--font-heading, sans-serif)', fontWeight: 600 }}>
+              <div className="text-[13px] text-[#F4F7FA] truncate" style={{ fontFamily: 'var(--font-heading, sans-serif)', fontWeight: 600 }}>
                 {displayName}
               </div>
-              <div className="text-[11px] text-[#8A9AAA]" style={{ fontFamily: 'var(--font-body, sans-serif)' }}>Member</div>
+              <div className="text-[10px]" style={{ color: '#8A9AAA', fontFamily: 'var(--font-body, sans-serif)' }}>Online</div>
             </div>
-            {/* Settings icon — appears on group hover */}
-            <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-[#8A9AAA] hover:text-[#F6C445] p-1 rounded">
+            <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 p-1 rounded" style={{ color: '#8A9AAA' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="3"/>
                 <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
@@ -406,38 +364,28 @@ export default function Community() {
       </aside>
 
       {/* -- CENTER: Message feed ----------------------------------- */}
-      <main className="flex min-w-0 flex-1 flex-col">
-        {/* Channel hero */}
-        <ChannelHero
+      <main className="flex min-w-0 flex-1 flex-col" style={{ background: 'rgba(17,27,36,0.85)' }}>
+        {/* Channel header */}
+        <ChannelHeader
           channelId={activeChannel}
-          messageCount={messages.length}
-          memberCount={onlineUsers.length}
           pinnedCount={pinnedMessages.length}
-          onPinnedClick={() => {}}
-          onMembersClick={() => setShowMembers(p => !p)}
+          showMembers={showMembers}
+          onToggleMembers={() => setShowMembers((v) => !v)}
+          onTogglePinned={() => setShowPinned((v) => !v)}
+          onSearch={search}
+          onClearSearch={clearSearch}
+          searchResults={searchResults}
+          searchQuery={searchQuery}
+          onSelectSearchResult={scrollToMessage}
+          notifications={notifications}
+          notifUnreadCount={notifUnreadCount}
+          onMarkNotifRead={markNotifRead}
+          onMarkAllNotifsRead={markAllNotifsRead}
+          onNotifNavigate={(notif) => {
+            if (notif.channelId) switchChannel(notif.channelId)
+            if (notif.messageId) setTimeout(() => scrollToMessage(notif.messageId), 300)
+          }}
         />
-        {/* Toolbar: search + notifications */}
-        <div className="flex items-center gap-2 px-5 py-2 border-b border-[rgba(246,196,69,0.10)]" style={{ background: 'rgba(11,15,20,0.6)' }}>
-          <div className="ml-auto flex items-center gap-2">
-            <SearchBar
-              onSearch={search}
-              onClear={clearSearch}
-              results={searchResults}
-              query={searchQuery}
-              onSelectResult={scrollToMessage}
-            />
-            <NotificationBell
-              notifications={notifications}
-              unreadCount={notifUnreadCount}
-              onMarkRead={markNotifRead}
-              onMarkAllRead={markAllNotifsRead}
-              onNavigate={(notif) => {
-                if (notif.channelId) { switchChannel(notif.channelId) }
-                if (notif.messageId) { setTimeout(() => scrollToMessage(notif.messageId), 300) }
-              }}
-            />
-          </div>
-        </div>
 
         {/* Conditional rendering: DM conversation or channel feed */}
         {viewMode === 'dm' && activeDMId ? (
@@ -455,12 +403,14 @@ export default function Community() {
         ) : (
           <>
             {/* Pinned messages */}
-            <PinnedMessagesBar
-              pinnedMessages={pinnedMessages}
-              isAdmin={isAdmin}
-              onUnpin={unpinMessage}
-              onScrollTo={scrollToMessage}
-            />
+            {showPinned && (
+              <PinnedMessagesBar
+                pinnedMessages={pinnedMessages}
+                isAdmin={isAdmin}
+                onUnpin={unpinMessage}
+                onScrollTo={scrollToMessage}
+              />
+            )}
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-5 py-4" style={{ paddingBottom: '8px' }}>
@@ -593,12 +543,31 @@ export default function Community() {
         )}
       </main>
 
+      {/* Right panel: Member list */}
+      {showMembers && !activeThread && viewMode !== 'dm' && (
+        <div className="w-[240px] shrink-0 h-full">
+          <MemberList
+            allUsers={allUsers}
+            onlineUsers={onlineUsers}
+            leaders={leaders}
+            currentUid={currentUid}
+            onUserClick={(user) => {
+              setProfilePopover({
+                id: user.id,
+                name: user.displayName,
+                email: user.email,
+              })
+            }}
+          />
+        </div>
+      )}
+
       {/* -- RIGHT: Thread panel ------------------------------------ */}
       <AnimatePresence>
         {activeThread && (
           <motion.aside
             key="thread-panel"
-            className="w-[380px] xl:w-[400px] flex-shrink-0 flex flex-col h-full"
+            className="w-[360px] flex-shrink-0 flex flex-col h-full"
             style={{
               background: 'linear-gradient(180deg, #0B0F14 0%, #0E1820 30%, #090D12 70%, #0B0F14 100%)',
               borderLeft: '1px solid rgba(0,198,255,0.08)',
