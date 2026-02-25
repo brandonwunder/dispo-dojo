@@ -61,7 +61,7 @@ const navSections = [
     ],
   },
   {
-    title: 'Resources',
+    title: 'Extra Resources',
     items: [
       { to: '/scripts', icon: MessageCircle, label: 'Scripts & Objections' },
       { to: '/direct-agent', icon: House, label: 'DTA Process' },
