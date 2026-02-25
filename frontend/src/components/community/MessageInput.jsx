@@ -4,7 +4,6 @@ import { Send, SmilePlus, Image, Paperclip, X, Loader2, Reply } from 'lucide-rea
 import EmojiPicker from './EmojiPicker'
 import GifPicker from './GifPicker'
 import MentionAutocomplete from './MentionAutocomplete'
-import DealForm from './DealForm'
 
 const CHANNEL_PLACEHOLDERS = {
   general: 'Drop a message in #general...',
@@ -31,7 +30,6 @@ export default function MessageInput({
   const [pendingAttachments, setPendingAttachments] = useState([])
   const [mentionQuery, setMentionQuery] = useState('')
   const [showMentions, setShowMentions] = useState(false)
-  const [showDealForm, setShowDealForm] = useState(false)
   const inputRef = useRef(null)
   const fileInputRef = useRef(null)
 
@@ -206,17 +204,6 @@ export default function MessageInput({
           accept="image/*,.pdf,.doc,.docx"
         />
 
-        {/* Deal share button */}
-        <button
-          type="button"
-          onClick={() => setShowDealForm(true)}
-          title="Share a deal"
-          className="text-text-dim/40 transition-colors duration-150 hover:text-[#F6C445] focus-visible:outline-none active:scale-90"
-          style={{ fontSize: '16px', lineHeight: 1 }}
-        >
-          🏠
-        </button>
-
         {/* Text input */}
         <input
           ref={inputRef}
@@ -305,25 +292,6 @@ export default function MessageInput({
         </p>
       )}
 
-      {/* Deal form modal */}
-      <AnimatePresence>
-        {showDealForm && (
-          <DealForm
-            onClose={() => setShowDealForm(false)}
-            onSubmit={(dealData) => {
-              onSend(
-                `🏠 ${dealData.address}`,
-                null,
-                null,
-                [],
-                'deal',
-                dealData,
-              )
-              setShowDealForm(false)
-            }}
-          />
-        )}
-      </AnimatePresence>
     </div>
   )
 }
