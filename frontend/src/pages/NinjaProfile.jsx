@@ -235,7 +235,7 @@ function formatDateLong(dateStr) {
 export default function NinjaProfile() {
   const { uid: paramUid } = useParams()
   const navigate = useNavigate()
-  const { user, profile: ownProfile, updateProfile } = useAuth()
+  const { user, profile: ownProfile, updateProfile, firebaseReady } = useAuth()
   const currentUid = user?.firebaseUid
 
   const targetUid = paramUid || currentUid
@@ -317,7 +317,8 @@ export default function NinjaProfile() {
   const xpNeeded = communityRank.next ? communityRank.next.xpRequired - communityRank.xpRequired : 1
 
   // ── Loading / not found ───────────────────────────────────────────
-  if (!isOwnProfile && loading) {
+  const isLoading = isOwnProfile ? (!firebaseReady || !ownProfile) : loading
+  if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-64px)] items-center justify-center">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#00C6FF] border-t-transparent" />

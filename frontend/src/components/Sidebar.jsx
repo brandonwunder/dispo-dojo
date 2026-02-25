@@ -14,6 +14,7 @@ import {
   MonomiEyeIcon,
   ToriiIcon,
   ShurikenIcon,
+  NinjaIcon,
 } from '../icons/index'
 import { useAuth } from '../context/AuthContext'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -24,7 +25,7 @@ const navSections = [
     title: '',
     items: [
       { to: '/', icon: LayoutDashboard, label: 'JV Dashboard' },
-      { to: '/ninja-profile', icon: ShurikenIcon, label: 'Ninja Profile' },
+      { to: '/ninja-profile', icon: NinjaIcon, label: 'Ninja Profile' },
       { to: '/community', icon: MessageSquare, label: 'Message Board' },
       { to: '/live-deals', icon: Briefcase, label: 'View Active Deals' },
     ],
