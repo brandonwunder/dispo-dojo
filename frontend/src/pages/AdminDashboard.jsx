@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Shield, Users, Mail, Phone, Calendar, AtSign, Clock, TrendingUp, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, FileText, CheckCircle, Dog, DollarSign, Footprints, Briefcase } from 'lucide-react'
+import { Shield, Users, Mail, Phone, Calendar, AtSign, Clock, TrendingUp, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, FileText, CheckCircle, Dog, DollarSign, Footprints, Briefcase, AlertTriangle } from 'lucide-react'
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../lib/firebase'
@@ -298,67 +298,71 @@ function LiveDealsAdmin() {
 
 // ── BirdDogAdmin ──────────────────────────────────────────────────────────────
 const BD_TABS = [
-  { id: 'birddogs', label: 'Bird Dog Directory' },
-  { id: 'investors', label: 'Investor Directory' },
-  { id: 'posts', label: 'Posts & Jobs' },
+  { id: 'leads', label: 'Lead Management' },
+  { id: 'birddogs', label: 'Registered Bird Dogs' },
 ]
 
 const BD_KPI_CONFIG = [
-  { icon: Dog, label: 'Bird Dogs on File', kanji: '犬' },
-  { icon: DollarSign, label: 'Investors on File', kanji: '金' },
-  { icon: FileText, label: 'Active Posts', kanji: '書' },
-  { icon: CheckCircle, label: 'Completed Jobs', kanji: '済' },
+  { icon: FileText, label: 'Total Leads', kanji: '犬' },
+  { icon: TrendingUp, label: 'In Pipeline', kanji: '進' },
+  { icon: CheckCircle, label: 'Closed Deals', kanji: '済' },
+  { icon: Dog, label: 'Registered Bird Dogs', kanji: '人' },
 ]
 
+const STATUS_STYLES = {
+  submitted: { label: 'Submitted', color: '#9CA3AF' },
+  under_review: { label: 'Under Review', color: '#00C6FF' },
+  contacting_seller: { label: 'Contacting Seller', color: '#0E5A88' },
+  seller_interested: { label: 'Seller Interested', color: '#00D9FF' },
+  underwriting: { label: 'Underwriting', color: '#F6C445' },
+  offer_made: { label: 'Offer Made', color: '#FF9500' },
+  under_contract: { label: 'Under Contract', color: '#7F00FF' },
+  closed_paid: { label: 'Closed / Paid', color: '#10B981' },
+  seller_not_interested: { label: 'Seller Not Interested', color: '#E53935' },
+  seller_declined_offer: { label: 'Seller Declined Offer', color: '#E53935' },
+}
+
 function BirdDogAdmin() {
-  const [bdSubTab, setBdSubTab] = useState('birddogs')
+  const [bdSubTab, setBdSubTab] = useState('leads')
   const [birdDogs, setBirdDogs] = useState([])
-  const [investors, setInvestors] = useState([])
-  const [posts, setPosts] = useState([])
-  const [activePosts, setActivePosts] = useState(0)
-  const [completedJobs, setCompletedJobs] = useState(0)
-  const [typeFilter, setTypeFilter] = useState('all')
+  const [leads, setLeads] = useState([])
   const [statusFilter, setStatusFilter] = useState('all')
 
-  // Listen to users collection for bird dogs & investors
+  // Listen to users collection for registered bird dogs
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'users'), (snap) => {
       const allUsers = snap.docs.map((d) => ({ uid: d.id, ...d.data() }))
-      setBirdDogs(allUsers.filter((u) => u.birdDogProfile?.role === 'bird_dog'))
-      setInvestors(allUsers.filter((u) => u.birdDogProfile?.role === 'investor'))
+      setBirdDogs(allUsers.filter((u) => u.birdDogProfile?.registered === true))
     })
     return unsub
   }, [])
 
-  // Listen to bird_dog_posts collection
+  // Listen to bird_dog_leads collection
   useEffect(() => {
     const unsub = onSnapshot(
-      query(collection(db, 'bird_dog_posts'), orderBy('createdAt', 'desc')),
+      query(collection(db, 'bird_dog_leads'), orderBy('submittedAt', 'desc')),
       (snap) => {
-        const allPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-        setPosts(allPosts)
-        setActivePosts(allPosts.filter((p) => p.status === 'active').length)
-        setCompletedJobs(allPosts.filter((p) => p.status === 'completed').length)
+        setLeads(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
       }
     )
     return unsub
   }, [])
 
-  const kpiValues = [birdDogs.length, investors.length, activePosts, completedJobs]
+  const pipelineExclude = ['closed_paid', 'seller_not_interested', 'seller_declined_offer']
+  const inPipeline = leads.filter((l) => !pipelineExclude.includes(l.status)).length
+  const closedDeals = leads.filter((l) => l.status === 'closed_paid').length
+  const kpiValues = [leads.length, inPipeline, closedDeals, birdDogs.length]
 
   async function handleDeactivateUser(uid) {
     if (!window.confirm('Deactivate this user from the Bird Dog network?')) return
     await updateDoc(doc(db, 'users', uid), { 'birdDogProfile.deactivated': true })
   }
 
-  async function handleClosePost(postId) {
-    if (!window.confirm('Close this post?')) return
-    await updateDoc(doc(db, 'bird_dog_posts', postId), { status: 'closed' })
-  }
-
-  async function handleDeletePost(postId) {
-    if (!window.confirm('Permanently delete this post?')) return
-    await deleteDoc(doc(db, 'bird_dog_posts', postId))
+  async function handleStatusChange(leadId, newStatus) {
+    await updateDoc(doc(db, 'bird_dog_leads', leadId), {
+      status: newStatus,
+      updatedAt: serverTimestamp(),
+    })
   }
 
   const formatDate = (ts) => {
@@ -367,15 +371,28 @@ function BirdDogAdmin() {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  // Filter posts
-  const filteredPosts = posts.filter((p) => {
-    if (typeFilter !== 'all' && p.type !== typeFilter) return false
-    if (statusFilter !== 'all' && p.status !== statusFilter) return false
-    return true
+  // Filter leads
+  const filteredLeads = leads.filter((l) => {
+    if (statusFilter === 'all') return true
+    if (statusFilter === 'rejected') return l.status === 'seller_not_interested' || l.status === 'seller_declined_offer'
+    return l.status === statusFilter
   })
+
+  const filterChips = ['all', 'submitted', 'under_review', 'contacting_seller', 'seller_interested', 'underwriting', 'offer_made', 'under_contract', 'closed_paid', 'rejected']
 
   return (
     <div>
+      {/* TODO Alert Card */}
+      <GlassPanel className="p-4 mb-6" style={{ borderColor: 'rgba(229,57,53,0.4)', background: 'rgba(229,57,53,0.08)' }}>
+        <div className="flex items-center gap-3">
+          <AlertTriangle size={20} style={{ color: '#E53935' }} />
+          <div>
+            <p className="font-heading text-sm font-semibold text-parchment tracking-wide">Action Required</p>
+            <p className="font-body text-xs text-text-dim mt-0.5">Define bird dog payout structure — amounts, conditions, and payment timeline.</p>
+          </div>
+        </div>
+      </GlassPanel>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {BD_KPI_CONFIG.map((stat, i) => {
@@ -424,11 +441,120 @@ function BirdDogAdmin() {
         ))}
       </div>
 
-      {/* Bird Dog Directory */}
+      {/* Lead Management */}
+      {bdSubTab === 'leads' && (
+        <div>
+          {/* Status filter chips */}
+          <div className="flex flex-wrap gap-1 mb-5">
+            <span className="text-text-dim text-xs font-heading uppercase tracking-wider self-center mr-2">Status:</span>
+            {filterChips.map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 rounded-sm text-[11px] font-heading tracking-wider uppercase transition-colors duration-150 ${
+                  statusFilter === s
+                    ? 'bg-[rgba(0,198,255,0.15)] text-[#00C6FF] border border-[rgba(0,198,255,0.4)]'
+                    : 'text-text-dim border border-[rgba(255,255,255,0.1)] hover:text-parchment hover:border-[rgba(255,255,255,0.2)]'
+                }`}
+              >
+                {s === 'all' ? 'All' : s === 'rejected' ? 'Rejected' : (STATUS_STYLES[s]?.label || s)}
+              </button>
+            ))}
+          </div>
+
+          <GlassPanel className="overflow-hidden">
+            <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Lead Management</span>
+            </div>
+            {filteredLeads.length === 0 ? (
+              <div className="px-6 py-16 text-center">
+                <FileText size={40} className="text-text-muted mx-auto mb-3" />
+                <p className="text-text-dim text-sm font-heading">No leads match the current filters.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr style={{ background: 'rgba(0,198,255,0.06)' }}>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Address</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Bird Dog</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Condition</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Price / ARV</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Status</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Date</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLeads.map((lead, i) => {
+                      const ss = STATUS_STYLES[lead.status] || STATUS_STYLES.submitted
+                      return (
+                        <motion.tr
+                          key={lead.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.04 }}
+                          className="border-b border-[rgba(255,255,255,0.05)] hover:bg-white/[0.03] transition-colors duration-200"
+                        >
+                          <td className="px-6 py-4 text-sm text-parchment font-medium">{lead.propertyAddress || '—'}</td>
+                          <td className="px-6 py-4 text-sm text-text-dim">{lead.userName || '—'}</td>
+                          <td className="px-6 py-4 text-sm text-text-dim">{lead.propertyCondition || '—'}</td>
+                          <td className="px-6 py-4 text-sm text-text-dim">
+                            {lead.askingPrice ? `$${Number(lead.askingPrice).toLocaleString()}` : '—'}
+                          </td>
+                          <td className="px-6 py-4">
+                            <select
+                              value={lead.status || 'submitted'}
+                              onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                              className="bg-black/40 border rounded-sm px-2 py-1 text-[11px] font-heading tracking-wider uppercase cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyan/40"
+                              style={{
+                                borderColor: `${ss.color}60`,
+                                color: ss.color,
+                              }}
+                            >
+                              {Object.entries(STATUS_STYLES).map(([key, val]) => (
+                                <option key={key} value={key} style={{ background: '#111B24', color: val.color }}>
+                                  {val.label}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-text-dim font-mono">{formatDate(lead.submittedAt)}</td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => {
+                                const details = [
+                                  `Address: ${lead.propertyAddress || '—'}`,
+                                  `Owner: ${lead.ownerName || '—'}`,
+                                  `Contact: ${lead.ownerContact || '—'}`,
+                                  `Condition: ${lead.propertyCondition || '—'}`,
+                                  `Asking: ${lead.askingPrice ? '$' + Number(lead.askingPrice).toLocaleString() : '—'}`,
+                                  `Reason: ${lead.dealReason || '—'}`,
+                                  `Bird Dog: ${lead.userName || '—'}`,
+                                ].join('\n')
+                                window.alert(details)
+                              }}
+                              className="px-3 py-1 rounded-sm text-[11px] font-heading tracking-wider uppercase border border-[rgba(0,198,255,0.4)] text-[#00C6FF] hover:bg-[rgba(0,198,255,0.1)] transition-colors duration-150"
+                            >
+                              Details
+                            </button>
+                          </td>
+                        </motion.tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </GlassPanel>
+        </div>
+      )}
+
+      {/* Registered Bird Dogs */}
       {bdSubTab === 'birddogs' && (
         <GlassPanel className="overflow-hidden">
           <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Bird Dog Directory</span>
+            <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Registered Bird Dogs</span>
           </div>
           {birdDogs.length === 0 ? (
             <div className="px-6 py-16 text-center">
@@ -441,10 +567,9 @@ function BirdDogAdmin() {
                 <thead>
                   <tr style={{ background: 'rgba(0,198,255,0.06)' }}>
                     <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Name</th>
-                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Service Area</th>
-                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Methods</th>
-                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Availability</th>
-                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Rating</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Email</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Market</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Experience</th>
                     <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Leads Submitted</th>
                     <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Date Joined</th>
                     <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Actions</th>
@@ -453,6 +578,7 @@ function BirdDogAdmin() {
                 <tbody>
                   {birdDogs.map((user, i) => {
                     const bp = user.birdDogProfile || {}
+                    const userLeads = leads.filter((l) => l.userId === user.uid).length
                     return (
                       <motion.tr
                         key={user.uid}
@@ -462,11 +588,10 @@ function BirdDogAdmin() {
                         className="border-b border-[rgba(255,255,255,0.05)] hover:bg-white/[0.03] transition-colors duration-200"
                       >
                         <td className="px-6 py-4 text-sm text-parchment font-medium">{user.displayName || user.email}</td>
-                        <td className="px-6 py-4 text-sm text-text-dim">{bp.serviceArea || '—'}</td>
-                        <td className="px-6 py-4 text-sm text-text-dim">{bp.methods?.join(', ') || '—'}</td>
-                        <td className="px-6 py-4 text-sm text-text-dim">{bp.availability || '—'}</td>
-                        <td className="px-6 py-4 text-sm text-text-dim">—</td>
-                        <td className="px-6 py-4 text-sm text-text-dim">{user.stats?.birdDogLeads ?? 0}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">{user.email || '—'}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">{bp.market || '—'}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">{bp.experienceLevel || '—'}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">{userLeads}</td>
                         <td className="px-6 py-4 text-sm text-text-dim font-mono">{formatDate(user.createdAt)}</td>
                         <td className="px-6 py-4">
                           {bp.deactivated ? (
@@ -488,206 +613,6 @@ function BirdDogAdmin() {
             </div>
           )}
         </GlassPanel>
-      )}
-
-      {/* Investor Directory */}
-      {bdSubTab === 'investors' && (
-        <GlassPanel className="overflow-hidden">
-          <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Investor Directory</span>
-          </div>
-          {investors.length === 0 ? (
-            <div className="px-6 py-16 text-center">
-              <DollarSign size={40} className="text-text-muted mx-auto mb-3" />
-              <p className="text-text-dim text-sm font-heading">No investors registered yet.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr style={{ background: 'rgba(0,198,255,0.06)' }}>
-                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Name</th>
-                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Markets</th>
-                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Deal Types</th>
-                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Rating</th>
-                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Jobs Posted</th>
-                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Date Joined</th>
-                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {investors.map((user, i) => {
-                    const bp = user.birdDogProfile || {}
-                    const jobsPosted = posts.filter((p) => p.authorId === user.uid).length
-                    return (
-                      <motion.tr
-                        key={user.uid}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: i * 0.04 }}
-                        className="border-b border-[rgba(255,255,255,0.05)] hover:bg-white/[0.03] transition-colors duration-200"
-                      >
-                        <td className="px-6 py-4 text-sm text-parchment font-medium">{user.displayName || user.email}</td>
-                        <td className="px-6 py-4 text-sm text-text-dim">{bp.markets?.join(', ') || '—'}</td>
-                        <td className="px-6 py-4 text-sm text-text-dim">{bp.dealTypes?.join(', ') || '—'}</td>
-                        <td className="px-6 py-4 text-sm text-text-dim">—</td>
-                        <td className="px-6 py-4 text-sm text-text-dim">{jobsPosted}</td>
-                        <td className="px-6 py-4 text-sm text-text-dim font-mono">{formatDate(user.createdAt)}</td>
-                        <td className="px-6 py-4">
-                          {bp.deactivated ? (
-                            <span className="text-xs text-text-muted font-heading uppercase tracking-wider">Deactivated</span>
-                          ) : (
-                            <button
-                              onClick={() => handleDeactivateUser(user.uid)}
-                              className="px-3 py-1 rounded-sm text-[11px] font-heading tracking-wider uppercase border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors duration-150"
-                            >
-                              Deactivate
-                            </button>
-                          )}
-                        </td>
-                      </motion.tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </GlassPanel>
-      )}
-
-      {/* Posts & Jobs */}
-      {bdSubTab === 'posts' && (
-        <div>
-          {/* Filter chips */}
-          <div className="flex flex-wrap gap-3 mb-5">
-            <div className="flex gap-1">
-              <span className="text-text-dim text-xs font-heading uppercase tracking-wider self-center mr-2">Type:</span>
-              {['all', 'bird_dog', 'job'].map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTypeFilter(t)}
-                  className={`px-3 py-1.5 rounded-sm text-[11px] font-heading tracking-wider uppercase transition-colors duration-150 ${
-                    typeFilter === t
-                      ? 'bg-[rgba(0,198,255,0.15)] text-[#00C6FF] border border-[rgba(0,198,255,0.4)]'
-                      : 'text-text-dim border border-[rgba(255,255,255,0.1)] hover:text-parchment hover:border-[rgba(255,255,255,0.2)]'
-                  }`}
-                >
-                  {t === 'all' ? 'All' : t === 'bird_dog' ? 'Bird Dog' : 'Job'}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-1">
-              <span className="text-text-dim text-xs font-heading uppercase tracking-wider self-center mr-2">Status:</span>
-              {['all', 'active', 'in_progress', 'completed', 'closed'].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className={`px-3 py-1.5 rounded-sm text-[11px] font-heading tracking-wider uppercase transition-colors duration-150 ${
-                    statusFilter === s
-                      ? 'bg-[rgba(0,198,255,0.15)] text-[#00C6FF] border border-[rgba(0,198,255,0.4)]'
-                      : 'text-text-dim border border-[rgba(255,255,255,0.1)] hover:text-parchment hover:border-[rgba(255,255,255,0.2)]'
-                  }`}
-                >
-                  {s === 'all' ? 'All' : s === 'in_progress' ? 'In Progress' : s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <GlassPanel className="overflow-hidden">
-            <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Posts & Jobs</span>
-            </div>
-            {filteredPosts.length === 0 ? (
-              <div className="px-6 py-16 text-center">
-                <FileText size={40} className="text-text-muted mx-auto mb-3" />
-                <p className="text-text-dim text-sm font-heading">No posts match the current filters.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr style={{ background: 'rgba(0,198,255,0.06)' }}>
-                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Title</th>
-                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Type</th>
-                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Author</th>
-                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Area</th>
-                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Status</th>
-                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Date Posted</th>
-                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Applicants</th>
-                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPosts.map((post, i) => {
-                      const isBirdDog = post.type === 'bird_dog'
-                      const statusColors = {
-                        active: { bg: 'rgba(0,198,255,0.1)', border: 'rgba(0,198,255,0.3)', color: '#00C6FF' },
-                        in_progress: { bg: 'rgba(246,196,69,0.1)', border: 'rgba(246,196,69,0.3)', color: '#F6C445' },
-                        completed: { bg: 'rgba(76,175,80,0.1)', border: 'rgba(76,175,80,0.3)', color: '#4CAF50' },
-                        closed: { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)', color: '#8a8578' },
-                      }
-                      const sc = statusColors[post.status] || statusColors.closed
-                      return (
-                        <motion.tr
-                          key={post.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: i * 0.04 }}
-                          className="border-b border-[rgba(255,255,255,0.05)] hover:bg-white/[0.03] transition-colors duration-200"
-                        >
-                          <td className="px-6 py-4 text-sm text-parchment font-medium">{post.title || '—'}</td>
-                          <td className="px-6 py-4">
-                            <span
-                              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-heading tracking-wider uppercase"
-                              style={{
-                                background: isBirdDog ? 'rgba(0,198,255,0.1)' : 'rgba(246,196,69,0.1)',
-                                border: `1px solid ${isBirdDog ? 'rgba(0,198,255,0.3)' : 'rgba(246,196,69,0.3)'}`,
-                                color: isBirdDog ? '#00C6FF' : '#F6C445',
-                              }}
-                            >
-                              {isBirdDog ? 'Bird Dog' : 'Job'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-text-dim">{post.authorName || '—'}</td>
-                          <td className="px-6 py-4 text-sm text-text-dim">{post.area || post.serviceArea || '—'}</td>
-                          <td className="px-6 py-4">
-                            <span
-                              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-heading tracking-wider uppercase"
-                              style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color }}
-                            >
-                              {post.status === 'in_progress' ? 'In Progress' : post.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-text-dim font-mono">{formatDate(post.createdAt)}</td>
-                          <td className="px-6 py-4 text-sm text-text-dim">{post.applicants?.length ?? 0}</td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              {post.status !== 'closed' && (
-                                <button
-                                  onClick={() => handleClosePost(post.id)}
-                                  className="px-3 py-1 rounded-sm text-[11px] font-heading tracking-wider uppercase border border-[rgba(246,196,69,0.4)] text-[#F6C445] hover:bg-[rgba(246,196,69,0.1)] transition-colors duration-150"
-                                >
-                                  Close
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleDeletePost(post.id)}
-                                className="px-3 py-1 rounded-sm text-[11px] font-heading tracking-wider uppercase border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors duration-150"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </GlassPanel>
-        </div>
       )}
     </div>
   )
