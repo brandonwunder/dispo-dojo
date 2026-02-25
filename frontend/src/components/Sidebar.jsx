@@ -35,6 +35,7 @@ const navSections = [
       { to: '/lead-scrubbing', icon: Search, label: 'Finding Leads' },
       { to: '/agent-finder', icon: CompassIcon, label: 'Find Agent Emails' },
       { to: '/loi-sender', icon: Send, label: 'LOI Sender' },
+      { to: '/bird-dog', icon: DollarSign, label: 'Bird Dogging' },
     ],
   },
   {
@@ -56,6 +57,7 @@ const navSections = [
       { to: '/contract-generator', icon: FileSignature, label: 'Contract Generator' },
       { to: '/find-buyers', icon: HandCoins, label: 'Find Buyers' },
       { to: '/buy-boxes', icon: Target, label: 'Buy Boxes' },
+      { to: '/boots-on-ground', icon: Footprints, label: 'Boots on Ground' },
     ],
   },
   {
@@ -63,8 +65,6 @@ const navSections = [
     items: [
       { to: '/scripts', icon: MessageCircle, label: 'Scripts & Objections' },
       { to: '/direct-agent', icon: House, label: 'DTA Process' },
-      { to: '/bird-dog', icon: DollarSign, label: 'Bird Dog Network' },
-      { to: '/boots-on-ground', icon: Footprints, label: 'Boots on Ground' },
       { to: '/call-recordings', icon: Video, label: 'Call Recordings' },
     ],
   },
