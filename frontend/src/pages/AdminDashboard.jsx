@@ -64,6 +64,7 @@ function DealForm({ initial, onClose }) {
             <option value="sub-to">Sub-To</option>
             <option value="seller-finance">Seller Finance</option>
             <option value="cash">Cash</option>
+            <option value="stack">Stack Method</option>
           </select>
         </div>
         <div><label className={labelCls}>Assignment Fee ($)</label><input className={inputCls} type="number" value={form.assignmentFee} onChange={(e) => set('assignmentFee', e.target.value)} placeholder="15000" /></div>
