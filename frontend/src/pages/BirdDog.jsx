@@ -9,7 +9,6 @@ import {
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { incrementStat } from '../lib/userProfile'
-import GlassShell from '../components/GlassShell'
 import GlassPanel from '../components/GlassPanel'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -539,7 +538,7 @@ export default function BirdDog() {
       </motion.div>
 
       {/* ── 3-column grid ──────────────────────────────── */}
-      <GlassShell orbColors="default" maxWidth="max-w-6xl">
+      <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
           {/* Left */}
           <div className="lg:col-span-1">
@@ -574,7 +573,7 @@ export default function BirdDog() {
             <MySubmissions firebaseUid={firebaseUid} />
           </div>
         </div>
-      </GlassShell>
+      </div>
     </div>
     </>
   )

@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion'
-import { Lock, Video } from 'lucide-react'
-import GlassShell from '../components/GlassShell'
+import { Play, Video } from 'lucide-react'
 import GlassPanel from '../components/GlassPanel'
 
 const containerVariants = {
@@ -99,7 +98,7 @@ export default function CallRecordings() {
         </div>
       </motion.div>
 
-      <GlassShell orbColors="purple">
+      <div>
         {/* Category Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {CATEGORIES.map((cat, idx) => (
@@ -107,7 +106,7 @@ export default function CallRecordings() {
               <GlassPanel className="p-5 h-full opacity-70">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)' }}>
-                    <Lock size={15} style={{ color: '#00C6FF' }} />
+                    <Play size={15} style={{ color: '#00C6FF' }} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -135,7 +134,7 @@ export default function CallRecordings() {
         <motion.p variants={itemVariants} className="text-text-muted text-xs text-center mt-8 font-body">
           We'll be adding recordings as we collect strong examples. Check back regularly.
         </motion.p>
-      </GlassShell>
+      </div>
     </motion.div>
     </>
   )
