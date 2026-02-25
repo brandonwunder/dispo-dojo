@@ -103,7 +103,7 @@ export default function CallRecordings() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {CATEGORIES.map((cat, idx) => (
             <motion.div key={idx} variants={itemVariants}>
-              <GlassPanel className="p-5 h-full opacity-70">
+              <GlassPanel className="p-5 h-full" style={{ background: 'rgba(11,15,20,0.65)' }}>
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)' }}>
                     <Play size={15} style={{ color: '#00C6FF' }} />
