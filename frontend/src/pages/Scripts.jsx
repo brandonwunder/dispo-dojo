@@ -316,12 +316,32 @@ export default function Scripts() {
   const [activeTab, setActiveTab] = useState('calling')
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="relative z-10 max-w-[900px] mx-auto px-6 py-16"
-    >
+    <>
+      {/* Background Image */}
+      <div
+        className="fixed inset-0 -z-20 bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/scripts-bg.png)',
+          backgroundSize: '120%',
+          backgroundPosition: 'center 30%',
+        }}
+      />
+      <div
+        className="fixed inset-0 -z-10"
+        style={{
+          background: `
+            radial-gradient(ellipse 80% 60% at 50% 30%, rgba(11,15,20,0.3) 0%, rgba(11,15,20,0.6) 55%, rgba(11,15,20,0.88) 100%),
+            linear-gradient(180deg, rgba(11,15,20,0.25) 0%, rgba(11,15,20,0.5) 40%, rgba(11,15,20,0.85) 100%)
+          `,
+        }}
+      />
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="relative z-10 max-w-[900px] mx-auto px-6 py-16"
+      >
       {/* Header */}
       <div className="relative z-10 mb-6">
         <div className="text-center mb-8 max-w-[680px] mx-auto">
@@ -420,5 +440,6 @@ export default function Scripts() {
         </div>
       </GlassShell>
     </motion.div>
+    </>
   )
 }
