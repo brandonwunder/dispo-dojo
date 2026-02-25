@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  MapPin, CheckCircle, Send, Clock,
+  MapPin, CheckCircle, Send, Clock, Plus,
 } from 'lucide-react'
 import {
   collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp,
@@ -57,6 +57,12 @@ const EMPTY_FORM = {
   howFound: '',
   summary: '',
 }
+
+const TABS = [
+  { id: 'find-birddogs', label: 'Find Bird Dogs' },
+  { id: 'find-jobs', label: 'Find Jobs' },
+  { id: 'my-activity', label: 'My Activity' },
+]
 
 // ─── Animation variants ───────────────────────────────────────────────────────
 
@@ -481,11 +487,56 @@ function MySubmissions({ firebaseUid }) {
   )
 }
 
+// ─── Tab Components ──────────────────────────────────────────────────────────
+
+function FindBirdDogsTab() {
+  return (
+    <GlassPanel className="p-8 text-center">
+      <p className="text-text-dim font-body text-sm">Bird dog listings coming soon...</p>
+    </GlassPanel>
+  )
+}
+
+function FindJobsTab() {
+  return (
+    <GlassPanel className="p-8 text-center">
+      <p className="text-text-dim font-body text-sm">Job postings coming soon...</p>
+    </GlassPanel>
+  )
+}
+
+function MyActivityTab({ firebaseUid, profile, user }) {
+  const { firebaseReady } = useAuth()
+
+  return (
+    <div className="flex flex-col gap-5">
+      {firebaseReady ? (
+        <SubmissionForm firebaseUid={firebaseUid} profile={profile} user={user} />
+      ) : (
+        <GlassPanel className="p-5">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="w-6 h-6 rounded-full border-2 animate-spin mx-auto mb-3" style={{ borderColor: 'rgba(0,198,255,0.3)', borderTopColor: '#00C6FF' }} />
+              <p className="text-xs text-text-dim/40 font-body">Connecting...</p>
+            </div>
+          </div>
+        </GlassPanel>
+      )}
+      <MySubmissions firebaseUid={firebaseUid} />
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BirdDog() {
   const { user, profile, firebaseReady } = useAuth()
   const firebaseUid = user?.firebaseUid
+  const [activeTab, setActiveTab] = useState('find-birddogs')
+
+  function handleCreatePost() {
+    // Will check for birdDogProfile and show onboarding modal — built in Task 2
+  }
 
   return (
     <>
@@ -532,47 +583,49 @@ export default function BirdDog() {
             </h1>
           </div>
           <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
-            Find motivated sellers. Earn on every deal that closes.
+            Connect with bird dogs and investors in your market.
           </p>
         </div>
       </motion.div>
 
-      {/* ── 3-column grid ──────────────────────────────── */}
+      {/* ── Tab bar + content ──────────────────────────── */}
       <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
-          {/* Left */}
-          <div className="lg:col-span-1">
-            <LeftColumn />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex gap-1 border-b border-[rgba(0,198,255,0.12)]">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={[
+                  'relative px-4 py-2.5 font-heading text-xs tracking-widest uppercase transition-colors',
+                  activeTab === tab.id ? 'text-cyan' : 'text-text-dim hover:text-parchment',
+                ].join(' ')}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <motion.div
+                    layoutId="bird-dog-tab"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00C6FF]"
+                  />
+                )}
+              </button>
+            ))}
           </div>
-
-          {/* Center — form */}
-          <div className="lg:col-span-1">
-            {firebaseReady ? (
-              <SubmissionForm
-                firebaseUid={firebaseUid}
-                profile={profile}
-                user={user}
-              />
-            ) : (
-              <GlassPanel className="p-5">
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <div
-                      className="w-6 h-6 rounded-full border-2 animate-spin mx-auto mb-3"
-                      style={{ borderColor: 'rgba(0,198,255,0.3)', borderTopColor: '#00C6FF' }}
-                    />
-                    <p className="text-xs text-text-dim/40 font-body">Connecting...</p>
-                  </div>
-                </div>
-              </GlassPanel>
-            )}
-          </div>
-
-          {/* Right — submissions */}
-          <div className="lg:col-span-1">
-            <MySubmissions firebaseUid={firebaseUid} />
-          </div>
+          <button
+            onClick={handleCreatePost}
+            className="flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-heading font-semibold tracking-wider text-white bg-[#E53935] border border-[#E53935]/40 hover:bg-[#ef5350] active:scale-[0.98] transition-colors shadow-[0_4px_20px_rgba(229,57,53,0.25)]"
+          >
+            <Plus size={14} />
+            Create Post
+          </button>
         </div>
+
+        {/* Tab content */}
+        {activeTab === 'find-birddogs' && <FindBirdDogsTab />}
+        {activeTab === 'find-jobs' && <FindJobsTab />}
+        {activeTab === 'my-activity' && (
+          <MyActivityTab firebaseUid={firebaseUid} profile={profile} user={user} />
+        )}
       </div>
     </div>
     </>
