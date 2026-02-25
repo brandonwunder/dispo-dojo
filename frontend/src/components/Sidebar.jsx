@@ -24,10 +24,15 @@ const navSections = [
   {
     title: '',
     items: [
+      { to: '/live-deals', icon: Briefcase, label: 'View Active Deals' },
+    ],
+  },
+  {
+    title: 'Community',
+    items: [
       { to: '/', icon: LayoutDashboard, label: 'JV Dashboard' },
       { to: '/ninja-profile', icon: NinjaIcon, label: 'Ninja Profile' },
       { to: '/community', icon: MessageSquare, label: 'Message Board' },
-      { to: '/live-deals', icon: Briefcase, label: 'View Active Deals' },
     ],
   },
   {
