@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Play, Info, X } from 'lucide-react'
-import WoodPanel from '../components/WoodPanel'
+import GlassPanel from '../components/GlassPanel'
 import { ForgeHammerIcon } from '../components/icons/index'
 
 const containerVariants = {
@@ -74,8 +74,14 @@ function VideoModal({ video, onClose }) {
     >
       <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={onClose} />
       <motion.div
-        className="relative z-10 w-full max-w-3xl rounded-sm border border-gold-dim/25 overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, #111B24 0%, #0B0F14 100%)' }}
+        className="relative z-10 w-full max-w-3xl rounded-2xl border overflow-hidden"
+        style={{
+          background: 'rgba(11,15,20,0.45)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          borderColor: 'rgba(255,255,255,0.07)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
+        }}
         initial={{ opacity: 0, scale: 0.9, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 30 }}
@@ -163,14 +169,11 @@ function VideoCard({ video, onClick }) {
       className="cursor-pointer group"
       onClick={onClick}
     >
-      <div
-        className="rounded-sm border border-gold-dim/20 overflow-hidden h-full flex flex-col"
-        style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-      >
+      <GlassPanel className="overflow-hidden h-full flex flex-col">
         {/* Thumbnail / Coming Soon Area */}
         <div
           className="aspect-video relative flex items-center justify-center overflow-hidden"
-          style={{ background: `linear-gradient(135deg, ${video.colorBg}, rgba(11,15,20,0.9) 70%)` }}
+          style={{ background: `linear-gradient(135deg, ${video.colorBg}, rgba(11,15,20,0.6) 70%)` }}
         >
           {/* Colored line at top */}
           <div
@@ -182,7 +185,7 @@ function VideoCard({ video, onClick }) {
           <motion.div
             className="w-14 h-14 rounded-full flex items-center justify-center border"
             style={{
-              background: 'rgba(0,0,0,0.4)',
+              background: 'rgba(0,0,0,0.3)',
               borderColor: video.colorBorder,
               boxShadow: `0 0 20px ${video.colorGlow}`,
             }}
@@ -203,7 +206,7 @@ function VideoCard({ video, onClick }) {
 
           {/* Watch CTA */}
           <div
-            className="py-2 rounded-sm text-center font-heading text-xs tracking-widest uppercase border transition-colors duration-200"
+            className="py-2 rounded-xl text-center font-heading text-xs tracking-widest uppercase border transition-colors duration-200"
             style={{
               borderColor: video.colorBorder,
               color: video.color,
@@ -213,7 +216,7 @@ function VideoCard({ video, onClick }) {
             View Details
           </div>
         </div>
-      </div>
+      </GlassPanel>
     </motion.div>
   )
 }
@@ -281,20 +284,14 @@ export default function LeadScrubbing() {
 
         {/* Info Banner */}
         <motion.div variants={itemVariants} className="mb-8">
-          <div
-            className="flex items-start gap-3 px-5 py-4 rounded-sm border"
-            style={{
-              background: 'rgba(0, 198, 255, 0.05)',
-              borderColor: 'rgba(0, 198, 255, 0.2)',
-            }}
-          >
+          <GlassPanel className="flex items-start gap-3 px-5 py-4">
             <Info size={18} className="text-cyan shrink-0 mt-0.5" />
             <p className="text-text-dim text-sm leading-relaxed font-body">
               These training videos focus on finding{' '}
               <span className="text-parchment font-heading">on-market properties</span> in each category.
               Once we identify a lead, we reach out directly to the listing agent to present our offer.
             </p>
-          </div>
+          </GlassPanel>
         </motion.div>
 
         {/* 3 Video Cards — Side by Side */}

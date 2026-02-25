@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import * as XLSX from 'xlsx'
 import ShurikenLoader from '../components/ShurikenLoader'
 import { CompassIcon } from '../components/icons/index'
-import WoodPanel from '../components/WoodPanel'
+import GlassPanel from '../components/GlassPanel'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -139,9 +139,9 @@ function DonutRing({ found, partial, cached, notFound, total }) {
 // ─── Glass Card ──────────────────────────────────────────────────────────────
 function GlassCard({ children, maxWidth = '680px' }) {
   return (
-    <WoodPanel glow className="mx-auto mb-6" style={{ maxWidth }}>
+    <GlassPanel className="mx-auto mb-6 p-6" style={{ maxWidth }}>
       {children}
-    </WoodPanel>
+    </GlassPanel>
   )
 }
 

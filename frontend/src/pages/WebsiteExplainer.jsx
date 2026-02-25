@@ -63,7 +63,7 @@ export default function WebsiteExplainer() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="max-w-[800px] mx-auto"
+      className="max-w-[800px] mx-auto relative z-10"
     >
       {/* Header */}
       <div className="text-center mb-8 max-w-[680px] mx-auto">
