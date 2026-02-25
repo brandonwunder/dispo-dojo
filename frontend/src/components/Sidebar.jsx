@@ -45,9 +45,14 @@ const navSections = [
     ],
   },
   {
-    title: 'Deal Management',
+    title: 'Underwriting',
     items: [
       { to: '/underwriting', icon: Calculator, label: 'Free Underwriting' },
+    ],
+  },
+  {
+    title: 'Deal Management',
+    items: [
       { to: '/contract-generator', icon: FileSignature, label: 'Contract Generator' },
       { to: '/find-buyers', icon: HandCoins, label: 'Find Buyers' },
       { to: '/buy-boxes', icon: Target, label: 'Buy Boxes' },
