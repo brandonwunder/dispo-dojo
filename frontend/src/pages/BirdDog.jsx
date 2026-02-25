@@ -495,7 +495,7 @@ export default function BirdDog() {
         style={{
           backgroundImage: 'url(/bird-dog-bg.png)',
           backgroundSize: '120%',
-          backgroundPosition: 'center 45%',
+          backgroundPosition: 'center 20%',
         }}
       />
       <div
