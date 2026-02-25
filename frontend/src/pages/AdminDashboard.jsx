@@ -359,10 +359,15 @@ function BirdDogAdmin() {
   }
 
   async function handleStatusChange(leadId, newStatus) {
-    await updateDoc(doc(db, 'bird_dog_leads', leadId), {
-      status: newStatus,
-      updatedAt: serverTimestamp(),
-    })
+    try {
+      await updateDoc(doc(db, 'bird_dog_leads', leadId), {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+      })
+    } catch (err) {
+      console.error('Failed to update lead status:', err)
+      window.alert('Failed to update status. Please try again.')
+    }
   }
 
   const formatDate = (ts) => {
@@ -482,7 +487,7 @@ function BirdDogAdmin() {
                       <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Price / ARV</th>
                       <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Status</th>
                       <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Date</th>
-                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Actions</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Deal Reason</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -520,24 +525,8 @@ function BirdDogAdmin() {
                             </select>
                           </td>
                           <td className="px-6 py-4 text-sm text-text-dim font-mono">{formatDate(lead.submittedAt)}</td>
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => {
-                                const details = [
-                                  `Address: ${lead.propertyAddress || '—'}`,
-                                  `Owner: ${lead.ownerName || '—'}`,
-                                  `Contact: ${lead.ownerContact || '—'}`,
-                                  `Condition: ${lead.propertyCondition || '—'}`,
-                                  `Asking: ${lead.askingPrice ? '$' + Number(lead.askingPrice).toLocaleString() : '—'}`,
-                                  `Reason: ${lead.dealReason || '—'}`,
-                                  `Bird Dog: ${lead.userName || '—'}`,
-                                ].join('\n')
-                                window.alert(details)
-                              }}
-                              className="px-3 py-1 rounded-sm text-[11px] font-heading tracking-wider uppercase border border-[rgba(0,198,255,0.4)] text-[#00C6FF] hover:bg-[rgba(0,198,255,0.1)] transition-colors duration-150"
-                            >
-                              Details
-                            </button>
+                          <td className="px-6 py-4 text-sm text-text-dim max-w-[200px] truncate" title={lead.dealReason || ''}>
+                            {lead.dealReason || '—'}
                           </td>
                         </motion.tr>
                       )
