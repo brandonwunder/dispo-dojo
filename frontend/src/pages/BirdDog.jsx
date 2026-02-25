@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext'
 import { incrementStat } from '../lib/userProfile'
 import GlassPanel from '../components/GlassPanel'
 import ProfileSetupModal from '../components/birddog/ProfileSetupModal'
+import CreatePostModal from '../components/birddog/CreatePostModal'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -646,6 +647,13 @@ export default function BirdDog() {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onComplete={handleProfileComplete}
+      />
+
+      <CreatePostModal
+        isOpen={showPostModal}
+        onClose={() => setShowPostModal(false)}
+        profile={profile}
+        firebaseUid={firebaseUid}
       />
     </>
   )
