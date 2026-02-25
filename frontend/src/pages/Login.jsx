@@ -524,9 +524,9 @@ export default function Login() {
         style={{ background: 'rgba(11,15,20,0.45)' }}
       />
 
-      {/* Layer 2: Rain (calmer, no lightning) */}
+      {/* Layer 2: Rain + lightning */}
       <div className="fixed inset-0 z-[2] pointer-events-none">
-        <RainEffect count={150} lightning={false} />
+        <RainEffect count={150} lightning={true} />
       </div>
 
       {/* Layer 3: Fog/mist blobs */}
@@ -600,9 +600,23 @@ export default function Login() {
       {/* ═══ Layer 10: HERO SECTION ═══ */}
       <div className="relative z-[10] min-h-screen flex flex-col items-center justify-center p-4 text-center">
 
+        {/* Company Logo — 3x large */}
+        <motion.img
+          src="/dispo-dojo-logo.png"
+          alt="Dispo Dojo"
+          className="h-48 md:h-60 w-auto object-contain mb-6"
+          style={{
+            filter: 'drop-shadow(0 0 24px rgba(246,196,69,0.4))',
+            animation: 'logoFloat 6s ease-in-out infinite',
+          }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+        />
+
         {/* Main Headline */}
         <motion.h1
-          className="font-display gold-shimmer-text leading-[1.05] tracking-[0.03em] px-4"
+          className="font-heading font-bold gold-shimmer-text leading-[1.05] tracking-[0.04em] uppercase px-4"
           style={{
             fontSize: 'clamp(2.5rem, 8vw, 5.5rem)',
             textShadow: '0 0 60px rgba(246,196,69,0.25), 0 4px 24px rgba(0,0,0,0.7)',
@@ -611,9 +625,9 @@ export default function Login() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1.8, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          THE ONLY JV PARTNER
+          THE #1 WHOLESALING
           <br />
-          YOU NEED!
+          JV TEAM
         </motion.h1>
 
         {/* Subtitle */}
