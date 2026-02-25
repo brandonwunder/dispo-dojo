@@ -15,8 +15,15 @@ const statConfig = [
 
 // ── DealForm ─────────────────────────────────────────────────────────────────
 function DealForm({ initial, onClose }) {
-  const blank = { address: '', city: '', state: '', dealType: 'sub-to', assignmentFee: '', beds: '', baths: '', sqft: '', arv: '', pitch: '', status: 'active' }
-  const [form, setForm] = useState(initial || blank)
+  const blank = { address: '', city: '', state: '', zip: '', dealType: 'sub-to', assignmentFee: '', purchasePrice: '', beds: '', baths: '', sqft: '', arv: '', yearBuilt: '', image: '', pitch: '', highlights: '', status: 'active' }
+  const [form, setForm] = useState(() => {
+    if (!initial) return blank
+    return {
+      ...blank,
+      ...initial,
+      highlights: Array.isArray(initial.highlights) ? initial.highlights.join('\n') : (initial.highlights || ''),
+    }
+  })
   const [saving, setSaving] = useState(false)
 
   function set(field, value) {
@@ -26,13 +33,19 @@ function DealForm({ initial, onClose }) {
   async function handleSave() {
     setSaving(true)
     try {
+      const highlightsArray = form.highlights
+        ? form.highlights.split('\n').map((h) => h.trim()).filter(Boolean)
+        : []
       const data = {
         ...form,
         assignmentFee: Number(form.assignmentFee) || 0,
+        purchasePrice: Number(form.purchasePrice) || 0,
         beds: Number(form.beds) || 0,
         baths: Number(form.baths) || 0,
         sqft: Number(form.sqft) || 0,
         arv: Number(form.arv) || 0,
+        yearBuilt: Number(form.yearBuilt) || 0,
+        highlights: highlightsArray,
         updatedAt: serverTimestamp(),
       }
       if (initial?.id) {
@@ -58,6 +71,7 @@ function DealForm({ initial, onClose }) {
         <div><label className={labelCls}>Address</label><input className={inputCls} value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="123 Main St" /></div>
         <div><label className={labelCls}>City</label><input className={inputCls} value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Austin" /></div>
         <div><label className={labelCls}>State</label><input className={inputCls} value={form.state} onChange={(e) => set('state', e.target.value)} placeholder="TX" /></div>
+        <div><label className={labelCls}>ZIP</label><input className={inputCls} value={form.zip} onChange={(e) => set('zip', e.target.value)} placeholder="78245" /></div>
         <div>
           <label className={labelCls}>Deal Type</label>
           <select className={inputCls} value={form.dealType} onChange={(e) => set('dealType', e.target.value)}>
@@ -68,10 +82,13 @@ function DealForm({ initial, onClose }) {
           </select>
         </div>
         <div><label className={labelCls}>Assignment Fee ($)</label><input className={inputCls} type="number" value={form.assignmentFee} onChange={(e) => set('assignmentFee', e.target.value)} placeholder="15000" /></div>
+        <div><label className={labelCls}>Purchase Price ($)</label><input className={inputCls} type="number" value={form.purchasePrice} onChange={(e) => set('purchasePrice', e.target.value)} placeholder="215000" /></div>
         <div><label className={labelCls}>ARV ($)</label><input className={inputCls} type="number" value={form.arv} onChange={(e) => set('arv', e.target.value)} placeholder="250000" /></div>
         <div><label className={labelCls}>Beds</label><input className={inputCls} type="number" value={form.beds} onChange={(e) => set('beds', e.target.value)} placeholder="3" /></div>
         <div><label className={labelCls}>Baths</label><input className={inputCls} type="number" value={form.baths} onChange={(e) => set('baths', e.target.value)} placeholder="2" /></div>
         <div><label className={labelCls}>Sqft</label><input className={inputCls} type="number" value={form.sqft} onChange={(e) => set('sqft', e.target.value)} placeholder="1400" /></div>
+        <div><label className={labelCls}>Year Built</label><input className={inputCls} type="number" value={form.yearBuilt} onChange={(e) => set('yearBuilt', e.target.value)} placeholder="2018" /></div>
+        <div><label className={labelCls}>Image URL</label><input className={inputCls} value={form.image} onChange={(e) => set('image', e.target.value)} placeholder="https://images.unsplash.com/..." /></div>
         <div>
           <label className={labelCls}>Status</label>
           <select className={inputCls} value={form.status} onChange={(e) => set('status', e.target.value)}>
@@ -80,9 +97,13 @@ function DealForm({ initial, onClose }) {
           </select>
         </div>
       </div>
-      <div className="mb-4">
+      <div className="mb-3">
         <label className={labelCls}>Pitch (1-2 sentences)</label>
         <textarea className={inputCls + ' resize-none'} rows={2} value={form.pitch} onChange={(e) => set('pitch', e.target.value)} placeholder="Strong cashflow opportunity in a growing market..." />
+      </div>
+      <div className="mb-4">
+        <label className={labelCls}>Highlights (one per line)</label>
+        <textarea className={inputCls + ' resize-none'} rows={3} value={form.highlights} onChange={(e) => set('highlights', e.target.value)} placeholder={"Assumable VA loan at 2.75%\nNew roof installed 2024\nSeller motivated"} />
       </div>
       <div className="flex gap-3">
         <button onClick={handleSave} disabled={saving} className="px-5 py-2.5 rounded-sm font-heading text-xs tracking-widest uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-colors duration-200 disabled:opacity-40">
@@ -215,7 +236,7 @@ function LiveDealsAdmin() {
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="font-heading text-sm text-parchment">{deal.address}, {deal.city}, {deal.state}</span>
+                  <span className="font-heading text-sm text-parchment">{deal.address}, {deal.city}, {deal.state}{deal.zip ? ` ${deal.zip}` : ''}</span>
                   <span
                     className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-heading tracking-wider uppercase"
                     style={{
@@ -229,6 +250,16 @@ function LiveDealsAdmin() {
                 </div>
                 <p className="text-text-dim text-xs font-body">
                   {deal.dealType} · ${Number(deal.assignmentFee || 0).toLocaleString()} assignment fee
+                  {deal.purchasePrice > 0 && ` · $${Number(deal.purchasePrice).toLocaleString()} purchase`}
+                  {deal.arv > 0 && ` · $${Number(deal.arv).toLocaleString()} ARV`}
+                </p>
+                <p className="text-text-muted text-xs font-body mt-0.5">
+                  {[
+                    deal.beds > 0 && `${deal.beds} bd`,
+                    deal.baths > 0 && `${deal.baths} ba`,
+                    deal.sqft > 0 && `${Number(deal.sqft).toLocaleString()} sqft`,
+                    deal.yearBuilt > 0 && `Built ${deal.yearBuilt}`,
+                  ].filter(Boolean).join(' · ') || ''}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
