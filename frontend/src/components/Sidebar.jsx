@@ -60,7 +60,6 @@ const navSections = [
       { to: '/direct-agent', icon: House, label: 'DTA Process' },
       { to: '/bird-dog', icon: DollarSign, label: 'Bird Dog Network' },
       { to: '/boots-on-ground', icon: Footprints, label: 'Boots on Ground' },
-      { to: '/rent-comps', icon: BarChart3, label: 'Rent Comps' },
       { to: '/call-recordings', icon: Video, label: 'Call Recordings' },
     ],
   },

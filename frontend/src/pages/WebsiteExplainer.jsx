@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Globe, Copy, Check, ExternalLink, Link2, Share2 } from 'lucide-react'
-import WoodPanel from '../components/WoodPanel'
+import GlassShell from '../components/GlassShell'
+import GlassPanel from '../components/GlassPanel'
 
 const PLACEHOLDER_URL = 'https://dispodojo.com/subto-explained'
 
@@ -66,113 +67,136 @@ export default function WebsiteExplainer() {
         </p>
       </div>
 
-      {/* URL Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.5 }}
-        className="mb-8"
-      >
-        <WoodPanel headerBar="Share the Dojo" hover={false}>
-          {/* Preview header */}
-          <div className="pb-5 border-b border-gold-dim/10 mb-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full hanko-seal flex items-center justify-center">
-                <Link2 size={20} className="text-white" />
-              </div>
-              <div>
-                <h2 className="font-heading text-lg font-semibold tracking-wide text-parchment">
-                  Sub-To Explainer Page
-                </h2>
-                <p className="text-xs text-text-dim">
-                  A clean, professional landing page for agents & sellers
-                </p>
-              </div>
+      <GlassShell orbColors="default">
+        {/* URL Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+          className="mb-8"
+        >
+          <GlassPanel className="p-5">
+            <div className="mb-4">
+              <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Share the Dojo</span>
             </div>
 
-            <p className="text-sm text-text-dim leading-relaxed">
-              This link takes agents or sellers to a simple one-page website that
-              explains the Subject-To process in plain English. It covers how it
-              works, why it benefits the seller, and answers common questions — so
-              you don't have to explain it every time over the phone.
-            </p>
-          </div>
+            {/* Preview header */}
+            <div className="pb-5 mb-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)' }}
+                >
+                  <Link2 size={20} style={{ color: '#00C6FF' }} />
+                </div>
+                <div>
+                  <h2 className="font-heading text-lg font-semibold tracking-wide text-[#F4F7FA]">
+                    Sub-To Explainer Page
+                  </h2>
+                  <p className="text-xs text-text-dim">
+                    A clean, professional landing page for agents & sellers
+                  </p>
+                </div>
+              </div>
 
-          {/* URL on parchment strip */}
-          <label className="block font-heading text-gold-dim tracking-wide uppercase text-xs mb-3">
-            Shareable Link
-          </label>
-
-          <div className="flex items-center gap-3">
-            <div className="flex-1 flex items-center gap-3 font-mono text-sm parchment-texture border border-gold-dim/20 rounded-sm px-4 py-3">
-              <Globe size={16} className="text-gold-dim shrink-0 relative z-10" />
-              <span className="text-ink truncate relative z-10">
-                {PLACEHOLDER_URL}
-              </span>
+              <p className="text-sm text-text-dim leading-relaxed">
+                This link takes agents or sellers to a simple one-page website that
+                explains the Subject-To process in plain English. It covers how it
+                works, why it benefits the seller, and answers common questions — so
+                you don't have to explain it every time over the phone.
+              </p>
             </div>
 
-            <button
-              onClick={handleCopy}
-              className={`flex items-center gap-2 px-5 py-3 rounded-sm text-sm font-heading font-semibold tracking-wide uppercase transition-all duration-300 shrink-0 ${
-                copied
-                  ? 'bg-bamboo/20 text-bamboo border border-bamboo/30'
-                  : 'gold-shimmer text-ink hover:shadow-[0_0_24px_-4px_rgba(212,168,83,0.5)]'
-              }`}
-            >
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-              {copied ? 'Copied!' : 'Copy Link'}
-            </button>
-          </div>
-        </WoodPanel>
-      </motion.div>
+            {/* Shareable Link */}
+            <label className="block font-heading tracking-wide uppercase text-xs mb-3" style={{ color: '#00C6FF' }}>
+              Shareable Link
+            </label>
 
-      {/* Usage tips — 4 WoodPanel cards in grid */}
-      <div className="mb-8">
-        <h3 className="font-heading text-sm font-semibold tracking-wide text-parchment mb-4 flex items-center gap-2">
-          <Share2 size={16} className="text-gold" />
-          When to Share This Link
-        </h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {tips.map((tip, i) => {
-            const Icon = tip.icon
-            return (
-              <motion.div
-                key={tip.title}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + i * 0.05 }}
+            <div className="flex items-center gap-3">
+              <div
+                className="flex-1 flex items-center gap-3 font-mono text-sm bg-black/30 border rounded-sm px-4 py-3"
+                style={{ borderColor: 'rgba(255,255,255,0.07)' }}
               >
-                <WoodPanel hover={false} className="h-full">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full hanko-seal flex items-center justify-center shrink-0 mt-0.5">
-                      <Icon size={14} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="font-heading text-sm font-medium tracking-wide text-parchment mb-1">
-                        {tip.title}
-                      </p>
-                      <p className="text-xs text-text-dim leading-relaxed">
-                        {tip.desc}
-                      </p>
-                    </div>
-                  </div>
-                </WoodPanel>
-              </motion.div>
-            )
-          })}
-        </div>
-      </div>
+                <Globe size={16} className="shrink-0 relative z-10" style={{ color: '#00C6FF' }} />
+                <span className="text-[#F4F7FA] truncate relative z-10">
+                  {PLACEHOLDER_URL}
+                </span>
+              </div>
 
-      {/* Coming soon note — scroll-card with parchment texture */}
-      <div className="scroll-card parchment-texture rounded-sm border border-gold-dim/20">
-        <div className="flex items-center justify-center gap-2 px-5 py-3 relative z-10">
-          <ExternalLink size={14} className="text-gold-dim" />
-          <span className="text-sm text-ink font-heading tracking-wide">
-            Custom branded explainer page coming soon — link will be live shortly
-          </span>
+              <button
+                onClick={handleCopy}
+                className={`flex items-center gap-2 px-5 py-3 rounded-sm text-sm font-heading font-semibold tracking-wide uppercase transition-all duration-300 shrink-0 ${
+                  copied
+                    ? 'bg-bamboo/20 text-bamboo border border-bamboo/30'
+                    : ''
+                }`}
+                style={!copied ? {
+                  background: 'rgba(0,198,255,0.1)',
+                  border: '1px solid rgba(0,198,255,0.3)',
+                  color: '#00C6FF',
+                } : undefined}
+              >
+                {copied ? <Check size={16} /> : <Copy size={16} />}
+                {copied ? 'Copied!' : 'Copy Link'}
+              </button>
+            </div>
+          </GlassPanel>
+        </motion.div>
+
+        {/* Usage tips — 4 GlassPanel cards in grid */}
+        <div className="mb-8">
+          <h3 className="font-heading text-sm font-semibold tracking-wide text-[#F4F7FA] mb-4 flex items-center gap-2">
+            <Share2 size={16} style={{ color: '#00C6FF' }} />
+            When to Share This Link
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {tips.map((tip, i) => {
+              const Icon = tip.icon
+              return (
+                <motion.div
+                  key={tip.title}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + i * 0.05 }}
+                >
+                  <GlassPanel className="p-5 h-full">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                        style={{ background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)' }}
+                      >
+                        <Icon size={14} style={{ color: '#00C6FF' }} />
+                      </div>
+                      <div>
+                        <p className="font-heading text-sm font-medium tracking-wide text-[#F4F7FA] mb-1">
+                          {tip.title}
+                        </p>
+                        <p className="text-xs text-text-dim leading-relaxed">
+                          {tip.desc}
+                        </p>
+                      </div>
+                    </div>
+                  </GlassPanel>
+                </motion.div>
+              )
+            })}
+          </div>
         </div>
-      </div>
+
+        {/* Coming soon note — glass info bar */}
+        <div
+          className="rounded-2xl border"
+          style={{ background: 'rgba(11,15,20,0.45)', borderColor: 'rgba(255,255,255,0.07)' }}
+        >
+          <div className="flex items-center justify-center gap-2 px-5 py-3 relative z-10">
+            <ExternalLink size={14} style={{ color: '#00C6FF' }} />
+            <span className="text-sm text-[#C8D1DA] font-heading tracking-wide">
+              Custom branded explainer page coming soon — link will be live shortly
+            </span>
+          </div>
+        </div>
+      </GlassShell>
     </motion.div>
   )
 }

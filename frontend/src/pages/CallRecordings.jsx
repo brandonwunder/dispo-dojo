@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Lock, Video } from 'lucide-react'
-import WoodPanel from '../components/WoodPanel'
+import GlassShell from '../components/GlassShell'
+import GlassPanel from '../components/GlassPanel'
 
 const containerVariants = {
   hidden: {},
@@ -78,41 +79,43 @@ export default function CallRecordings() {
         </div>
       </motion.div>
 
-      {/* Category Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {CATEGORIES.map((cat, idx) => (
-          <motion.div key={idx} variants={itemVariants}>
-            <WoodPanel className="h-full opacity-70">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-full bg-white/5 border border-gold-dim/15 flex items-center justify-center shrink-0">
-                  <Lock size={15} className="text-text-dim" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h3 className="font-heading text-sm text-parchment tracking-wide">{cat.title}</h3>
-                    <span
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-heading tracking-wider uppercase"
-                      style={{
-                        background: 'rgba(0,198,255,0.08)',
-                        border: '1px solid rgba(0,198,255,0.2)',
-                        color: '#00C6FF',
-                      }}
-                    >
-                      Coming Soon
-                    </span>
+      <GlassShell orbColors="purple">
+        {/* Category Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {CATEGORIES.map((cat, idx) => (
+            <motion.div key={idx} variants={itemVariants}>
+              <GlassPanel className="p-5 h-full opacity-70">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)' }}>
+                    <Lock size={15} style={{ color: '#00C6FF' }} />
                   </div>
-                  <p className="text-text-dim text-xs leading-relaxed font-body">{cat.desc}</p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="font-heading text-sm text-parchment tracking-wide">{cat.title}</h3>
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-heading tracking-wider uppercase"
+                        style={{
+                          background: 'rgba(0,198,255,0.08)',
+                          border: '1px solid rgba(0,198,255,0.2)',
+                          color: '#00C6FF',
+                        }}
+                      >
+                        Coming Soon
+                      </span>
+                    </div>
+                    <p className="text-text-dim text-xs leading-relaxed font-body">{cat.desc}</p>
+                  </div>
                 </div>
-              </div>
-            </WoodPanel>
-          </motion.div>
-        ))}
-      </div>
+              </GlassPanel>
+            </motion.div>
+          ))}
+        </div>
 
-      {/* Footer note */}
-      <motion.p variants={itemVariants} className="text-text-muted text-xs text-center mt-8 font-body">
-        We'll be adding recordings as we collect strong examples. Check back regularly.
-      </motion.p>
+        {/* Footer note */}
+        <motion.p variants={itemVariants} className="text-text-muted text-xs text-center mt-8 font-body">
+          We'll be adding recordings as we collect strong examples. Check back regularly.
+        </motion.p>
+      </GlassShell>
     </motion.div>
   )
 }

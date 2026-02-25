@@ -5,7 +5,8 @@ import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimest
 import { useAuth } from '../context/AuthContext'
 import { db } from '../lib/firebase'
 import CountUp from 'react-countup'
-import WoodPanel from '../components/WoodPanel'
+import GlassShell from '../components/GlassShell'
+import GlassPanel from '../components/GlassPanel'
 
 const statConfig = [
   { icon: Users, label: 'Total Users', kanji: '\u7DCF' },
@@ -52,8 +53,8 @@ function DealForm({ initial, onClose }) {
   const labelCls = 'block text-xs font-heading text-text-dim tracking-wide mb-1 uppercase'
 
   return (
-    <WoodPanel className="mb-5 border border-cyan/20">
-      <h3 className="font-heading text-sm text-gold mb-4 tracking-wide uppercase">{initial ? 'Edit Deal' : 'New Deal'}</h3>
+    <GlassPanel className="p-5 mb-5">
+      <h3 className="font-heading text-sm mb-4 tracking-wide uppercase" style={{ color: '#F6C445' }}>{initial ? 'Edit Deal' : 'New Deal'}</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
         <div><label className={labelCls}>Address</label><input className={inputCls} value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="123 Main St" /></div>
         <div><label className={labelCls}>City</label><input className={inputCls} value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Austin" /></div>
@@ -92,7 +93,7 @@ function DealForm({ initial, onClose }) {
           Cancel
         </button>
       </div>
-    </WoodPanel>
+    </GlassPanel>
   )
 }
 
@@ -119,7 +120,7 @@ function BuyerListAdmin() {
 
   return (
     <div>
-      <h2 className="font-heading text-lg text-gold tracking-wide mb-5">Buyer List</h2>
+      <h2 className="font-heading text-lg tracking-wide mb-5" style={{ color: '#F6C445' }}>Buyer List</h2>
       {buyers.length === 0 ? (
         <p className="text-text-dim text-sm font-body text-center py-8">No buyers have submitted criteria yet.</p>
       ) : (
@@ -128,7 +129,7 @@ function BuyerListAdmin() {
             const bb = buyer.buyBox
             const isExpanded = expanded === buyer.uid
             return (
-              <WoodPanel key={buyer.uid}>
+              <GlassPanel className="p-5" key={buyer.uid}>
                 <button
                   className="w-full text-left"
                   onClick={() => setExpanded(isExpanded ? null : buyer.uid)}
@@ -144,7 +145,7 @@ function BuyerListAdmin() {
                   </div>
                 </button>
                 {isExpanded && (
-                  <div className="mt-3 pt-3 border-t border-gold-dim/10 grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                  <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.07)] grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
                     <div><span className="text-text-dim font-heading uppercase tracking-wider">Deal Types</span><p className="text-parchment mt-0.5">{bb.dealTypes?.join(', ') || '—'}</p></div>
                     <div><span className="text-text-dim font-heading uppercase tracking-wider">Property Types</span><p className="text-parchment mt-0.5">{bb.propertyTypes?.join(', ') || '—'}</p></div>
                     <div><span className="text-text-dim font-heading uppercase tracking-wider">Close Timeline</span><p className="text-parchment mt-0.5">{bb.closeTimeline || '—'}</p></div>
@@ -156,7 +157,7 @@ function BuyerListAdmin() {
                     {bb.notes && <div className="col-span-2"><span className="text-text-dim font-heading uppercase tracking-wider">Notes</span><p className="text-parchment mt-0.5">{bb.notes}</p></div>}
                   </div>
                 )}
-              </WoodPanel>
+              </GlassPanel>
             )
           })}
         </div>
@@ -192,7 +193,7 @@ function LiveDealsAdmin() {
   return (
     <div>
       <div className="flex items-center justify-between mb-5">
-        <h2 className="font-heading text-lg text-gold tracking-wide">Live Deals</h2>
+        <h2 className="font-heading text-lg tracking-wide" style={{ color: '#F6C445' }}>Live Deals</h2>
         <button
           onClick={() => { setEditingDeal(null); setShowForm(true) }}
           className="flex items-center gap-2 px-4 py-2 rounded-sm font-heading text-xs tracking-widest uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-colors duration-200"
@@ -211,7 +212,7 @@ function LiveDealsAdmin() {
 
       <div className="space-y-3">
         {deals.map((deal) => (
-          <WoodPanel key={deal.id}>
+          <GlassPanel className="p-5" key={deal.id}>
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -255,7 +256,7 @@ function LiveDealsAdmin() {
                 </button>
               </div>
             </div>
-          </WoodPanel>
+          </GlassPanel>
         ))}
         {deals.length === 0 && (
           <p className="text-text-dim text-sm font-body text-center py-8">No deals yet. Add one above.</p>
@@ -323,10 +324,10 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="hanko-seal w-10 h-10 rounded-full flex items-center justify-center">
-            <Shield size={20} className="text-white" />
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)' }}>
+            <Shield size={20} style={{ color: '#00C6FF' }} />
           </div>
-          <h1 className="font-display text-4xl text-gold">
+          <h1 className="font-display text-4xl" style={{ color: '#F4F7FA', textShadow: '0 2px 16px rgba(0,0,0,0.9)' }}>
             The Sensei's Quarters
           </h1>
         </div>
@@ -335,7 +336,7 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      <div className="katana-line my-4" />
+      <div className="my-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.15), transparent)' }} />
 
       {/* Tab bar */}
       <div className="flex gap-1 mb-6 border-b border-[rgba(0,198,255,0.12)]">
@@ -359,10 +360,11 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      <GlassShell orbColors="default" maxWidth="max-w-[1200px]">
       {/* Members tab */}
       {activeTab === 'members' && (
         <>
-          {/* Stats row — WoodPanel with scroll-card styling */}
+          {/* Stats row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             {statConfig.map((stat, i) => {
               const Icon = stat.icon
@@ -373,15 +375,15 @@ export default function AdminDashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
                 >
-                  <WoodPanel hover={false} className="scroll-card relative">
+                  <GlassPanel className="p-5 relative">
                     {/* Kanji watermark */}
-                    <div className="absolute top-2 right-3 font-display text-6xl text-gold/[0.06] pointer-events-none select-none z-0">
+                    <div className="absolute top-2 right-3 font-display text-6xl text-[rgba(0,198,255,0.04)] pointer-events-none select-none z-0">
                       {stat.kanji}
                     </div>
 
-                    {/* Hanko seal icon */}
-                    <div className="hanko-seal w-10 h-10 rounded-full flex items-center justify-center mb-3 relative z-10">
-                      <Icon size={18} className="text-white" />
+                    {/* Cyan glow icon */}
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3 relative z-10" style={{ background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)' }}>
+                      <Icon size={18} style={{ color: '#00C6FF' }} />
                     </div>
 
                     {/* Label */}
@@ -390,17 +392,18 @@ export default function AdminDashboard() {
                     </p>
 
                     {/* Value */}
-                    <p className="font-heading text-3xl text-gold-bright tracking-wide relative z-10">
+                    <p className="font-heading text-3xl tracking-wide relative z-10" style={{ color: '#F6C445' }}>
                       <CountUp end={typeof statValues[i] === 'number' ? statValues[i] : 0} duration={1.5} separator="," />
                     </p>
-                  </WoodPanel>
+                  </GlassPanel>
                 </motion.div>
               )
             })}
           </div>
 
           {/* User table */}
-          <WoodPanel hover={false} headerBar="Student Roster" className="!p-0">
+          <GlassPanel className="overflow-hidden">
+            <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}><span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Student Roster</span></div>
             {users.length === 0 ? (
               <div className="px-6 py-16 text-center">
                 <Users size={40} className="text-text-muted mx-auto mb-3" />
@@ -412,20 +415,20 @@ export default function AdminDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="lacquer-bar">
-                      <th className="text-left px-6 py-3 text-gold font-heading tracking-widest uppercase text-xs">
+                    <tr style={{ background: 'rgba(0,198,255,0.06)' }}>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>
                         Name
                       </th>
-                      <th className="text-left px-6 py-3 text-gold font-heading tracking-widest uppercase text-xs">
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>
                         Username
                       </th>
-                      <th className="text-left px-6 py-3 text-gold font-heading tracking-widest uppercase text-xs">
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>
                         Email
                       </th>
-                      <th className="text-left px-6 py-3 text-gold font-heading tracking-widest uppercase text-xs">
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>
                         Phone
                       </th>
-                      <th className="text-left px-6 py-3 text-gold font-heading tracking-widest uppercase text-xs">
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>
                         Signed Up
                       </th>
                     </tr>
@@ -437,7 +440,7 @@ export default function AdminDashboard() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.04 }}
-                        className="border-b border-gold-dim/[0.08] hover:bg-gold/5 transition-colors duration-200"
+                        className="border-b border-[rgba(255,255,255,0.05)] hover:bg-white/[0.03] transition-colors duration-200"
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -480,20 +483,20 @@ export default function AdminDashboard() {
                 </table>
               </div>
             )}
-          </WoodPanel>
+          </GlassPanel>
 
           {/* ── Upgrade Roadmap ── */}
           <div className="mt-10 mb-8">
             <div className="flex items-center gap-3 mb-4">
-              <div className="hanko-seal w-9 h-9 rounded-full flex items-center justify-center">
-                <TrendingUp size={16} className="text-white" />
+              <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)' }}>
+                <TrendingUp size={16} style={{ color: '#00C6FF' }} />
               </div>
               <div>
-                <h2 className="font-heading text-lg text-gold tracking-wide">Upgrade Roadmap</h2>
+                <h2 className="font-heading text-lg tracking-wide" style={{ color: '#F6C445' }}>Upgrade Roadmap</h2>
                 <p className="text-text-dim text-xs">Paid improvements to unlock as the platform grows</p>
               </div>
             </div>
-            <div className="katana-line mb-5" />
+            <div className="mb-5 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.15), transparent)' }} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 {
@@ -508,7 +511,7 @@ export default function AdminDashboard() {
                   priority: 'HIGH',
                   title: 'HUD API Token — Free, Requires Sign-Up',
                   description:
-                    'Register at huduser.gov for a free API token to unlock exact HUD Fair Market Rent by ZIP/county. Currently using a 90%-of-market fallback estimate on the Rent Comps page.',
+                    'Register at huduser.gov for a free API token to unlock exact HUD Fair Market Rent by ZIP/county. Currently using a 90%-of-market fallback estimate.',
                   cost: 'Free (one-time registration)',
                   impact: 'Section 8 FMR data becomes exact per ZIP and bedroom count.',
                 },
@@ -516,7 +519,7 @@ export default function AdminDashboard() {
                   priority: 'MEDIUM',
                   title: 'Saved Reports — Firestore Storage',
                   description:
-                    'Allow users to save rent comp and underwriting reports to their profile, access history, and share with partners.',
+                    'Allow users to save underwriting reports to their profile, access history, and share with partners.',
                   cost: '~$0.06/GB Firestore',
                   impact: 'Repeat use increases, users retain and share reports.',
                 },
@@ -529,7 +532,7 @@ export default function AdminDashboard() {
                   impact: 'Visual neighborhood comparison boosts user confidence.',
                 },
               ].map((item) => (
-                <WoodPanel key={item.title} hover={false} className="relative">
+                <GlassPanel className="p-5 relative" key={item.title}>
                   <div className="flex items-start gap-2 mb-2">
                     <div
                       className="shrink-0 px-2 py-0.5 rounded-sm text-[10px] font-heading font-bold tracking-widest"
@@ -561,7 +564,7 @@ export default function AdminDashboard() {
                   <p className="text-text-dim text-xs font-body mt-1">
                     <span className="text-gold-dim font-heading">Impact: </span>{item.impact}
                   </p>
-                </WoodPanel>
+                </GlassPanel>
               ))}
             </div>
           </div>
@@ -575,6 +578,7 @@ export default function AdminDashboard() {
 
       {/* Buyer List tab */}
       {activeTab === 'buyer-list' && <BuyerListAdmin />}
+      </GlassShell>
     </motion.div>
     </>
   )

@@ -5,6 +5,8 @@ import {
   Building2, Hotel, Home, Landmark, Lock, FileText, CheckCircle2, Upload, X,
 } from 'lucide-react'
 import jsPDF from 'jspdf'
+import GlassShell from '../components/GlassShell'
+import GlassPanel from '../components/GlassPanel'
 
 // ─── Animation Variants ──────────────────────────────────────────────────────
 
@@ -159,25 +161,6 @@ function generateJVPdf(name, date) {
   doc.save(`JV-Agreement-${name.replace(/\s+/g, '-')}.pdf`)
 }
 
-// ─── Glass Card Helper ───────────────────────────────────────────────────────
-
-function GlassCard({ children, accent, className = '' }) {
-  return (
-    <div
-      className={`rounded-sm border border-gold-dim/20 overflow-hidden ${className}`}
-      style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-    >
-      {accent && (
-        <div
-          className="h-[2px]"
-          style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
-        />
-      )}
-      <div className="p-5">{children}</div>
-    </div>
-  )
-}
-
 // ─── JV Modal Component ──────────────────────────────────────────────────────
 
 function JVModal({ show, onClose }) {
@@ -253,22 +236,16 @@ function JVModal({ show, onClose }) {
 
         {/* Modal Card — glass */}
         <motion.div
-          className="relative z-10 w-full max-w-lg rounded-sm border border-gold-dim/30 overflow-hidden"
-          style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
+          className="relative z-10 w-full max-w-lg rounded-2xl border overflow-hidden"
+          style={{ background: 'rgba(11,15,20,0.85)', backdropFilter: 'blur(8px)', borderColor: 'rgba(255,255,255,0.1)' }}
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          {/* Accent line */}
-          <div
-            className="h-[2px]"
-            style={{ background: 'linear-gradient(90deg, transparent, #F6C445, transparent)' }}
-          />
-
           {/* Header bar */}
-          <div className="px-5 py-3 flex items-center justify-between border-b border-gold-dim/15">
-            <span className="font-heading text-gold text-sm tracking-widest uppercase">JV Agreement</span>
+          <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>JV Agreement</span>
             <button
               onClick={handleClose}
               className="text-text-dim hover:text-parchment transition-colors duration-200"
@@ -506,16 +483,6 @@ function JVModal({ show, onClose }) {
   )
 }
 
-// ─── Icon Circle Helper ──────────────────────────────────────────────────────
-
-function HankoIcon({ icon: Icon, size = 20, className = '' }) {
-  return (
-    <div className={`w-10 h-10 rounded-full hanko-seal flex items-center justify-center shrink-0 ${className}`}>
-      <Icon size={size} className="text-parchment" />
-    </div>
-  )
-}
-
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function FindBuyers() {
@@ -554,13 +521,16 @@ export default function FindBuyers() {
           </p>
         </motion.div>
 
+        <GlassShell orbColors="default" maxWidth="max-w-[1000px]">
         {/* ═══ 2. Advantage Banner ═══ */}
         <motion.div className="mb-8" variants={cardVariants}>
-          <GlassCard accent="#F6C445">
+          <GlassPanel className="p-5">
             <div className="flex items-start gap-4">
-              <HankoIcon icon={Crown} size={22} className="mt-0.5" />
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)' }}>
+                <Crown size={22} style={{ color: '#00C6FF' }} />
+              </div>
               <div>
-                <h2 className="font-heading text-lg text-gold tracking-wide mb-2">
+                <h2 className="font-heading text-lg tracking-wide mb-2" style={{ color: '#F6C445' }}>
                   Dispo Is What We're Known For
                 </h2>
                 <p className="text-text-dim text-sm leading-relaxed font-body">
@@ -568,21 +538,21 @@ export default function FindBuyers() {
                 </p>
               </div>
             </div>
-          </GlassCard>
+          </GlassPanel>
         </motion.div>
 
         {/* ═══ Divider ═══ */}
-        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }} />
+        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.15), transparent)' }} />
 
         {/* ═══ 3. Platform Engine Cards ═══ */}
         <motion.div className="mb-8" variants={containerVariants}>
-          <h2 className="font-heading text-lg text-gold tracking-wide mb-5 text-center uppercase">
+          <h2 className="font-heading text-lg tracking-wide mb-5 text-center uppercase" style={{ color: '#F6C445' }}>
             Our Disposition Engine
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {PLATFORMS.map((platform) => (
               <motion.div key={platform.name} variants={cardVariants}>
-                <GlassCard accent={platform.accent} className="h-full">
+                <GlassPanel className="p-5 h-full">
                   <div className="flex items-start gap-3">
                     <div
                       className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border"
@@ -599,19 +569,19 @@ export default function FindBuyers() {
                       <p className="text-text-dim text-xs leading-relaxed font-body">{platform.desc}</p>
                     </div>
                   </div>
-                </GlassCard>
+                </GlassPanel>
               </motion.div>
             ))}
           </div>
         </motion.div>
 
         {/* ═══ Divider ═══ */}
-        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }} />
+        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.15), transparent)' }} />
 
         {/* ═══ 4. Buyer Types Grid ═══ */}
         <motion.div className="mb-8" variants={containerVariants}>
           {/* Conventional */}
-          <h2 className="font-heading text-lg text-gold tracking-wide mb-1 text-center uppercase">
+          <h2 className="font-heading text-lg tracking-wide mb-1 text-center uppercase" style={{ color: '#F6C445' }}>
             Buyer Types We Work With
           </h2>
           <p className="text-text-dim text-xs text-center mb-5 font-body">Conventional & Non-Conventional</p>
@@ -620,7 +590,7 @@ export default function FindBuyers() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
             {CONVENTIONAL_BUYERS.map((buyer) => (
               <motion.div key={buyer.name} variants={cardVariants}>
-                <GlassCard accent="#00C6FF" className="h-full">
+                <GlassPanel className="p-5 h-full">
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-cyan/10 border border-cyan/20">
                       <buyer.icon size={16} className="text-cyan" />
@@ -630,13 +600,13 @@ export default function FindBuyers() {
                       <p className="text-text-dim text-xs leading-relaxed mt-0.5 font-body">{buyer.desc}</p>
                     </div>
                   </div>
-                </GlassCard>
+                </GlassPanel>
               </motion.div>
             ))}
           </div>
 
           {/* Non-Conventional */}
-          <h3 className="font-heading text-sm text-gold tracking-wider uppercase mb-3 flex items-center gap-2">
+          <h3 className="font-heading text-sm tracking-wider uppercase mb-3 flex items-center gap-2" style={{ color: '#F6C445' }}>
             Non-Conventional
             <span
               className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-heading tracking-wider uppercase"
@@ -652,7 +622,7 @@ export default function FindBuyers() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {NON_CONVENTIONAL_BUYERS.map((buyer) => (
               <motion.div key={buyer.name} variants={cardVariants}>
-                <GlassCard accent="#F6C445" className="h-full">
+                <GlassPanel className="p-5 h-full">
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-gold/10 border border-gold-dim/25">
                       <buyer.icon size={16} className="text-gold" />
@@ -662,31 +632,22 @@ export default function FindBuyers() {
                       <p className="text-text-dim text-xs leading-relaxed mt-0.5 font-body">{buyer.desc}</p>
                     </div>
                   </div>
-                </GlassCard>
+                </GlassPanel>
               </motion.div>
             ))}
           </div>
         </motion.div>
 
         {/* ═══ Divider ═══ */}
-        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }} />
+        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.15), transparent)' }} />
 
         {/* ═══ 5. Blurred Buyer Data Table ═══ */}
         <motion.div className="mb-8" variants={cardVariants}>
-          <h2 className="font-heading text-lg text-gold tracking-wide mb-5 text-center uppercase">
+          <h2 className="font-heading text-lg tracking-wide mb-5 text-center uppercase" style={{ color: '#F6C445' }}>
             Active Buyer Database
           </h2>
 
-          <div
-            className="relative rounded-sm overflow-hidden border border-gold-dim/20"
-            style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-          >
-            {/* Accent line */}
-            <div
-              className="h-[2px]"
-              style={{ background: 'linear-gradient(90deg, transparent, #00C6FF, transparent)' }}
-            />
-
+          <GlassPanel className="overflow-hidden relative">
             {/* Blurred table */}
             <div className="blur-[6px] pointer-events-none select-none">
               <table className="w-full text-xs">
@@ -721,7 +682,7 @@ export default function FindBuyers() {
               <div className="w-14 h-14 rounded-full bg-black/60 border border-gold-dim/30 flex items-center justify-center mb-4">
                 <Lock size={24} className="text-gold" />
               </div>
-              <h3 className="font-heading text-base text-gold tracking-wide mb-2 text-center px-4">
+              <h3 className="font-heading text-base tracking-wide mb-2 text-center px-4" style={{ color: '#F6C445' }}>
                 Buyer List Access Requires a Signed JV Agreement
               </h3>
               <p className="text-text-dim text-xs mb-5 text-center px-4 font-body">
@@ -734,17 +695,17 @@ export default function FindBuyers() {
                 Submit a Deal
               </button>
             </div>
-          </div>
+          </GlassPanel>
         </motion.div>
 
         {/* ═══ Divider ═══ */}
-        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }} />
+        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.15), transparent)' }} />
 
         {/* ═══ 6. Bottom CTA ═══ */}
         <motion.div variants={cardVariants}>
-          <GlassCard accent="#E53935">
+          <GlassPanel className="p-5">
             <div className="text-center py-4">
-              <h2 className="font-heading text-2xl text-gold tracking-wide mb-3">
+              <h2 className="font-heading text-2xl tracking-wide mb-3" style={{ color: '#F6C445' }}>
                 Ready to Move a Deal?
               </h2>
               <p className="text-text-dim text-sm leading-relaxed max-w-md mx-auto mb-6 font-body">
@@ -765,8 +726,9 @@ export default function FindBuyers() {
                 </a>
               </div>
             </div>
-          </GlassCard>
+          </GlassPanel>
         </motion.div>
+        </GlassShell>
       </motion.div>
 
       {/* JV Modal */}

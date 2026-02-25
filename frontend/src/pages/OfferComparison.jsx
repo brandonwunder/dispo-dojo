@@ -5,7 +5,8 @@ import { jsPDF } from 'jspdf'
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
-import WoodPanel from '../components/WoodPanel'
+import GlassShell from '../components/GlassShell'
+import GlassPanel from '../components/GlassPanel'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:9000'
 
@@ -292,7 +293,7 @@ export default function OfferComparison() {
           <div className="flex justify-center mb-6">
             <button
               onClick={() => setShowHistory((s) => !s)}
-              className="flex items-center gap-2 px-4 py-2 rounded-sm font-heading text-xs tracking-widest uppercase text-text-dim border border-gold-dim/20 hover:text-parchment hover:border-gold-dim/40 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-sm font-heading text-xs tracking-widest uppercase text-text-dim border border-[rgba(255,255,255,0.07)] hover:text-parchment hover:border-[rgba(255,255,255,0.14)] transition-colors"
             >
               <History size={14} /> History {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
@@ -300,6 +301,7 @@ export default function OfferComparison() {
         )}
       </motion.div>
 
+      <GlassShell orbColors="default" maxWidth="max-w-[1000px]">
       {/* Disclaimer Banner */}
       <motion.div variants={itemVariants} className="mb-6">
         <div
@@ -325,8 +327,11 @@ export default function OfferComparison() {
             exit={{ opacity: 0, height: 0 }}
             className="mb-6 overflow-hidden"
           >
-            <WoodPanel headerBar="Past Comparisons">
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+            <GlassPanel className="overflow-hidden">
+              <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Past Comparisons</span>
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto p-5">
                 {history.map((item) => (
                   <button
                     key={item.id}
@@ -343,14 +348,18 @@ export default function OfferComparison() {
                   </button>
                 ))}
               </div>
-            </WoodPanel>
+            </GlassPanel>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Input Form */}
       <motion.div variants={itemVariants} className="mb-6">
-        <WoodPanel headerBar="Deal Details">
+        <GlassPanel className="overflow-hidden">
+          <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Deal Details</span>
+          </div>
+          <div className="p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Address with autocomplete */}
             <div className="sm:col-span-2 relative">
@@ -363,12 +372,12 @@ export default function OfferComparison() {
                 placeholder="123 Main St, Austin TX 78701"
               />
               {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-sm border border-gold-dim/20 bg-[#111B24] shadow-xl overflow-hidden">
+                <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-sm border shadow-xl overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(11,15,20,0.9)' }}>
                   {suggestions.map((s) => (
                     <button
                       key={s}
                       onMouseDown={() => { setAddress(s); setAddressQuery(s); setShowSuggestions(false) }}
-                      className="w-full text-left px-3 py-2.5 text-sm text-parchment hover:bg-white/5 transition-colors font-body border-b border-gold-dim/10 last:border-0"
+                      className="w-full text-left px-3 py-2.5 text-sm text-parchment hover:bg-white/5 transition-colors font-body border-b border-[rgba(255,255,255,0.05)] last:border-0"
                     >
                       {s}
                     </button>
@@ -433,7 +442,8 @@ export default function OfferComparison() {
               )}
             </button>
           </div>
-        </WoodPanel>
+          </div>
+        </GlassPanel>
       </motion.div>
 
       {/* Comp Warning */}
@@ -459,17 +469,21 @@ export default function OfferComparison() {
             className="space-y-6"
           >
             {/* Side-by-side comparison */}
-            <WoodPanel headerBar="Side-by-Side Comparison" glow>
+            <GlassPanel className="overflow-hidden" style={{ boxShadow: '0 0 30px rgba(0,198,255,0.08)' }}>
+              <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Side-by-Side Comparison</span>
+              </div>
+              <div className="p-5">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gold-dim/15">
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <th className="text-left py-2 pr-4 font-heading text-xs text-text-dim tracking-widest uppercase w-1/3"></th>
-                      <th className="text-center py-2 px-3 font-heading text-xs text-cyan tracking-widest uppercase">Our Offer</th>
+                      <th className="text-center py-2 px-3 font-heading text-xs tracking-widest uppercase" style={{ color: '#00C6FF' }}>Our Offer</th>
                       <th className="text-center py-2 px-3 font-heading text-xs text-text-dim tracking-widest uppercase">Traditional Sale</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gold-dim/8">
+                  <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
                     {[
                       { label: 'Gross', our: fmt(purchasePrice), trad: fmt(results.listEst) + ' (est. list)' },
                       { label: 'Agent Commissions', our: '$0', trad: `−6%  (${fmt(results.agentComm)})` },
@@ -484,7 +498,7 @@ export default function OfferComparison() {
                         <td className="py-2.5 px-3 text-center text-text-dim font-body text-xs">{row.trad}</td>
                       </tr>
                     ))}
-                    <tr className="border-t border-gold-dim/25">
+                    <tr className="border-t border-[rgba(255,255,255,0.07)]">
                       <td className="py-3 pr-4 font-heading text-sm text-parchment tracking-wide">Estimated Net</td>
                       <td className="py-3 px-3 text-center font-heading text-gold text-base">{fmt(purchasePrice)}</td>
                       <td className="py-3 px-3 text-center font-heading text-text-dim text-sm">{fmt(results.tradNetLow)} – {fmt(results.tradNetHigh)}</td>
@@ -504,24 +518,29 @@ export default function OfferComparison() {
                   </tbody>
                 </table>
               </div>
-            </WoodPanel>
+              </div>
+            </GlassPanel>
 
             {/* Comps table */}
             {comps?.comps?.length > 0 && (
-              <WoodPanel headerBar="Market Comps">
+              <GlassPanel className="overflow-hidden">
+                <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Market Comps</span>
+                </div>
+                <div className="p-5">
                 <p className="text-text-dim text-xs font-body mb-3">
                   Sold comps near <span className="text-parchment">{address}</span> — avg <span className="text-gold font-heading">{pct(results.avgPctUnderList)}</span> under list, <span className="text-gold font-heading">{results.avgDom} days</span> on market
                 </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-gold-dim/15">
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                         {['Address', 'List Price', 'Sold Price', '% Under List', 'DOM'].map((h) => (
                           <th key={h} className="text-left py-2 pr-4 font-heading text-text-dim tracking-widest uppercase text-[10px]">{h}</th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gold-dim/8">
+                    <tbody className="divide-y divide-[rgba(255,255,255,0.05)]">
                       {comps.comps.map((c, i) => (
                         <tr key={i}>
                           <td className="py-2 pr-4 text-parchment font-body">{c.address || '—'}</td>
@@ -534,7 +553,8 @@ export default function OfferComparison() {
                     </tbody>
                   </table>
                 </div>
-              </WoodPanel>
+                </div>
+              </GlassPanel>
             )}
 
             {/* Download button */}
@@ -549,6 +569,7 @@ export default function OfferComparison() {
           </motion.div>
         )}
       </AnimatePresence>
+      </GlassShell>
     </motion.div>
   )
 }

@@ -9,6 +9,8 @@ import {
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { incrementStat } from '../lib/userProfile'
+import GlassShell from '../components/GlassShell'
+import GlassPanel from '../components/GlassPanel'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -69,29 +71,11 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } },
 }
 
-// ─── Glass Card wrapper ─────────────────────────────────────────────────────
-
-function GlassCard({ children, className = '', accentColor = '#00C6FF', ...props }) {
-  return (
-    <div
-      className={`rounded-sm border border-gold-dim/20 overflow-hidden ${className}`}
-      style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-      {...props}
-    >
-      <div
-        className="h-[2px]"
-        style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)` }}
-      />
-      <div className="p-5">{children}</div>
-    </div>
-  )
-}
-
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function SectionDivider() {
   return (
-    <div className="my-4 h-px bg-gradient-to-r from-transparent via-cyan/20 to-transparent" />
+    <div className="my-4 h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.07)] to-transparent" />
   )
 }
 
@@ -105,8 +89,8 @@ function LeftColumn() {
     >
       {/* Card 1 — What is a Bird Dog */}
       <motion.div variants={itemVariants}>
-        <GlassCard accentColor="#00C6FF">
-          <h2 className="font-heading font-semibold text-base tracking-wider text-gold mb-3">
+        <GlassPanel className="p-5">
+          <h2 className="font-heading font-semibold text-base tracking-wider mb-3" style={{ color: '#F6C445' }}>
             What is a Bird Dog?
           </h2>
           <p className="text-sm text-text-dim leading-relaxed font-body">
@@ -132,13 +116,13 @@ function LeftColumn() {
               </li>
             ))}
           </ul>
-        </GlassCard>
+        </GlassPanel>
       </motion.div>
 
       {/* Card 2 — How Payouts Work */}
       <motion.div variants={itemVariants}>
-        <GlassCard accentColor="#F6C445">
-          <h2 className="font-heading font-semibold text-base tracking-wider text-gold mb-4">
+        <GlassPanel className="p-5">
+          <h2 className="font-heading font-semibold text-base tracking-wider mb-4" style={{ color: '#F6C445' }}>
             How Payouts Work
           </h2>
           <ol className="flex flex-col gap-3">
@@ -151,7 +135,7 @@ function LeftColumn() {
               </li>
             ))}
           </ol>
-        </GlassCard>
+        </GlassPanel>
       </motion.div>
     </motion.div>
   )
@@ -218,8 +202,8 @@ function SubmissionForm({ firebaseUid, profile, user }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <GlassCard accentColor="#E53935">
-        <h2 className="font-heading font-semibold text-base tracking-wider text-gold mb-4">
+      <GlassPanel className="p-5">
+        <h2 className="font-heading font-semibold text-base tracking-wider mb-4" style={{ color: '#F6C445' }}>
           Submit a Lead
         </h2>
 
@@ -383,7 +367,7 @@ function SubmissionForm({ firebaseUid, profile, user }) {
             {loading ? 'Submitting...' : 'Submit Lead'}
           </button>
         </form>
-      </GlassCard>
+      </GlassPanel>
     </motion.div>
   )
 }
@@ -441,8 +425,8 @@ function MySubmissions({ firebaseUid }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <GlassCard accentColor="#A855F7">
-        <h2 className="font-heading font-semibold text-base tracking-wider text-gold">
+      <GlassPanel className="p-5">
+        <h2 className="font-heading font-semibold text-base tracking-wider" style={{ color: '#F6C445' }}>
           My Submissions
         </h2>
 
@@ -473,7 +457,7 @@ function MySubmissions({ firebaseUid }) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04, duration: 0.3 }}
-                  className="p-3 rounded-sm bg-black/30 border border-gold-dim/10 hover:border-gold-dim/25 transition-colors"
+                  className="p-3 rounded-sm bg-black/30 border border-[rgba(255,255,255,0.07)] hover:border-[rgba(255,255,255,0.14)] transition-colors"
                 >
                   <div className="flex items-start justify-between gap-2 mb-1.5">
                     <p
@@ -493,7 +477,7 @@ function MySubmissions({ firebaseUid }) {
             </div>
           </AnimatePresence>
         )}
-      </GlassCard>
+      </GlassPanel>
     </motion.div>
   )
 }
@@ -535,40 +519,42 @@ export default function BirdDog() {
       </motion.div>
 
       {/* ── 3-column grid ──────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
-        {/* Left */}
-        <div className="lg:col-span-1">
-          <LeftColumn />
-        </div>
+      <GlassShell orbColors="default" maxWidth="max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+          {/* Left */}
+          <div className="lg:col-span-1">
+            <LeftColumn />
+          </div>
 
-        {/* Center — form */}
-        <div className="lg:col-span-1">
-          {firebaseReady ? (
-            <SubmissionForm
-              firebaseUid={firebaseUid}
-              profile={profile}
-              user={user}
-            />
-          ) : (
-            <GlassCard accentColor="#00C6FF">
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div
-                    className="w-6 h-6 rounded-full border-2 animate-spin mx-auto mb-3"
-                    style={{ borderColor: 'rgba(0,198,255,0.3)', borderTopColor: '#00C6FF' }}
-                  />
-                  <p className="text-xs text-text-dim/40 font-body">Connecting...</p>
+          {/* Center — form */}
+          <div className="lg:col-span-1">
+            {firebaseReady ? (
+              <SubmissionForm
+                firebaseUid={firebaseUid}
+                profile={profile}
+                user={user}
+              />
+            ) : (
+              <GlassPanel className="p-5">
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div
+                      className="w-6 h-6 rounded-full border-2 animate-spin mx-auto mb-3"
+                      style={{ borderColor: 'rgba(0,198,255,0.3)', borderTopColor: '#00C6FF' }}
+                    />
+                    <p className="text-xs text-text-dim/40 font-body">Connecting...</p>
+                  </div>
                 </div>
-              </div>
-            </GlassCard>
-          )}
-        </div>
+              </GlassPanel>
+            )}
+          </div>
 
-        {/* Right — submissions */}
-        <div className="lg:col-span-1">
-          <MySubmissions firebaseUid={firebaseUid} />
+          {/* Right — submissions */}
+          <div className="lg:col-span-1">
+            <MySubmissions firebaseUid={firebaseUid} />
+          </div>
         </div>
-      </div>
+      </GlassShell>
     </div>
   )
 }

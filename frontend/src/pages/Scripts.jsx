@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Phone, MessageSquare, ShieldAlert, ChevronDown, Copy, Check } from 'lucide-react'
+import GlassShell from '../components/GlassShell'
 
 const tabs = [
   { id: 'calling', label: 'Calling Scripts', icon: Phone },
@@ -183,8 +184,14 @@ function ScriptCard({ title, scenario, script, index }) {
   return (
     <motion.div variants={itemVariants}>
       <div
-        className="rounded-sm border border-gold-dim/20 overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
+        className="rounded-sm border overflow-hidden"
+        style={{
+          background: 'rgba(11,15,20,0.45)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          borderColor: 'rgba(255,255,255,0.07)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
+        }}
       >
         {/* Cyan accent line at top */}
         <div className="h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #00C6FF, transparent)' }} />
@@ -216,12 +223,12 @@ function ScriptCard({ title, scenario, script, index }) {
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              <div className="px-5 pb-5 border-t border-gold-dim/[0.08]">
+              <div className="px-5 pb-5 border-t border-[rgba(255,255,255,0.07)]">
                 <div className="flex justify-end mt-3 mb-2">
                   <CopyButton text={script} />
                 </div>
                 <div
-                  className="rounded-sm border border-gold-dim/10 p-4"
+                  className="rounded-sm border border-[rgba(255,255,255,0.07)] p-4"
                   style={{ background: 'rgba(11, 15, 20, 0.6)' }}
                 >
                   <pre className="text-sm text-parchment whitespace-pre-wrap font-body leading-relaxed">
@@ -243,8 +250,14 @@ function ObjectionCard({ objection, response, index }) {
   return (
     <motion.div variants={itemVariants}>
       <div
-        className="rounded-sm border border-gold-dim/20 overflow-hidden"
-        style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
+        className="rounded-sm border overflow-hidden"
+        style={{
+          background: 'rgba(11,15,20,0.45)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          borderColor: 'rgba(255,255,255,0.07)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
+        }}
       >
         {/* Crimson accent line at top */}
         <div className="h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #E53935, transparent)' }} />
@@ -278,7 +291,7 @@ function ObjectionCard({ objection, response, index }) {
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              <div className="pt-4 pb-5 px-5 border-t border-gold-dim/[0.08]">
+              <div className="pt-4 pb-5 px-5 border-t border-[rgba(255,255,255,0.07)]">
                 <div className="flex justify-end mb-2">
                   <CopyButton text={response} />
                 </div>
@@ -332,78 +345,80 @@ export default function Scripts() {
         </div>
       </div>
 
-      {/* Tabs — cyan underline pattern (matching AdminDashboard) */}
-      <div className="relative z-10 flex gap-1 mb-6 border-b border-[rgba(0,198,255,0.12)]">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 font-heading text-xs tracking-widest uppercase transition-colors duration-150 relative ${
-              activeTab === tab.id ? 'text-[#00C6FF]' : 'text-text-dim hover:text-parchment'
-            }`}
-          >
-            <tab.icon size={15} />
-            {tab.label}
-            {activeTab === tab.id && (
+      <GlassShell orbColors="default" maxWidth="max-w-[900px]">
+        {/* Tabs — cyan underline pattern (matching AdminDashboard) */}
+        <div className="flex gap-1 mb-6 border-b border-[rgba(0,198,255,0.12)]">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 font-heading text-xs tracking-widest uppercase transition-colors duration-150 relative ${
+                activeTab === tab.id ? 'text-[#00C6FF]' : 'text-text-dim hover:text-parchment'
+              }`}
+            >
+              <tab.icon size={15} />
+              {tab.label}
+              {activeTab === tab.id && (
+                <motion.div
+                  layoutId="scripts-tab-underline"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00C6FF]"
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div>
+          <AnimatePresence mode="wait">
+            {activeTab === 'calling' && (
               <motion.div
-                layoutId="scripts-tab-underline"
-                className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00C6FF]"
-                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              />
+                key="calling"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-3"
+              >
+                {callingScripts.map((s, i) => (
+                  <ScriptCard key={s.title} {...s} index={i} />
+                ))}
+              </motion.div>
             )}
-          </button>
-        ))}
-      </div>
 
-      {/* Content */}
-      <div className="relative z-10">
-        <AnimatePresence mode="wait">
-          {activeTab === 'calling' && (
-            <motion.div
-              key="calling"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-3"
-            >
-              {callingScripts.map((s, i) => (
-                <ScriptCard key={s.title} {...s} index={i} />
-              ))}
-            </motion.div>
-          )}
+            {activeTab === 'texting' && (
+              <motion.div
+                key="texting"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-3"
+              >
+                {textingScripts.map((s, i) => (
+                  <ScriptCard key={s.title} {...s} index={i} />
+                ))}
+              </motion.div>
+            )}
 
-          {activeTab === 'texting' && (
-            <motion.div
-              key="texting"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-3"
-            >
-              {textingScripts.map((s, i) => (
-                <ScriptCard key={s.title} {...s} index={i} />
-              ))}
-            </motion.div>
-          )}
-
-          {activeTab === 'objections' && (
-            <motion.div
-              key="objections"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-3"
-            >
-              {objectionHandling.map((o, i) => (
-                <ObjectionCard key={o.objection} {...o} index={i} />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            {activeTab === 'objections' && (
+              <motion.div
+                key="objections"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-3"
+              >
+                {objectionHandling.map((o, i) => (
+                  <ObjectionCard key={o.objection} {...o} index={i} />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </GlassShell>
     </motion.div>
   )
 }

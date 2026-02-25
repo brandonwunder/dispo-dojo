@@ -10,6 +10,8 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { db } from '../lib/firebase'
 import { incrementStat } from '../lib/userProfile'
+import GlassShell from '../components/GlassShell'
+import GlassPanel from '../components/GlassPanel'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -58,23 +60,6 @@ const itemVariants = {
 const cardItem = {
   hidden: { opacity: 0, scale: 0.94 },
   visible: { opacity: 1, scale: 1, transition: { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] } },
-}
-
-// ─── Glass Card wrapper ─────────────────────────────────────────────────────
-
-function GlassCard({ children, className = '', accentColor = '#00C6FF', noPad = false }) {
-  return (
-    <div
-      className={`rounded-sm border border-gold-dim/20 overflow-hidden ${className}`}
-      style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-    >
-      <div
-        className="h-[2px]"
-        style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)` }}
-      />
-      {noPad ? children : <div className="p-5">{children}</div>}
-    </div>
-  )
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -145,216 +130,208 @@ function OnboardingWizard({ onComplete }) {
   }
 
   const inputCls =
-    'w-full rounded-sm px-4 py-3 text-parchment text-sm font-body placeholder:text-text-muted bg-black/30 border border-gold-dim/20 focus:outline-none focus:border-cyan/40 transition-colors'
+    'w-full rounded-sm px-4 py-3 text-parchment text-sm font-body placeholder:text-text-muted bg-black/30 border border-[rgba(255,255,255,0.07)] focus:outline-none focus:border-cyan/40 transition-colors'
 
   return (
     <div className="min-h-screen bg-[#0B0F14] flex items-center justify-center px-4 py-16">
-      {/* Background glow */}
-      <div
-        className="pointer-events-none fixed inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 60% 40% at 50% 30%, rgba(0,198,255,0.06) 0%, transparent 70%), ' +
-            'radial-gradient(ellipse 40% 30% at 80% 80%, rgba(246,196,69,0.04) 0%, transparent 60%)',
-        }}
-      />
-
       <motion.div
         className="relative w-full max-w-lg"
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
-        {/* Step indicator */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          {[1, 2, 3].map((n) => (
-            <div key={n} className="flex items-center gap-3">
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-heading font-bold transition-colors duration-300"
+        <GlassShell orbColors="purple" maxWidth="max-w-lg">
+          {/* Step indicator */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="flex items-center gap-3">
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-heading font-bold transition-colors duration-300"
+                  style={{
+                    background: n < step ? '#10b981' : n === step ? '#00C6FF' : 'rgba(200,209,218,0.1)',
+                    color: n <= step ? '#0B0F14' : '#C8D1DA',
+                    border: n > step ? '1px solid rgba(200,209,218,0.2)' : 'none',
+                  }}
+                >
+                  {n < step ? <CheckCircle size={14} /> : n}
+                </div>
+                {n < 3 && (
+                  <div
+                    className="w-10 h-px transition-colors duration-300"
+                    style={{ background: n < step ? '#10b981' : 'rgba(200,209,218,0.15)' }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-xs font-heading tracking-widest uppercase text-text-dim mb-6">
+            Step {step} of {totalSteps}
+          </p>
+
+          {/* Card */}
+          <GlassPanel className="overflow-hidden">
+            <div className="p-8">
+              <AnimatePresence mode="wait">
+                {step === 1 && (
+                  <motion.div key="step1" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
+                    <h2 className="font-heading text-2xl font-bold text-parchment tracking-tight mb-1">
+                      Where do you operate?
+                    </h2>
+                    <p className="text-text-dim text-sm leading-relaxed font-body mb-6">
+                      Enter your primary market and how far you can travel.
+                    </p>
+
+                    <label className="block text-xs font-heading tracking-widest uppercase text-text-dim mb-2">
+                      City &amp; State
+                    </label>
+                    <input
+                      type="text"
+                      value={market}
+                      onChange={(e) => setMarket(e.target.value)}
+                      placeholder="Phoenix, AZ"
+                      className={inputCls + ' mb-5'}
+                    />
+
+                    <label className="block text-xs font-heading tracking-widest uppercase text-text-dim mb-2">
+                      Travel Radius
+                    </label>
+                    <select
+                      value={radius}
+                      onChange={(e) => setRadius(Number(e.target.value))}
+                      className={inputCls + ' appearance-none cursor-pointer'}
+                    >
+                      {RADIUS_OPTIONS.map((r) => (
+                        <option key={r} value={r} style={{ background: '#111B24' }}>
+                          {r} miles
+                        </option>
+                      ))}
+                    </select>
+                  </motion.div>
+                )}
+
+                {step === 2 && (
+                  <motion.div key="step2" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
+                    <h2 className="font-heading text-2xl font-bold text-parchment tracking-tight mb-1">
+                      What can you do?
+                    </h2>
+                    <p className="text-text-dim text-sm leading-relaxed font-body mb-6">
+                      Select all the task types you can handle.
+                    </p>
+
+                    <motion.div
+                      className="grid grid-cols-3 gap-3"
+                      variants={containerVariants}
+                      initial="hidden"
+                      animate="visible"
+                    >
+                      {TASK_TYPES.map(({ id, label, icon: Icon }) => {
+                        const selected = taskTypes.includes(id)
+                        const badgeColor = BADGE_COLORS[id] || '#00C6FF'
+                        return (
+                          <motion.button
+                            key={id}
+                            variants={cardItem}
+                            onClick={() => toggleTaskType(id)}
+                            className="flex flex-col items-center gap-2 p-4 rounded-sm text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan active:scale-95 transition-colors"
+                            style={{
+                              background: selected ? `${badgeColor}15` : 'rgba(255,255,255,0.03)',
+                              border: selected ? `1px solid ${badgeColor}80` : '1px solid rgba(255,255,255,0.08)',
+                            }}
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                          >
+                            <Icon
+                              size={20}
+                              style={{ color: selected ? badgeColor : '#C8D1DA' }}
+                            />
+                            <span
+                              className="text-xs font-heading leading-tight"
+                              style={{ color: selected ? '#F4F7FA' : '#C8D1DA' }}
+                            >
+                              {label}
+                            </span>
+                          </motion.button>
+                        )
+                      })}
+                    </motion.div>
+                  </motion.div>
+                )}
+
+                {step === 3 && (
+                  <motion.div key="step3" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
+                    <h2 className="font-heading text-2xl font-bold text-parchment tracking-tight mb-1">
+                      When are you available?
+                    </h2>
+                    <p className="text-text-dim text-sm leading-relaxed font-body mb-6">
+                      Select the days you can take on tasks.
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      {DAYS.map((day) => {
+                        const active = availability.includes(day)
+                        return (
+                          <button
+                            key={day}
+                            onClick={() => toggleDay(day)}
+                            className="px-4 py-2 rounded-sm text-sm font-heading tracking-wider focus:outline-none focus-visible:ring-2 focus-visible:ring-gold active:scale-95 transition-colors"
+                            style={{
+                              background: active ? 'rgba(0,198,255,0.15)' : 'rgba(255,255,255,0.04)',
+                              border: active ? '1px solid rgba(0,198,255,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                              color: active ? '#00C6FF' : '#C8D1DA',
+                            }}
+                          >
+                            {day}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </GlassPanel>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between mt-5 gap-3">
+            <button
+              onClick={() => setStep((s) => s - 1)}
+              disabled={step === 1}
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-sm text-sm font-heading tracking-wider text-text-dim border border-[rgba(255,255,255,0.07)] bg-white/5 hover:bg-white/9 focus:outline-none focus-visible:ring-2 focus-visible:ring-text-dim active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={15} />
+              Back
+            </button>
+
+            {step < totalSteps ? (
+              <button
+                onClick={() => setStep((s) => s + 1)}
+                disabled={!canAdvance()}
+                className="flex items-center gap-1.5 px-6 py-2.5 rounded-sm text-sm font-heading tracking-wider text-cyan focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 style={{
-                  background: n < step ? '#10b981' : n === step ? '#00C6FF' : 'rgba(200,209,218,0.1)',
-                  color: n <= step ? '#0B0F14' : '#C8D1DA',
-                  border: n > step ? '1px solid rgba(200,209,218,0.2)' : 'none',
+                  background: canAdvance() ? 'rgba(0,198,255,0.15)' : 'rgba(0,198,255,0.07)',
+                  border: `1px solid ${canAdvance() ? 'rgba(0,198,255,0.5)' : 'rgba(0,198,255,0.2)'}`,
                 }}
               >
-                {n < step ? <CheckCircle size={14} /> : n}
-              </div>
-              {n < 3 && (
-                <div
-                  className="w-10 h-px transition-colors duration-300"
-                  style={{ background: n < step ? '#10b981' : 'rgba(200,209,218,0.15)' }}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <p className="text-center text-xs font-heading tracking-widest uppercase text-text-dim mb-6">
-          Step {step} of {totalSteps}
-        </p>
-
-        {/* Card */}
-        <GlassCard accentColor={step === 1 ? '#00C6FF' : step === 2 ? '#A855F7' : '#F6C445'} noPad>
-          <div className="p-8">
-            <AnimatePresence mode="wait">
-              {step === 1 && (
-                <motion.div key="step1" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
-                  <h2 className="font-heading text-2xl font-bold text-parchment tracking-tight mb-1">
-                    Where do you operate?
-                  </h2>
-                  <p className="text-text-dim text-sm leading-relaxed font-body mb-6">
-                    Enter your primary market and how far you can travel.
-                  </p>
-
-                  <label className="block text-xs font-heading tracking-widest uppercase text-text-dim mb-2">
-                    City &amp; State
-                  </label>
-                  <input
-                    type="text"
-                    value={market}
-                    onChange={(e) => setMarket(e.target.value)}
-                    placeholder="Phoenix, AZ"
-                    className={inputCls + ' mb-5'}
-                  />
-
-                  <label className="block text-xs font-heading tracking-widest uppercase text-text-dim mb-2">
-                    Travel Radius
-                  </label>
-                  <select
-                    value={radius}
-                    onChange={(e) => setRadius(Number(e.target.value))}
-                    className={inputCls + ' appearance-none cursor-pointer'}
-                  >
-                    {RADIUS_OPTIONS.map((r) => (
-                      <option key={r} value={r} style={{ background: '#111B24' }}>
-                        {r} miles
-                      </option>
-                    ))}
-                  </select>
-                </motion.div>
-              )}
-
-              {step === 2 && (
-                <motion.div key="step2" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
-                  <h2 className="font-heading text-2xl font-bold text-parchment tracking-tight mb-1">
-                    What can you do?
-                  </h2>
-                  <p className="text-text-dim text-sm leading-relaxed font-body mb-6">
-                    Select all the task types you can handle.
-                  </p>
-
-                  <motion.div
-                    className="grid grid-cols-3 gap-3"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                  >
-                    {TASK_TYPES.map(({ id, label, icon: Icon }) => {
-                      const selected = taskTypes.includes(id)
-                      const badgeColor = BADGE_COLORS[id] || '#00C6FF'
-                      return (
-                        <motion.button
-                          key={id}
-                          variants={cardItem}
-                          onClick={() => toggleTaskType(id)}
-                          className="flex flex-col items-center gap-2 p-4 rounded-sm text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan active:scale-95 transition-colors"
-                          style={{
-                            background: selected ? `${badgeColor}15` : 'rgba(255,255,255,0.03)',
-                            border: selected ? `1px solid ${badgeColor}80` : '1px solid rgba(255,255,255,0.08)',
-                          }}
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.97 }}
-                        >
-                          <Icon
-                            size={20}
-                            style={{ color: selected ? badgeColor : '#C8D1DA' }}
-                          />
-                          <span
-                            className="text-xs font-heading leading-tight"
-                            style={{ color: selected ? '#F4F7FA' : '#C8D1DA' }}
-                          >
-                            {label}
-                          </span>
-                        </motion.button>
-                      )
-                    })}
-                  </motion.div>
-                </motion.div>
-              )}
-
-              {step === 3 && (
-                <motion.div key="step3" variants={itemVariants} initial="hidden" animate="visible" exit="exit">
-                  <h2 className="font-heading text-2xl font-bold text-parchment tracking-tight mb-1">
-                    When are you available?
-                  </h2>
-                  <p className="text-text-dim text-sm leading-relaxed font-body mb-6">
-                    Select the days you can take on tasks.
-                  </p>
-
-                  <div className="flex flex-wrap gap-2">
-                    {DAYS.map((day) => {
-                      const active = availability.includes(day)
-                      return (
-                        <button
-                          key={day}
-                          onClick={() => toggleDay(day)}
-                          className="px-4 py-2 rounded-sm text-sm font-heading tracking-wider focus:outline-none focus-visible:ring-2 focus-visible:ring-gold active:scale-95 transition-colors"
-                          style={{
-                            background: active ? 'rgba(0,198,255,0.15)' : 'rgba(255,255,255,0.04)',
-                            border: active ? '1px solid rgba(0,198,255,0.5)' : '1px solid rgba(255,255,255,0.1)',
-                            color: active ? '#00C6FF' : '#C8D1DA',
-                          }}
-                        >
-                          {day}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                Next
+                <ChevronRight size={15} />
+              </button>
+            ) : (
+              <button
+                onClick={handleComplete}
+                disabled={!canAdvance()}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-sm text-sm font-heading tracking-wider text-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                style={{
+                  background: canAdvance() ? 'rgba(246,196,69,0.18)' : 'rgba(246,196,69,0.07)',
+                  border: `1px solid ${canAdvance() ? 'rgba(246,196,69,0.55)' : 'rgba(246,196,69,0.2)'}`,
+                }}
+              >
+                <CheckCircle size={15} />
+                Complete Setup
+              </button>
+            )}
           </div>
-        </GlassCard>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-5 gap-3">
-          <button
-            onClick={() => setStep((s) => s - 1)}
-            disabled={step === 1}
-            className="flex items-center gap-1.5 px-5 py-2.5 rounded-sm text-sm font-heading tracking-wider text-text-dim border border-gold-dim/15 bg-white/5 hover:bg-white/9 focus:outline-none focus-visible:ring-2 focus-visible:ring-text-dim active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronLeft size={15} />
-            Back
-          </button>
-
-          {step < totalSteps ? (
-            <button
-              onClick={() => setStep((s) => s + 1)}
-              disabled={!canAdvance()}
-              className="flex items-center gap-1.5 px-6 py-2.5 rounded-sm text-sm font-heading tracking-wider text-cyan focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              style={{
-                background: canAdvance() ? 'rgba(0,198,255,0.15)' : 'rgba(0,198,255,0.07)',
-                border: `1px solid ${canAdvance() ? 'rgba(0,198,255,0.5)' : 'rgba(0,198,255,0.2)'}`,
-              }}
-            >
-              Next
-              <ChevronRight size={15} />
-            </button>
-          ) : (
-            <button
-              onClick={handleComplete}
-              disabled={!canAdvance()}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-sm text-sm font-heading tracking-wider text-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              style={{
-                background: canAdvance() ? 'rgba(246,196,69,0.18)' : 'rgba(246,196,69,0.07)',
-                border: `1px solid ${canAdvance() ? 'rgba(246,196,69,0.55)' : 'rgba(246,196,69,0.2)'}`,
-              }}
-            >
-              <CheckCircle size={15} />
-              Complete Setup
-            </button>
-          )}
-        </div>
+        </GlassShell>
       </motion.div>
     </div>
   )
@@ -365,7 +342,7 @@ function OnboardingWizard({ onComplete }) {
 function OpenTaskCard({ task, onAccept }) {
   return (
     <motion.div variants={cardItem}>
-      <GlassCard accentColor={BADGE_COLORS[task.taskType] || '#00C6FF'}>
+      <GlassPanel className="p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <TypeBadge type={task.taskType} />
           <span className="text-gold text-xs font-heading font-semibold">
@@ -386,7 +363,7 @@ function OpenTaskCard({ task, onAccept }) {
         >
           Accept Task
         </button>
-      </GlassCard>
+      </GlassPanel>
     </motion.div>
   )
 }
@@ -394,7 +371,7 @@ function OpenTaskCard({ task, onAccept }) {
 function MyTaskCard({ task }) {
   return (
     <motion.div variants={cardItem}>
-      <GlassCard accentColor={BADGE_COLORS[task.taskType] || '#A855F7'}>
+      <GlassPanel className="p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <TypeBadge type={task.taskType} />
           <StatusPill status={task.status} />
@@ -406,7 +383,7 @@ function MyTaskCard({ task }) {
         <p className="text-text-dim text-xs font-body">
           Due: {formatDue(task.dueDate)}
         </p>
-      </GlassCard>
+      </GlassPanel>
     </motion.div>
   )
 }
@@ -470,16 +447,6 @@ function MainView({ bootsProfile, onEditSetup, firebaseUid, profile, user }) {
 
   return (
     <div className="min-h-screen bg-[#0B0F14] px-4 py-10">
-      {/* Background ambient */}
-      <div
-        className="pointer-events-none fixed inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 50% 35% at 20% 20%, rgba(0,198,255,0.04) 0%, transparent 70%), ' +
-            'radial-gradient(ellipse 40% 30% at 80% 70%, rgba(246,196,69,0.04) 0%, transparent 60%)',
-        }}
-      />
-
       <div className="relative max-w-5xl mx-auto">
         {/* Page header */}
         <motion.div
@@ -511,7 +478,7 @@ function MainView({ bootsProfile, onEditSetup, firebaseUid, profile, user }) {
           <div className="flex justify-center">
             <button
               onClick={onEditSetup}
-              className="flex items-center gap-2 px-4 py-2 rounded-sm text-xs font-heading tracking-widest uppercase text-gold bg-gold/7 border border-gold-dim/20 hover:bg-gold/14 hover:border-gold-dim/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold active:scale-95 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-sm text-xs font-heading tracking-widest uppercase text-gold bg-gold/7 border border-[rgba(255,255,255,0.07)] hover:bg-gold/14 hover:border-gold-dim/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold active:scale-95 transition-colors"
             >
               <Pencil size={12} />
               Edit Setup
@@ -520,104 +487,106 @@ function MainView({ bootsProfile, onEditSetup, firebaseUid, profile, user }) {
         </motion.div>
 
         {/* Two-column grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* ── Left: Open Tasks ── */}
-          <div>
-            <motion.h2
-              className="font-heading text-sm tracking-widest uppercase mb-4 text-text-dim"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
-            >
-              Available in Your Market
-            </motion.h2>
-
-            {loadingOpen ? (
-              <div className="flex items-center justify-center py-12">
-                <div
-                  className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
-                  style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
-                />
-              </div>
-            ) : openTasks.length === 0 ? (
-              <motion.div
+        <GlassShell orbColors="emerald">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* ── Left: Open Tasks ── */}
+            <div>
+              <motion.h2
+                className="font-heading text-sm tracking-widest uppercase mb-4 text-text-dim"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.15 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
               >
-                <GlassCard accentColor="#00C6FF">
-                  <div className="py-4 text-center">
-                    <Navigation2 size={28} className="mx-auto mb-3 text-text-dim/25" />
-                    <p className="text-text-dim text-sm font-body">No open tasks in your area right now</p>
-                    <p className="text-text-dim/40 text-xs mt-1 font-body">Check back soon</p>
-                  </div>
-                </GlassCard>
-              </motion.div>
-            ) : (
-              <motion.div
-                className="flex flex-col gap-3"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {openTasks.map((task) => (
-                  <OpenTaskCard
-                    key={task.id}
-                    task={task}
-                    onAccept={handleAccept}
-                    accepting={accepting}
+                Available in Your Market
+              </motion.h2>
+
+              {loadingOpen ? (
+                <div className="flex items-center justify-center py-12">
+                  <div
+                    className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
+                    style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
                   />
-                ))}
-              </motion.div>
-            )}
-          </div>
+                </div>
+              ) : openTasks.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.15 }}
+                >
+                  <GlassPanel className="p-5">
+                    <div className="py-4 text-center">
+                      <Navigation2 size={28} className="mx-auto mb-3 text-text-dim/25" />
+                      <p className="text-text-dim text-sm font-body">No open tasks in your area right now</p>
+                      <p className="text-text-dim/40 text-xs mt-1 font-body">Check back soon</p>
+                    </div>
+                  </GlassPanel>
+                </motion.div>
+              ) : (
+                <motion.div
+                  className="flex flex-col gap-3"
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {openTasks.map((task) => (
+                    <OpenTaskCard
+                      key={task.id}
+                      task={task}
+                      onAccept={handleAccept}
+                      accepting={accepting}
+                    />
+                  ))}
+                </motion.div>
+              )}
+            </div>
 
-          {/* ── Right: My Tasks ── */}
-          <div>
-            <motion.h2
-              className="font-heading text-sm tracking-widest uppercase mb-4 text-text-dim"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.15, duration: 0.4 }}
-            >
-              My Active Tasks
-            </motion.h2>
-
-            {loadingMine ? (
-              <div className="flex items-center justify-center py-12">
-                <div
-                  className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
-                  style={{ borderColor: 'rgba(168,85,247,0.4)', borderTopColor: 'transparent' }}
-                />
-              </div>
-            ) : myTasks.length === 0 ? (
-              <motion.div
+            {/* ── Right: My Tasks ── */}
+            <div>
+              <motion.h2
+                className="font-heading text-sm tracking-widest uppercase mb-4 text-text-dim"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
+                transition={{ delay: 0.15, duration: 0.4 }}
               >
-                <GlassCard accentColor="#A855F7">
-                  <div className="py-4 text-center">
-                    <CheckCircle size={28} className="mx-auto mb-3 text-text-dim/25" />
-                    <p className="text-text-dim text-sm font-body">Accept a task to get started</p>
-                    <p className="text-text-dim/40 text-xs mt-1 font-body">Your active tasks will appear here</p>
-                  </div>
-                </GlassCard>
-              </motion.div>
-            ) : (
-              <motion.div
-                className="flex flex-col gap-3"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {myTasks.map((task) => (
-                  <MyTaskCard key={task.id} task={task} />
-                ))}
-              </motion.div>
-            )}
+                My Active Tasks
+              </motion.h2>
+
+              {loadingMine ? (
+                <div className="flex items-center justify-center py-12">
+                  <div
+                    className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
+                    style={{ borderColor: 'rgba(168,85,247,0.4)', borderTopColor: 'transparent' }}
+                  />
+                </div>
+              ) : myTasks.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <GlassPanel className="p-5">
+                    <div className="py-4 text-center">
+                      <CheckCircle size={28} className="mx-auto mb-3 text-text-dim/25" />
+                      <p className="text-text-dim text-sm font-body">Accept a task to get started</p>
+                      <p className="text-text-dim/40 text-xs mt-1 font-body">Your active tasks will appear here</p>
+                    </div>
+                  </GlassPanel>
+                </motion.div>
+              ) : (
+                <motion.div
+                  className="flex flex-col gap-3"
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {myTasks.map((task) => (
+                    <MyTaskCard key={task.id} task={task} />
+                  ))}
+                </motion.div>
+              )}
+            </div>
           </div>
-        </div>
+        </GlassShell>
       </div>
     </div>
   )

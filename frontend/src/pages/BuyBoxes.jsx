@@ -4,6 +4,8 @@ import { Target, CheckCircle2 } from 'lucide-react'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
+import GlassShell from '../components/GlassShell'
+import GlassPanel from '../components/GlassPanel'
 
 const containerVariants = {
   hidden: {},
@@ -107,21 +109,14 @@ export default function BuyBoxes() {
         </div>
       </motion.div>
 
+      <GlassShell orbColors="gold" maxWidth="max-w-[900px]">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left -- Form */}
         <motion.div variants={itemVariants}>
-          <div
-            className="rounded-sm border border-gold-dim/20 overflow-hidden"
-            style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-          >
-            {/* Accent line */}
-            <div
-              className="h-[2px]"
-              style={{ background: 'linear-gradient(90deg, transparent, #00C6FF, transparent)' }}
-            />
+          <GlassPanel className="overflow-hidden">
             {/* Header bar */}
-            <div className="px-5 py-3 border-b border-gold-dim/15">
-              <span className="font-heading text-gold text-sm tracking-widest uppercase">Your Buy Box Criteria</span>
+            <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Your Buy Box Criteria</span>
             </div>
             <div className="p-5">
               <div className="space-y-4">
@@ -228,24 +223,16 @@ export default function BuyBoxes() {
                 </button>
               </div>
             </div>
-          </div>
+          </GlassPanel>
         </motion.div>
 
         {/* Right -- Saved summary */}
         <motion.div variants={itemVariants}>
           {saved ? (
-            <div
-              className="rounded-sm border border-gold-dim/20 overflow-hidden"
-              style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-            >
-              {/* Accent line */}
-              <div
-                className="h-[2px]"
-                style={{ background: 'linear-gradient(90deg, transparent, #F6C445, transparent)' }}
-              />
+            <GlassPanel className="overflow-hidden">
               {/* Header bar */}
-              <div className="px-5 py-3 border-b border-gold-dim/15">
-                <span className="font-heading text-gold text-sm tracking-widest uppercase">Your Criteria on File</span>
+              <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Your Criteria on File</span>
               </div>
               <div className="p-5">
                 <div className="space-y-3">
@@ -320,32 +307,25 @@ export default function BuyBoxes() {
                   )}
                 </div>
               </div>
-            </div>
+            </GlassPanel>
           ) : (
-            <div
-              className="rounded-sm border border-gold-dim/20 overflow-hidden"
-              style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-            >
-              {/* Accent line */}
-              <div
-                className="h-[2px]"
-                style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }}
-              />
+            <GlassPanel className="overflow-hidden">
               <div className="p-5">
                 <div className="text-center py-10">
                   <div className="w-14 h-14 rounded-full bg-gold/10 border border-gold-dim/25 flex items-center justify-center mx-auto mb-4">
-                    <Target size={24} className="text-gold" />
+                    <Target size={24} style={{ color: '#F6C445' }} />
                   </div>
-                  <h3 className="font-heading text-base text-gold tracking-wide mb-2">No Buy Box on File</h3>
+                  <h3 className="font-heading text-base tracking-wide mb-2" style={{ color: '#F6C445' }}>No Buy Box on File</h3>
                   <p className="text-text-dim text-xs font-body leading-relaxed">
                     Fill out the form and save your criteria. We'll notify you when a deal matches.
                   </p>
                 </div>
               </div>
-            </div>
+            </GlassPanel>
           )}
         </motion.div>
       </div>
+      </GlassShell>
     </motion.div>
   )
 }
