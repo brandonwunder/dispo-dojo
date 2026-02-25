@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Navigation2, Plus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import GlassPanel from '../components/GlassPanel'
+import ProfileSetupModal from '../components/boots/ProfileSetupModal'
 
 // ─── Placeholder Tab Components ──────────────────────────────────────────────
 
@@ -36,6 +37,8 @@ export default function BootsOnGround() {
   const { user, profile, updateProfile, firebaseUid } = useAuth()
   const uid = firebaseUid || user?.firebaseUid
   const [activeTab, setActiveTab] = useState('find-boots')
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showPostModal, setShowPostModal] = useState(false)
 
   const TABS = [
     { id: 'find-boots', label: 'Find Boots People' },
@@ -44,7 +47,17 @@ export default function BootsOnGround() {
   ]
 
   function handleCreatePost() {
-    // Will check for bootsProfile and show onboarding modal — Task 2
+    if (!profile?.bootsProfile) {
+      setShowProfileModal(true)
+    } else {
+      setShowPostModal(true) // Task 3 builds this
+    }
+  }
+
+  async function handleProfileComplete(profileData) {
+    await updateProfile({ bootsProfile: profileData })
+    setShowProfileModal(false)
+    setShowPostModal(true)
   }
 
   return (
@@ -141,6 +154,12 @@ export default function BootsOnGround() {
           )}
         </div>
       </div>
+
+      <ProfileSetupModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        onComplete={handleProfileComplete}
+      />
     </>
   )
 }
