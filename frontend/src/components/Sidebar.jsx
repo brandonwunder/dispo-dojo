@@ -136,7 +136,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const sectionRefs = useRef({})
 
   const sections = useMemo(
-    () => isAdmin ? [navSections[0], adminSection, ...navSections.slice(1)] : navSections,
+    () => isAdmin ? [adminSection, ...navSections] : navSections,
     [isAdmin]
   )
 
