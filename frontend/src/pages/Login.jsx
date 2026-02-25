@@ -604,7 +604,7 @@ export default function Login() {
         <motion.img
           src="/dispo-dojo-logo.png"
           alt="Dispo Dojo"
-          className="h-[21rem] sm:h-48 md:h-60 w-auto object-contain mb-2 sm:mb-6 shrink-0"
+          className="h-[14rem] sm:h-48 md:h-60 w-auto object-contain mb-2 sm:mb-6 shrink-0"
           style={{
             filter: 'drop-shadow(0 0 36px rgba(246,196,69,0.55)) drop-shadow(0 0 80px rgba(246,196,69,0.25))',
             animation: 'logoFloat 3s ease-in-out infinite',
