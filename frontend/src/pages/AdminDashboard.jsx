@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Shield, Users, Mail, Phone, Calendar, AtSign, Clock, TrendingUp, Plus, Edit2, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore'
+import { Shield, Users, Mail, Phone, Calendar, AtSign, Clock, TrendingUp, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, FileText, CheckCircle, Dog, DollarSign } from 'lucide-react'
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../lib/firebase'
 import CountUp from 'react-countup'
@@ -265,6 +265,403 @@ function LiveDealsAdmin() {
   )
 }
 
+// ── BirdDogAdmin ──────────────────────────────────────────────────────────────
+const BD_TABS = [
+  { id: 'birddogs', label: 'Bird Dog Directory' },
+  { id: 'investors', label: 'Investor Directory' },
+  { id: 'posts', label: 'Posts & Jobs' },
+]
+
+const BD_KPI_CONFIG = [
+  { icon: Dog, label: 'Bird Dogs on File', kanji: '犬' },
+  { icon: DollarSign, label: 'Investors on File', kanji: '金' },
+  { icon: FileText, label: 'Active Posts', kanji: '書' },
+  { icon: CheckCircle, label: 'Completed Jobs', kanji: '済' },
+]
+
+function BirdDogAdmin() {
+  const [bdSubTab, setBdSubTab] = useState('birddogs')
+  const [birdDogs, setBirdDogs] = useState([])
+  const [investors, setInvestors] = useState([])
+  const [posts, setPosts] = useState([])
+  const [activePosts, setActivePosts] = useState(0)
+  const [completedJobs, setCompletedJobs] = useState(0)
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  // Listen to users collection for bird dogs & investors
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'users'), (snap) => {
+      const allUsers = snap.docs.map((d) => ({ uid: d.id, ...d.data() }))
+      setBirdDogs(allUsers.filter((u) => u.birdDogProfile?.role === 'bird_dog'))
+      setInvestors(allUsers.filter((u) => u.birdDogProfile?.role === 'investor'))
+    })
+    return unsub
+  }, [])
+
+  // Listen to bird_dog_posts collection
+  useEffect(() => {
+    const unsub = onSnapshot(
+      query(collection(db, 'bird_dog_posts'), orderBy('createdAt', 'desc')),
+      (snap) => {
+        const allPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        setPosts(allPosts)
+        setActivePosts(allPosts.filter((p) => p.status === 'active').length)
+        setCompletedJobs(allPosts.filter((p) => p.status === 'completed').length)
+      }
+    )
+    return unsub
+  }, [])
+
+  const kpiValues = [birdDogs.length, investors.length, activePosts, completedJobs]
+
+  async function handleDeactivateUser(uid) {
+    if (!window.confirm('Deactivate this user from the Bird Dog network?')) return
+    await updateDoc(doc(db, 'users', uid), { 'birdDogProfile.deactivated': true })
+  }
+
+  async function handleClosePost(postId) {
+    if (!window.confirm('Close this post?')) return
+    await updateDoc(doc(db, 'bird_dog_posts', postId), { status: 'closed' })
+  }
+
+  async function handleDeletePost(postId) {
+    if (!window.confirm('Permanently delete this post?')) return
+    await deleteDoc(doc(db, 'bird_dog_posts', postId))
+  }
+
+  const formatDate = (ts) => {
+    if (!ts) return '—'
+    const d = ts.toDate ? ts.toDate() : new Date(ts)
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  // Filter posts
+  const filteredPosts = posts.filter((p) => {
+    if (typeFilter !== 'all' && p.type !== typeFilter) return false
+    if (statusFilter !== 'all' && p.status !== statusFilter) return false
+    return true
+  })
+
+  return (
+    <div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {BD_KPI_CONFIG.map((stat, i) => {
+          const Icon = stat.icon
+          return (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <GlassPanel className="p-5 relative">
+                <div className="absolute top-2 right-3 font-display text-6xl text-[rgba(0,198,255,0.04)] pointer-events-none select-none z-0">
+                  {stat.kanji}
+                </div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3 relative z-10" style={{ background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)' }}>
+                  <Icon size={18} style={{ color: '#00C6FF' }} />
+                </div>
+                <p className="font-heading text-text-dim tracking-widest uppercase text-xs mb-1 relative z-10">
+                  {stat.label}
+                </p>
+                <p className="font-heading text-3xl tracking-wide relative z-10" style={{ color: '#F6C445' }}>
+                  <CountUp end={typeof kpiValues[i] === 'number' ? kpiValues[i] : 0} duration={1.5} separator="," />
+                </p>
+              </GlassPanel>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex gap-1 mb-6 border-b border-[rgba(0,198,255,0.12)]">
+        {BD_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setBdSubTab(tab.id)}
+            className={`px-4 py-2.5 font-heading text-xs tracking-widest uppercase transition-colors duration-150 relative ${
+              bdSubTab === tab.id ? 'text-[#00C6FF]' : 'text-text-dim hover:text-parchment'
+            }`}
+          >
+            {tab.label}
+            {bdSubTab === tab.id && (
+              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00C6FF]" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Bird Dog Directory */}
+      {bdSubTab === 'birddogs' && (
+        <GlassPanel className="overflow-hidden">
+          <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Bird Dog Directory</span>
+          </div>
+          {birdDogs.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <Dog size={40} className="text-text-muted mx-auto mb-3" />
+              <p className="text-text-dim text-sm font-heading">No bird dogs registered yet.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr style={{ background: 'rgba(0,198,255,0.06)' }}>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Name</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Service Area</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Methods</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Availability</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Rating</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Leads Submitted</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Date Joined</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {birdDogs.map((user, i) => {
+                    const bp = user.birdDogProfile || {}
+                    return (
+                      <motion.tr
+                        key={user.uid}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: i * 0.04 }}
+                        className="border-b border-[rgba(255,255,255,0.05)] hover:bg-white/[0.03] transition-colors duration-200"
+                      >
+                        <td className="px-6 py-4 text-sm text-parchment font-medium">{user.displayName || user.email}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">{bp.serviceArea || '—'}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">{bp.methods?.join(', ') || '—'}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">{bp.availability || '—'}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">—</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">{user.stats?.birdDogLeads ?? 0}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim font-mono">{formatDate(user.createdAt)}</td>
+                        <td className="px-6 py-4">
+                          {bp.deactivated ? (
+                            <span className="text-xs text-text-muted font-heading uppercase tracking-wider">Deactivated</span>
+                          ) : (
+                            <button
+                              onClick={() => handleDeactivateUser(user.uid)}
+                              className="px-3 py-1 rounded-sm text-[11px] font-heading tracking-wider uppercase border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors duration-150"
+                            >
+                              Deactivate
+                            </button>
+                          )}
+                        </td>
+                      </motion.tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </GlassPanel>
+      )}
+
+      {/* Investor Directory */}
+      {bdSubTab === 'investors' && (
+        <GlassPanel className="overflow-hidden">
+          <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Investor Directory</span>
+          </div>
+          {investors.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <DollarSign size={40} className="text-text-muted mx-auto mb-3" />
+              <p className="text-text-dim text-sm font-heading">No investors registered yet.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr style={{ background: 'rgba(0,198,255,0.06)' }}>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Name</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Markets</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Deal Types</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Rating</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Jobs Posted</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Date Joined</th>
+                    <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {investors.map((user, i) => {
+                    const bp = user.birdDogProfile || {}
+                    const jobsPosted = posts.filter((p) => p.authorId === user.uid).length
+                    return (
+                      <motion.tr
+                        key={user.uid}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: i * 0.04 }}
+                        className="border-b border-[rgba(255,255,255,0.05)] hover:bg-white/[0.03] transition-colors duration-200"
+                      >
+                        <td className="px-6 py-4 text-sm text-parchment font-medium">{user.displayName || user.email}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">{bp.markets?.join(', ') || '—'}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">{bp.dealTypes?.join(', ') || '—'}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">—</td>
+                        <td className="px-6 py-4 text-sm text-text-dim">{jobsPosted}</td>
+                        <td className="px-6 py-4 text-sm text-text-dim font-mono">{formatDate(user.createdAt)}</td>
+                        <td className="px-6 py-4">
+                          {bp.deactivated ? (
+                            <span className="text-xs text-text-muted font-heading uppercase tracking-wider">Deactivated</span>
+                          ) : (
+                            <button
+                              onClick={() => handleDeactivateUser(user.uid)}
+                              className="px-3 py-1 rounded-sm text-[11px] font-heading tracking-wider uppercase border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors duration-150"
+                            >
+                              Deactivate
+                            </button>
+                          )}
+                        </td>
+                      </motion.tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </GlassPanel>
+      )}
+
+      {/* Posts & Jobs */}
+      {bdSubTab === 'posts' && (
+        <div>
+          {/* Filter chips */}
+          <div className="flex flex-wrap gap-3 mb-5">
+            <div className="flex gap-1">
+              <span className="text-text-dim text-xs font-heading uppercase tracking-wider self-center mr-2">Type:</span>
+              {['all', 'bird_dog', 'job'].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTypeFilter(t)}
+                  className={`px-3 py-1.5 rounded-sm text-[11px] font-heading tracking-wider uppercase transition-colors duration-150 ${
+                    typeFilter === t
+                      ? 'bg-[rgba(0,198,255,0.15)] text-[#00C6FF] border border-[rgba(0,198,255,0.4)]'
+                      : 'text-text-dim border border-[rgba(255,255,255,0.1)] hover:text-parchment hover:border-[rgba(255,255,255,0.2)]'
+                  }`}
+                >
+                  {t === 'all' ? 'All' : t === 'bird_dog' ? 'Bird Dog' : 'Job'}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              <span className="text-text-dim text-xs font-heading uppercase tracking-wider self-center mr-2">Status:</span>
+              {['all', 'active', 'in_progress', 'completed', 'closed'].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-3 py-1.5 rounded-sm text-[11px] font-heading tracking-wider uppercase transition-colors duration-150 ${
+                    statusFilter === s
+                      ? 'bg-[rgba(0,198,255,0.15)] text-[#00C6FF] border border-[rgba(0,198,255,0.4)]'
+                      : 'text-text-dim border border-[rgba(255,255,255,0.1)] hover:text-parchment hover:border-[rgba(255,255,255,0.2)]'
+                  }`}
+                >
+                  {s === 'all' ? 'All' : s === 'in_progress' ? 'In Progress' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <GlassPanel className="overflow-hidden">
+            <div className="px-5 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <span className="font-heading text-sm tracking-widest uppercase" style={{ color: '#00C6FF' }}>Posts & Jobs</span>
+            </div>
+            {filteredPosts.length === 0 ? (
+              <div className="px-6 py-16 text-center">
+                <FileText size={40} className="text-text-muted mx-auto mb-3" />
+                <p className="text-text-dim text-sm font-heading">No posts match the current filters.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr style={{ background: 'rgba(0,198,255,0.06)' }}>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Title</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Type</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Author</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Area</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Status</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Date Posted</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Applicants</th>
+                      <th className="text-left px-6 py-3 font-heading tracking-widest uppercase text-xs" style={{ color: '#00C6FF' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPosts.map((post, i) => {
+                      const isBirdDog = post.type === 'bird_dog'
+                      const statusColors = {
+                        active: { bg: 'rgba(0,198,255,0.1)', border: 'rgba(0,198,255,0.3)', color: '#00C6FF' },
+                        in_progress: { bg: 'rgba(246,196,69,0.1)', border: 'rgba(246,196,69,0.3)', color: '#F6C445' },
+                        completed: { bg: 'rgba(76,175,80,0.1)', border: 'rgba(76,175,80,0.3)', color: '#4CAF50' },
+                        closed: { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)', color: '#8a8578' },
+                      }
+                      const sc = statusColors[post.status] || statusColors.closed
+                      return (
+                        <motion.tr
+                          key={post.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.04 }}
+                          className="border-b border-[rgba(255,255,255,0.05)] hover:bg-white/[0.03] transition-colors duration-200"
+                        >
+                          <td className="px-6 py-4 text-sm text-parchment font-medium">{post.title || '—'}</td>
+                          <td className="px-6 py-4">
+                            <span
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-heading tracking-wider uppercase"
+                              style={{
+                                background: isBirdDog ? 'rgba(0,198,255,0.1)' : 'rgba(246,196,69,0.1)',
+                                border: `1px solid ${isBirdDog ? 'rgba(0,198,255,0.3)' : 'rgba(246,196,69,0.3)'}`,
+                                color: isBirdDog ? '#00C6FF' : '#F6C445',
+                              }}
+                            >
+                              {isBirdDog ? 'Bird Dog' : 'Job'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-text-dim">{post.authorName || '—'}</td>
+                          <td className="px-6 py-4 text-sm text-text-dim">{post.area || post.serviceArea || '—'}</td>
+                          <td className="px-6 py-4">
+                            <span
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-heading tracking-wider uppercase"
+                              style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color }}
+                            >
+                              {post.status === 'in_progress' ? 'In Progress' : post.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-text-dim font-mono">{formatDate(post.createdAt)}</td>
+                          <td className="px-6 py-4 text-sm text-text-dim">{post.applicants?.length ?? 0}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              {post.status !== 'closed' && (
+                                <button
+                                  onClick={() => handleClosePost(post.id)}
+                                  className="px-3 py-1 rounded-sm text-[11px] font-heading tracking-wider uppercase border border-[rgba(246,196,69,0.4)] text-[#F6C445] hover:bg-[rgba(246,196,69,0.1)] transition-colors duration-150"
+                                >
+                                  Close
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleDeletePost(post.id)}
+                                className="px-3 py-1 rounded-sm text-[11px] font-heading tracking-wider uppercase border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors duration-150"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </GlassPanel>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── AdminDashboard ────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const { users } = useAuth()
@@ -347,6 +744,7 @@ export default function AdminDashboard() {
           { id: 'members', label: 'Members' },
           { id: 'live-deals', label: 'Live Deals' },
           { id: 'buyer-list', label: 'Buyer List' },
+          { id: 'bird-dogs', label: 'Bird Dogs' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -580,6 +978,9 @@ export default function AdminDashboard() {
 
       {/* Buyer List tab */}
       {activeTab === 'buyer-list' && <BuyerListAdmin />}
+
+      {/* Bird Dogs tab */}
+      {activeTab === 'bird-dogs' && <BirdDogAdmin />}
     </motion.div>
     </>
   )
