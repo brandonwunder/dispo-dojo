@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Outlet } from 'react-router-dom';
 import MistLayer from './MistLayer';
 import TorchLight from './TorchLight';
 import EmberField from './EmberField';
@@ -9,7 +8,6 @@ import Sidebar from './Sidebar';
 import { Menu } from 'lucide-react';
 
 export default function Layout() {
-  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -41,17 +39,7 @@ export default function Layout() {
         <main className="ml-0 lg:ml-[250px] min-h-screen relative z-10">
           <RainEffect />
           <div>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={location.pathname}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-              >
-                <Outlet />
-              </motion.div>
-            </AnimatePresence>
+            <Outlet />
           </div>
         </main>
       </div>

@@ -88,90 +88,30 @@ const tools = [
   },
 ]
 
-/* Hawk silhouette SVG for the dawn sky */
-function HawkSilhouette() {
-  return (
-    <motion.svg
-      viewBox="0 0 64 64"
-      fill="none"
-      className="absolute top-16 right-12 w-[60px] h-[60px] opacity-[0.12] pointer-events-none"
-      animate={{ rotate: [0, 5, -3, 0], x: [0, 6, -4, 0], y: [0, -4, 2, 0] }}
-      transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-    >
-      <path
-        d="M32 18c-4 0-12 3-18 10-2 2.5-3 5-3 5s8-4 14-4c0 0-6 6-8 14 0 0 6-6 12-8 0 0-2 8-1 12 0 0 4-8 6-10 2 2 6 10 6 10 1-4-1-12-1-12 6 2 12 8 12 8-2-8-8-14-8-14 6 0 14 4 14 4s-1-2.5-3-5c-6-7-14-10-18-10z"
-        fill="currentColor"
-        className="text-parchment"
-      />
-    </motion.svg>
-  )
-}
-
 export default function DirectAgent() {
   return (
     <div className="relative min-h-screen">
-      {/* ---- Dawn sky background ---- */}
-      <div
-        className="fixed inset-0 -z-10"
-        style={{
-          background:
-            'linear-gradient(to top, #1a1510 0%, #06060f 30%, #0a0a20 60%, #2a1a3a 80%, #c9913a33 100%)',
-        }}
-      />
-
-      {/* ---- Mountain silhouettes ---- */}
-      <div className="fixed bottom-0 left-0 right-0 -z-10 h-48 pointer-events-none">
-        {/* Mountain 1 — large left */}
+      {/* Background Image */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 2 }}>
         <div
-          className="absolute bottom-0 left-[5%]"
+          className="absolute inset-0"
           style={{
-            width: 0,
-            height: 0,
-            borderLeft: '160px solid transparent',
-            borderRight: '160px solid transparent',
-            borderBottom: '180px solid #0d0b09',
+            backgroundImage: 'url(/direct-agent-bg.png)',
+            backgroundSize: '120%',
+            backgroundPosition: 'center 30%',
+            backgroundRepeat: 'no-repeat',
           }}
         />
-        {/* Mountain 2 — tall center-left */}
-        <div
-          className="absolute bottom-0 left-[25%]"
-          style={{
-            width: 0,
-            height: 0,
-            borderLeft: '120px solid transparent',
-            borderRight: '140px solid transparent',
-            borderBottom: '200px solid #11100e',
-          }}
-        />
-        {/* Mountain 3 — center-right */}
-        <div
-          className="absolute bottom-0 right-[20%]"
-          style={{
-            width: 0,
-            height: 0,
-            borderLeft: '180px solid transparent',
-            borderRight: '130px solid transparent',
-            borderBottom: '160px solid #0f0d0b',
-          }}
-        />
-        {/* Mountain 4 — far right */}
-        <div
-          className="absolute bottom-0 right-[0%]"
-          style={{
-            width: 0,
-            height: 0,
-            borderLeft: '140px solid transparent',
-            borderRight: '100px solid transparent',
-            borderBottom: '140px solid #0e0c0a',
-          }}
-        />
+        <div className="absolute inset-0" style={{
+          background: `
+            radial-gradient(ellipse 80% 60% at 50% 30%, rgba(11,15,20,0.3) 0%, rgba(11,15,20,0.6) 55%, rgba(11,15,20,0.88) 100%),
+            linear-gradient(180deg, rgba(11,15,20,0.25) 0%, rgba(11,15,20,0.5) 40%, rgba(11,15,20,0.85) 100%)
+          `,
+        }} />
       </div>
 
-      {/* ---- Hawk silhouette ---- */}
-      <HawkSilhouette />
-
       {/* ---- Main content ---- */}
-      <div className="max-w-3xl mx-auto pb-16 relative z-10">
+      <div className="max-w-3xl mx-auto px-6 py-16 relative z-10">
         {/* ---- Hero ---- */}
         <motion.div
           initial="hidden"

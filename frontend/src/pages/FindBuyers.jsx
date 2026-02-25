@@ -510,7 +510,7 @@ export default function FindBuyers() {
       </div>
 
       <motion.div
-        className="max-w-[1000px] mx-auto relative z-10"
+        className="max-w-[1000px] mx-auto relative z-10 px-6 py-16"
         variants={containerVariants}
         initial="hidden"
         animate="visible"

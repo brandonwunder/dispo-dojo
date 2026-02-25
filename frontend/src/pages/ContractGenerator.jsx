@@ -892,7 +892,7 @@ export default function ContractGenerator() {
       variants={pageVariants}
       initial="hidden"
       animate="visible"
-      className="max-w-[1200px] mx-auto"
+      className="max-w-[1200px] mx-auto px-6 py-16"
     >
       {/* Header */}
       <div className="relative z-10 mb-8">

@@ -11,6 +11,7 @@ import {
   CheckCircle,
   FileText,
   Pencil,
+  PenLine,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { incrementStat } from '../lib/userProfile'
@@ -183,14 +184,25 @@ export default function LOIGenerator() {
       variants={pageVariants}
       initial="hidden"
       animate="visible"
-      className="max-w-[1200px] mx-auto"
+      className="max-w-[1200px] mx-auto px-6 py-16"
     >
       {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="font-display text-3xl md:text-4xl text-text-primary mb-2">
-          LOI <span className="brush-underline">Generator</span>
-        </h1>
-        <p className="text-text-dim text-base">
+      <div className="text-center mb-8 max-w-[680px] mx-auto">
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+            <PenLine size={36} style={{ color: '#00C6FF' }} />
+          </div>
+          <h1
+            className="font-display text-4xl"
+            style={{
+              color: '#F4F7FA',
+              textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+            }}
+          >
+            LOI Generator
+          </h1>
+        </div>
+        <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
           Create, preview, and send professional Letters of Intent in minutes.
         </p>
       </div>

@@ -1027,7 +1027,7 @@ export default function Underwriting() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-[900px] mx-auto relative z-10"
+        className="max-w-[900px] mx-auto relative z-10 px-6 py-16"
       >
         {/* Hero header */}
         <motion.div variants={itemVariants}>

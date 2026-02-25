@@ -319,24 +319,28 @@ export default function AdminDashboard() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="max-w-[1200px] mx-auto relative z-10"
+      className="max-w-[1200px] mx-auto relative z-10 px-6 py-16"
     >
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,198,255,0.1)', border: '1px solid rgba(0,198,255,0.3)' }}>
-            <Shield size={20} style={{ color: '#00C6FF' }} />
+      <div className="text-center mb-8 max-w-[680px] mx-auto">
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+            <Shield size={36} style={{ color: '#00C6FF' }} />
           </div>
-          <h1 className="font-display text-4xl" style={{ color: '#F4F7FA', textShadow: '0 2px 16px rgba(0,0,0,0.9)' }}>
+          <h1
+            className="font-display text-4xl"
+            style={{
+              color: '#F4F7FA',
+              textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+            }}
+          >
             The Sensei's Quarters
           </h1>
         </div>
-        <p className="text-text-dim text-base max-w-2xl mt-3">
+        <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
           Manage your platform and track partner sign-ups.
         </p>
       </div>
-
-      <div className="my-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,198,255,0.15), transparent)' }} />
 
       {/* Tab bar */}
       <div className="flex gap-1 mb-6 border-b border-[rgba(0,198,255,0.12)]">

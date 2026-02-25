@@ -446,7 +446,7 @@ function MainView({ bootsProfile, onEditSetup, firebaseUid, profile, user }) {
   }
 
   return (
-    <div className="min-h-screen px-4 py-10 relative z-10">
+    <div className="min-h-screen px-6 py-16 relative z-10">
       <div className="relative max-w-5xl mx-auto">
         {/* Page header */}
         <motion.div
