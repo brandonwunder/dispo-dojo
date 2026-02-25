@@ -4,6 +4,7 @@ import { Navigation2, Plus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import GlassPanel from '../components/GlassPanel'
 import ProfileSetupModal from '../components/boots/ProfileSetupModal'
+import CreatePostModal from '../components/boots/CreatePostModal'
 
 // ─── Placeholder Tab Components ──────────────────────────────────────────────
 
@@ -159,6 +160,13 @@ export default function BootsOnGround() {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onComplete={handleProfileComplete}
+      />
+
+      <CreatePostModal
+        isOpen={showPostModal}
+        onClose={() => setShowPostModal(false)}
+        firebaseUid={uid}
+        profile={profile}
       />
     </>
   )
