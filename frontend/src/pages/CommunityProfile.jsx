@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import {
   ArrowLeft, MessageSquare, Heart, Award, Calendar,
   X, Plus, Save, CheckCircle, Binoculars, TrendingUp, Target, Pencil,
+  Navigation2, Briefcase,
 } from 'lucide-react'
 import useUserProfile from '../hooks/useUserProfile'
 import { useAuth } from '../context/AuthContext'
@@ -55,9 +56,32 @@ const INVESTOR_DEAL_TYPES = [
 ]
 
 // ---------------------------------------------------------------------------
+// Boots on Ground constants
+// ---------------------------------------------------------------------------
+const BOOTS_TASK_TYPES = [
+  { id: 'photos', label: 'Property Photos' },
+  { id: 'walkthrough', label: 'Video Walkthroughs' },
+  { id: 'lockbox', label: 'Lockbox Access' },
+  { id: 'sign', label: 'Sign Placement' },
+  { id: 'occupant', label: 'Occupant Check' },
+  { id: 'hoa', label: 'HOA Docs' },
+  { id: 'other', label: 'Other' },
+]
+
+const BOOTS_DAYS = [
+  { id: 'mon', label: 'Mon' },
+  { id: 'tue', label: 'Tue' },
+  { id: 'wed', label: 'Wed' },
+  { id: 'thu', label: 'Thu' },
+  { id: 'fri', label: 'Fri' },
+  { id: 'sat', label: 'Sat' },
+  { id: 'sun', label: 'Sun' },
+]
+
+// ---------------------------------------------------------------------------
 // Tag Input sub-component
 // ---------------------------------------------------------------------------
-function TagInput({ tags, onChange, placeholder, maxTags = 10 }) {
+function TagInput({ tags, onChange, placeholder, maxTags = 10, accentColor = '#00C6FF' }) {
   const [inputValue, setInputValue] = useState('')
 
   const addTag = () => {
@@ -89,9 +113,9 @@ function TagInput({ tags, onChange, placeholder, maxTags = 10 }) {
             key={tag}
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm text-xs font-heading font-semibold tracking-wide"
             style={{
-              background: 'rgba(0,198,255,0.08)',
-              border: '1px solid rgba(0,198,255,0.2)',
-              color: '#00C6FF',
+              background: `${accentColor}14`,
+              border: `1px solid ${accentColor}33`,
+              color: accentColor,
             }}
           >
             {tag}
@@ -121,10 +145,10 @@ function TagInput({ tags, onChange, placeholder, maxTags = 10 }) {
           className="flex items-center justify-center px-3 rounded-sm transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/40 active:scale-95"
           style={{
             background: inputValue.trim()
-              ? 'rgba(0,198,255,0.12)'
+              ? `${accentColor}1F`
               : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${inputValue.trim() ? 'rgba(0,198,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
-            color: inputValue.trim() ? '#00C6FF' : 'rgba(200,209,218,0.3)',
+            border: `1px solid ${inputValue.trim() ? `${accentColor}4D` : 'rgba(255,255,255,0.08)'}`,
+            color: inputValue.trim() ? accentColor : 'rgba(200,209,218,0.3)',
             cursor: inputValue.trim() ? 'pointer' : 'not-allowed',
           }}
         >
@@ -451,6 +475,311 @@ function BirdDogProfileEditor({ birdDogProfile, onSave }) {
 }
 
 // ---------------------------------------------------------------------------
+// Boots Toggle Pills (accepts {id, label} objects)
+// ---------------------------------------------------------------------------
+function BootsTogglePills({ options, selected, onChange, accentColor = '#00C6FF' }) {
+  const toggle = (optionId) => {
+    if (selected.includes(optionId)) {
+      onChange(selected.filter((s) => s !== optionId))
+    } else {
+      onChange([...selected, optionId])
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map(({ id, label }) => {
+        const isActive = selected.includes(id)
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => toggle(id)}
+            className="px-3 py-1.5 rounded-sm text-xs font-heading font-semibold tracking-wide transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/40 active:scale-95"
+            style={{
+              background: isActive ? `${accentColor}20` : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isActive ? `${accentColor}55` : 'rgba(255,255,255,0.08)'}`,
+              color: isActive ? accentColor : 'rgba(200,209,218,0.5)',
+            }}
+          >
+            {label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Boots Day Toggles
+// ---------------------------------------------------------------------------
+function BootsDayToggles({ selected, onChange, accentColor = '#00C6FF' }) {
+  const toggle = (dayId) => {
+    onChange({ ...selected, [dayId]: !selected[dayId] })
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {BOOTS_DAYS.map(({ id, label }) => {
+        const isActive = selected[id]
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => toggle(id)}
+            className="px-3 py-1.5 rounded-sm text-xs font-heading font-semibold tracking-wider transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/40 active:scale-95"
+            style={{
+              background: isActive ? `${accentColor}20` : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isActive ? `${accentColor}55` : 'rgba(255,255,255,0.08)'}`,
+              color: isActive ? accentColor : 'rgba(200,209,218,0.5)',
+            }}
+          >
+            {label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// BootsProfileEditor sub-component
+// ---------------------------------------------------------------------------
+function BootsProfileEditor({ bootsProfile, onSave }) {
+  const [draft, setDraft] = useState(() => ({
+    role: bootsProfile.role || 'operator',
+    serviceArea: bootsProfile.serviceArea || [],
+    taskTypes: bootsProfile.taskTypes || [],
+    customTaskType: bootsProfile.customTaskType || '',
+    markets: bootsProfile.markets || [],
+    availability: bootsProfile.availability || {
+      mon: false, tue: false, wed: false, thu: false,
+      fri: false, sat: false, sun: false,
+    },
+    bio: bootsProfile.bio || '',
+    contactPrefs: {
+      showPhone: bootsProfile.contactPrefs?.showPhone ?? false,
+      showEmail: bootsProfile.contactPrefs?.showEmail ?? false,
+      dmsOnly: bootsProfile.contactPrefs?.dmsOnly ?? true,
+    },
+  }))
+
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const patch = useCallback((key, value) => {
+    setDraft((prev) => ({ ...prev, [key]: value }))
+    setSaved(false)
+  }, [])
+
+  const patchContactPref = useCallback((key, value) => {
+    setDraft((prev) => ({
+      ...prev,
+      contactPrefs: { ...prev.contactPrefs, [key]: value },
+    }))
+    setSaved(false)
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await onSave({
+        ...draft,
+        customTaskType: draft.taskTypes.includes('other') ? draft.customTaskType : '',
+        createdAt: bootsProfile.createdAt || new Date().toISOString(),
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const isOperator = draft.role === 'operator'
+  const roleBadgeColor = isOperator ? '#00C6FF' : '#F6C445'
+  const roleBadgeBg = isOperator ? 'rgba(0,198,255,0.1)' : 'rgba(246,196,69,0.1)'
+  const roleBadgeBorder = isOperator ? 'rgba(0,198,255,0.3)' : 'rgba(246,196,69,0.3)'
+  const roleLabel = isOperator ? 'Boots Operator' : 'Investor'
+  const RoleIcon = isOperator ? Navigation2 : Briefcase
+  const accentColor = isOperator ? '#00C6FF' : '#F6C445'
+
+  return (
+    <div className="space-y-5">
+      {/* Role badge */}
+      <div className="flex items-center gap-3">
+        <span
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-heading font-semibold tracking-wider uppercase"
+          style={{
+            color: roleBadgeColor,
+            background: roleBadgeBg,
+            border: `1px solid ${roleBadgeBorder}`,
+          }}
+        >
+          <RoleIcon size={12} />
+          {roleLabel}
+        </span>
+      </div>
+
+      {/* Operator fields */}
+      {isOperator && (
+        <>
+          {/* Service Area */}
+          <div>
+            <label className={labelCls}>Service Area</label>
+            <TagInput
+              tags={draft.serviceArea}
+              onChange={(v) => patch('serviceArea', v)}
+              placeholder="e.g. Dallas, TX"
+            />
+          </div>
+
+          {/* Task Types */}
+          <div>
+            <label className={labelCls}>Task Types</label>
+            <BootsTogglePills
+              options={BOOTS_TASK_TYPES}
+              selected={draft.taskTypes}
+              onChange={(v) => patch('taskTypes', v)}
+              accentColor={accentColor}
+            />
+            {draft.taskTypes.includes('other') && (
+              <div className="mt-2.5">
+                <input
+                  type="text"
+                  className={inputCls}
+                  placeholder="Describe your custom service..."
+                  value={draft.customTaskType}
+                  onChange={(e) => patch('customTaskType', e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Weekly Availability */}
+          <div>
+            <label className={labelCls}>Weekly Availability</label>
+            <BootsDayToggles
+              selected={draft.availability}
+              onChange={(v) => patch('availability', v)}
+              accentColor={accentColor}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Investor fields */}
+      {!isOperator && (
+        <>
+          {/* Markets */}
+          <div>
+            <label className={labelCls}>Markets</label>
+            <TagInput
+              tags={draft.markets}
+              onChange={(v) => patch('markets', v)}
+              placeholder="e.g. Houston, TX"
+              accentColor="#F6C445"
+            />
+          </div>
+
+          {/* Task Types Commonly Needed */}
+          <div>
+            <label className={labelCls}>Task Types Commonly Needed</label>
+            <BootsTogglePills
+              options={BOOTS_TASK_TYPES}
+              selected={draft.taskTypes}
+              onChange={(v) => patch('taskTypes', v)}
+              accentColor={accentColor}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Bio */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className={labelCls + ' mb-0'}>Bio</label>
+          <span
+            className="text-[10px] font-heading"
+            style={{
+              color: draft.bio.length > 260 ? '#E53935' : 'rgba(200,209,218,0.3)',
+            }}
+          >
+            {draft.bio.length}/280
+          </span>
+        </div>
+        <textarea
+          rows={3}
+          maxLength={280}
+          className={inputCls + ' resize-none'}
+          value={draft.bio}
+          onChange={(e) => patch('bio', e.target.value)}
+          placeholder={
+            isOperator
+              ? 'Tell investors about your experience and availability...'
+              : 'Describe what tasks you typically need boots on the ground for...'
+          }
+        />
+      </div>
+
+      {/* Contact Preferences */}
+      <div>
+        <label className={labelCls}>Contact Preferences</label>
+        <div className="space-y-3 mt-2">
+          <Checkbox
+            id="boots-showPhone"
+            checked={draft.contactPrefs.showPhone}
+            onChange={(v) => patchContactPref('showPhone', v)}
+            label="Show Phone Number"
+          />
+          <Checkbox
+            id="boots-showEmail"
+            checked={draft.contactPrefs.showEmail}
+            onChange={(v) => patchContactPref('showEmail', v)}
+            label="Show Email Address"
+          />
+          <Checkbox
+            id="boots-dmsOnly"
+            checked={draft.contactPrefs.dmsOnly}
+            onChange={(v) => patchContactPref('dmsOnly', v)}
+            label="DMs Only"
+          />
+        </div>
+      </div>
+
+      {/* Save button */}
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-sm font-heading text-sm font-semibold tracking-wider uppercase transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/50 active:scale-[0.98]"
+        style={{
+          background: saved
+            ? 'rgba(0,198,255,0.08)'
+            : 'linear-gradient(135deg, #0E5A88 0%, #00C6FF 100%)',
+          color: saved ? '#00C6FF' : '#F4F7FA',
+          border: `1px solid ${saved ? 'rgba(0,198,255,0.3)' : 'rgba(0,198,255,0.4)'}`,
+          boxShadow: saved ? 'none' : '0 4px 16px rgba(0,198,255,0.25)',
+          opacity: saving ? 0.7 : 1,
+          cursor: saving ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {saved ? (
+          <>
+            <CheckCircle size={14} />
+            Saved
+          </>
+        ) : (
+          <>
+            <Save size={14} />
+            {saving ? 'Saving...' : 'Save Changes'}
+          </>
+        )}
+      </button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 export default function CommunityProfile() {
@@ -496,6 +825,14 @@ export default function CommunityProfile() {
 
   const handleBirdDogSave = async (updatedData) => {
     await updateProfile({ birdDogProfile: updatedData })
+  }
+
+  // Use authProfile for boots data when viewing own profile (it's always fresh after saves)
+  const bootsSource = isOwnProfile ? authProfile : profile
+  const bootsProfile = bootsSource?.bootsProfile || null
+
+  const handleBootsSave = async (updatedData) => {
+    await updateProfile({ bootsProfile: updatedData })
   }
 
   return (
@@ -776,6 +1113,46 @@ export default function CommunityProfile() {
                   }}
                 >
                   <Binoculars size={14} />
+                  Get Started
+                </Link>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Boots on Ground Profile section — only on own profile */}
+        {isOwnProfile && (
+          <motion.div
+            className={`${cardClass} px-6 py-5`}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Navigation2 size={16} className="text-[#00C6FF]" />
+              <h3 className="text-[10px] font-heading font-semibold uppercase tracking-widest text-text-dim/40">
+                Boots on Ground Profile
+              </h3>
+            </div>
+
+            {bootsProfile ? (
+              <BootsProfileEditor
+                key={JSON.stringify(bootsProfile)}
+                bootsProfile={bootsProfile}
+                onSave={handleBootsSave}
+              />
+            ) : (
+              /* CTA to join Boots on Ground */
+              <div>
+                <p className="text-text-dim font-body text-sm mb-4">
+                  Join the Boots on Ground marketplace to connect with operators and investors.
+                </p>
+                <Link
+                  to="/boots-on-ground"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-sm text-xs font-heading tracking-wider text-[#00C6FF] border border-[rgba(0,198,255,0.3)] hover:bg-[rgba(0,198,255,0.15)] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/40 active:scale-95"
+                  style={{ background: 'rgba(0,198,255,0.05)' }}
+                >
+                  <Navigation2 size={14} />
                   Get Started
                 </Link>
               </div>
