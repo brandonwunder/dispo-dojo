@@ -1,7 +1,12 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useCallback } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, MessageSquare, Heart, Award, Calendar } from 'lucide-react'
+import {
+  ArrowLeft, MessageSquare, Heart, Award, Calendar,
+  X, Plus, Save, CheckCircle, Binoculars, TrendingUp,
+} from 'lucide-react'
 import useUserProfile from '../hooks/useUserProfile'
+import { useAuth } from '../context/AuthContext'
 import { computeCommunityRank } from '../lib/userProfile'
 import RankBadge from '../components/community/RankBadge'
 import BadgeShowcase from '../components/community/BadgeShowcase'
@@ -19,10 +24,443 @@ function formatDate(dateStr) {
 
 const cardClass = 'bg-[#111B24] border border-[rgba(246,196,69,0.10)] rounded-sm'
 
+const inputCls =
+  'w-full bg-black/40 border border-[rgba(246,196,69,0.15)] rounded-sm px-3 py-2 text-sm text-parchment placeholder:text-text-dim/30 focus:outline-none focus:border-[rgba(246,196,69,0.4)] transition-colors duration-150'
+const labelCls =
+  'block text-[10px] font-heading font-semibold tracking-widest uppercase text-text-dim/50 mb-1'
+
+// ---------------------------------------------------------------------------
+// Bird Dog methods & deal types constants
+// ---------------------------------------------------------------------------
+const BIRD_DOG_METHODS = [
+  'Driving for Dollars',
+  'Door Knocking',
+  'Cold Calling',
+  'Texting / SMS',
+  'Skip Tracing',
+  'Bandit Signs',
+  'Networking',
+  'Online Research',
+]
+
+const INVESTOR_DEAL_TYPES = [
+  'Wholesale',
+  'Fix & Flip',
+  'Buy & Hold',
+  'Creative Finance',
+  'Subject To',
+  'Seller Finance',
+  'Lease Option',
+  'Land',
+]
+
+// ---------------------------------------------------------------------------
+// Tag Input sub-component
+// ---------------------------------------------------------------------------
+function TagInput({ tags, onChange, placeholder, maxTags = 10 }) {
+  const [inputValue, setInputValue] = useState('')
+
+  const addTag = () => {
+    const trimmed = inputValue.trim()
+    if (!trimmed || tags.includes(trimmed) || tags.length >= maxTags) return
+    onChange([...tags, trimmed])
+    setInputValue('')
+  }
+
+  const removeTag = (tagToRemove) => {
+    onChange(tags.filter((t) => t !== tagToRemove))
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addTag()
+    }
+    if (e.key === 'Backspace' && !inputValue && tags.length > 0) {
+      removeTag(tags[tags.length - 1])
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm text-xs font-heading font-semibold tracking-wide"
+            style={{
+              background: 'rgba(0,198,255,0.08)',
+              border: '1px solid rgba(0,198,255,0.2)',
+              color: '#00C6FF',
+            }}
+          >
+            {tag}
+            <button
+              type="button"
+              onClick={() => removeTag(tag)}
+              className="ml-0.5 hover:text-[#E53935] transition-colors duration-150 focus-visible:outline-none active:scale-90"
+              aria-label={`Remove ${tag}`}
+            >
+              <X size={10} />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          className={inputCls}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+        />
+        <button
+          type="button"
+          onClick={addTag}
+          disabled={!inputValue.trim() || tags.length >= maxTags}
+          className="flex items-center justify-center px-3 rounded-sm transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/40 active:scale-95"
+          style={{
+            background: inputValue.trim()
+              ? 'rgba(0,198,255,0.12)'
+              : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${inputValue.trim() ? 'rgba(0,198,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
+            color: inputValue.trim() ? '#00C6FF' : 'rgba(200,209,218,0.3)',
+            cursor: inputValue.trim() ? 'pointer' : 'not-allowed',
+          }}
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Toggle Pill sub-component
+// ---------------------------------------------------------------------------
+function TogglePills({ options, selected, onChange }) {
+  const toggle = (option) => {
+    if (selected.includes(option)) {
+      onChange(selected.filter((s) => s !== option))
+    } else {
+      onChange([...selected, option])
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((option) => {
+        const isActive = selected.includes(option)
+        return (
+          <button
+            key={option}
+            type="button"
+            onClick={() => toggle(option)}
+            className="px-3 py-1.5 rounded-sm text-xs font-heading font-semibold tracking-wide transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/40 active:scale-95"
+            style={{
+              background: isActive
+                ? 'rgba(0,198,255,0.12)'
+                : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isActive ? 'rgba(0,198,255,0.35)' : 'rgba(255,255,255,0.08)'}`,
+              color: isActive ? '#00C6FF' : 'rgba(200,209,218,0.5)',
+            }}
+          >
+            {option}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Checkbox sub-component
+// ---------------------------------------------------------------------------
+function Checkbox({ checked, onChange, label, id }) {
+  return (
+    <label
+      htmlFor={id}
+      className="flex items-center gap-2.5 cursor-pointer group"
+    >
+      <button
+        id={id}
+        type="button"
+        role="checkbox"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className="w-4 h-4 rounded-sm flex items-center justify-center flex-shrink-0 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/40"
+        style={{
+          background: checked ? '#00C6FF' : 'rgba(255,255,255,0.06)',
+          border: `1px solid ${checked ? '#00C6FF' : 'rgba(255,255,255,0.15)'}`,
+        }}
+      >
+        {checked && (
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+            <path d="M1 4L3.5 6.5L9 1" stroke="#0B0F14" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </button>
+      <span className="text-sm font-body text-text-dim/80 group-hover:text-parchment transition-colors duration-150">
+        {label}
+      </span>
+    </label>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// BirdDogProfileEditor sub-component
+// ---------------------------------------------------------------------------
+function BirdDogProfileEditor({ birdDogProfile, onSave }) {
+  const [draft, setDraft] = useState(() => ({
+    role: birdDogProfile.role || 'bird_dog',
+    serviceArea: birdDogProfile.serviceArea || [],
+    methods: birdDogProfile.methods || [],
+    markets: birdDogProfile.markets || [],
+    dealTypes: birdDogProfile.dealTypes || [],
+    bio: birdDogProfile.bio || '',
+    availability: birdDogProfile.availability || 'available',
+    contactPrefs: {
+      showPhone: birdDogProfile.contactPrefs?.showPhone ?? false,
+      showEmail: birdDogProfile.contactPrefs?.showEmail ?? false,
+      dmsOnly: birdDogProfile.contactPrefs?.dmsOnly ?? true,
+    },
+  }))
+
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const patch = useCallback((key, value) => {
+    setDraft((prev) => ({ ...prev, [key]: value }))
+    setSaved(false)
+  }, [])
+
+  const patchContactPref = useCallback((key, value) => {
+    setDraft((prev) => ({
+      ...prev,
+      contactPrefs: { ...prev.contactPrefs, [key]: value },
+    }))
+    setSaved(false)
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await onSave({
+        ...draft,
+        createdAt: birdDogProfile.createdAt || new Date().toISOString(),
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const isBirdDog = draft.role === 'bird_dog'
+  const roleBadgeColor = isBirdDog ? '#00C6FF' : '#F6C445'
+  const roleBadgeBg = isBirdDog ? 'rgba(0,198,255,0.1)' : 'rgba(246,196,69,0.1)'
+  const roleBadgeBorder = isBirdDog ? 'rgba(0,198,255,0.3)' : 'rgba(246,196,69,0.3)'
+  const roleLabel = isBirdDog ? 'Bird Dog' : 'Investor'
+  const RoleIcon = isBirdDog ? Binoculars : TrendingUp
+
+  return (
+    <div className="space-y-5">
+      {/* Role badge */}
+      <div className="flex items-center gap-3">
+        <span
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-heading font-semibold tracking-wider uppercase"
+          style={{
+            color: roleBadgeColor,
+            background: roleBadgeBg,
+            border: `1px solid ${roleBadgeBorder}`,
+          }}
+        >
+          <RoleIcon size={12} />
+          {roleLabel}
+        </span>
+      </div>
+
+      {/* Bird Dog fields */}
+      {isBirdDog && (
+        <>
+          {/* Service Area */}
+          <div>
+            <label className={labelCls}>Service Area</label>
+            <TagInput
+              tags={draft.serviceArea}
+              onChange={(v) => patch('serviceArea', v)}
+              placeholder="e.g. Dallas, TX"
+            />
+          </div>
+
+          {/* Methods */}
+          <div>
+            <label className={labelCls}>Methods</label>
+            <TogglePills
+              options={BIRD_DOG_METHODS}
+              selected={draft.methods}
+              onChange={(v) => patch('methods', v)}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Investor fields */}
+      {!isBirdDog && (
+        <>
+          {/* Markets */}
+          <div>
+            <label className={labelCls}>Markets</label>
+            <TagInput
+              tags={draft.markets}
+              onChange={(v) => patch('markets', v)}
+              placeholder="e.g. Houston, TX"
+            />
+          </div>
+
+          {/* Deal Types */}
+          <div>
+            <label className={labelCls}>Deal Types</label>
+            <TogglePills
+              options={INVESTOR_DEAL_TYPES}
+              selected={draft.dealTypes}
+              onChange={(v) => patch('dealTypes', v)}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Bio / Pitch */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className={labelCls + ' mb-0'}>
+            {isBirdDog ? 'Bio / Pitch' : 'Bio'}
+          </label>
+          <span
+            className="text-[10px] font-heading"
+            style={{
+              color: draft.bio.length > 260 ? '#E53935' : 'rgba(200,209,218,0.3)',
+            }}
+          >
+            {draft.bio.length}/280
+          </span>
+        </div>
+        <textarea
+          rows={3}
+          maxLength={280}
+          className={inputCls + ' resize-none'}
+          value={draft.bio}
+          onChange={(e) => patch('bio', e.target.value)}
+          placeholder={
+            isBirdDog
+              ? 'Tell investors why they should work with you...'
+              : 'Describe what deals you are looking for...'
+          }
+        />
+      </div>
+
+      {/* Availability (bird dog only) */}
+      {isBirdDog && (
+        <div>
+          <label className={labelCls}>Availability</label>
+          <div className="flex gap-2">
+            {[
+              { value: 'available', label: 'Available Now' },
+              { value: 'unavailable', label: 'Not Available' },
+            ].map(({ value, label }) => {
+              const isActive = draft.availability === value
+              const activeColor = value === 'available' ? '#00C6FF' : '#E53935'
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => patch('availability', value)}
+                  className="flex-1 py-2 rounded-sm text-xs font-heading font-semibold tracking-widest uppercase transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F6C445]/40 active:scale-95"
+                  style={{
+                    background: isActive
+                      ? `${activeColor}15`
+                      : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${isActive ? `${activeColor}40` : 'rgba(255,255,255,0.08)'}`,
+                    color: isActive ? activeColor : 'rgba(200,209,218,0.5)',
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Contact Preferences */}
+      <div>
+        <label className={labelCls}>Contact Preferences</label>
+        <div className="space-y-3 mt-2">
+          <Checkbox
+            id="bd-showPhone"
+            checked={draft.contactPrefs.showPhone}
+            onChange={(v) => patchContactPref('showPhone', v)}
+            label="Show Phone Number"
+          />
+          <Checkbox
+            id="bd-showEmail"
+            checked={draft.contactPrefs.showEmail}
+            onChange={(v) => patchContactPref('showEmail', v)}
+            label="Show Email Address"
+          />
+          <Checkbox
+            id="bd-dmsOnly"
+            checked={draft.contactPrefs.dmsOnly}
+            onChange={(v) => patchContactPref('dmsOnly', v)}
+            label="DMs Only"
+          />
+        </div>
+      </div>
+
+      {/* Save button */}
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-sm font-heading text-sm font-semibold tracking-wider uppercase transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/50 active:scale-[0.98]"
+        style={{
+          background: saved
+            ? 'rgba(0,198,255,0.08)'
+            : 'linear-gradient(135deg, #0E5A88 0%, #00C6FF 100%)',
+          color: saved ? '#00C6FF' : '#F4F7FA',
+          border: `1px solid ${saved ? 'rgba(0,198,255,0.3)' : 'rgba(0,198,255,0.4)'}`,
+          boxShadow: saved ? 'none' : '0 4px 16px rgba(0,198,255,0.25)',
+          opacity: saving ? 0.7 : 1,
+          cursor: saving ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {saved ? (
+          <>
+            <CheckCircle size={14} />
+            Saved
+          </>
+        ) : (
+          <>
+            <Save size={14} />
+            {saving ? 'Saving...' : 'Save Changes'}
+          </>
+        )}
+      </button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 export default function CommunityProfile() {
   const { uid } = useParams()
   const navigate = useNavigate()
   const { profile, loading } = useUserProfile(uid)
+  const { user, profile: authProfile, updateProfile } = useAuth()
+
+  // Determine if the viewer is the profile owner
+  const isOwnProfile = user?.firebaseUid && user.firebaseUid === uid
 
   if (loading) {
     return (
@@ -51,6 +489,14 @@ export default function CommunityProfile() {
   const xpCurrent = (stats.communityXp || 0) - rank.xpRequired
   const xpNeeded = rank.next ? rank.next.xpRequired - rank.xpRequired : 1
   const progressPercent = rank.next ? Math.min((xpCurrent / xpNeeded) * 100, 100) : 100
+
+  // Use authProfile for bird dog data when viewing own profile (it's always fresh after saves)
+  const birdDogSource = isOwnProfile ? authProfile : profile
+  const birdDogProfile = birdDogSource?.birdDogProfile || null
+
+  const handleBirdDogSave = async (updatedData) => {
+    await updateProfile({ birdDogProfile: updatedData })
+  }
 
   return (
     <div className="h-[calc(100vh-64px)] overflow-y-auto px-4 py-6">
@@ -176,6 +622,61 @@ export default function CommunityProfile() {
           </h3>
           <BadgeShowcase earnedBadgeIds={profile.communityBadges || []} showAll={true} />
         </div>
+
+        {/* Bird Dog Profile section — only on own profile */}
+        {isOwnProfile && (
+          <motion.div
+            className={`${cardClass} px-6 py-5`}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
+          >
+            <h3 className="mb-4 text-[10px] font-heading font-semibold uppercase tracking-widest text-text-dim/40">
+              Bird Dog Profile
+            </h3>
+
+            {birdDogProfile ? (
+              <BirdDogProfileEditor
+                key={JSON.stringify(birdDogProfile)}
+                birdDogProfile={birdDogProfile}
+                onSave={handleBirdDogSave}
+              />
+            ) : (
+              /* CTA to join the Bird Dog Network */
+              <div className="text-center py-4">
+                <div
+                  className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+                  style={{
+                    background: 'rgba(0,198,255,0.08)',
+                    border: '1px solid rgba(0,198,255,0.15)',
+                  }}
+                >
+                  <Binoculars size={20} className="text-[#00C6FF]" />
+                </div>
+                <h4 className="font-heading text-sm font-semibold text-parchment mb-1.5">
+                  Join the Bird Dog Network
+                </h4>
+                <p className="text-xs text-text-dim/60 font-body leading-relaxed max-w-sm mx-auto mb-5">
+                  Find motivated sellers, connect with investors, and earn referral fees.
+                  Set up your Bird Dog profile to get started.
+                </p>
+                <Link
+                  to="/bird-dog"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-sm font-heading text-sm font-semibold tracking-wider uppercase transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/50 active:scale-[0.98]"
+                  style={{
+                    background: 'linear-gradient(135deg, #0E5A88 0%, #00C6FF 100%)',
+                    color: '#F4F7FA',
+                    border: '1px solid rgba(0,198,255,0.4)',
+                    boxShadow: '0 4px 16px rgba(0,198,255,0.25)',
+                  }}
+                >
+                  <Binoculars size={14} />
+                  Get Started
+                </Link>
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {/* Member since */}
         <div className="flex items-center justify-center gap-1.5 pb-4 text-text-dim/30">
