@@ -117,7 +117,8 @@ export default function MessageInput({
       className="px-5 py-3"
       style={{
         background: '#111B24',
-        borderTop: '1px solid rgba(0,198,255,0.08)',
+        padding: '12px 16px',
+        borderTop: '1px solid rgba(0,198,255,0.06)',
         boxShadow: '0 -4px 24px rgba(0,0,0,0.4)',
       }}
     >
@@ -130,7 +131,7 @@ export default function MessageInput({
             exit={{ opacity: 0, y: 6 }}
             transition={{ duration: 0.15 }}
             className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-md"
-            style={{ background: 'rgba(0,198,255,0.06)', border: '1px solid rgba(0,198,255,0.15)' }}
+            style={{ background: 'rgba(0,198,255,0.06)', border: '1px solid rgba(0,198,255,0.10)' }}
           >
             <Reply className="h-3 w-3 shrink-0" style={{ color: 'rgba(0,198,255,0.6)' }} />
             <span className="text-[11px]" style={{ color: 'rgba(0,198,255,0.6)', fontFamily: 'var(--font-heading, sans-serif)' }}>
@@ -160,7 +161,7 @@ export default function MessageInput({
             </div>
           )}
           {pendingAttachments.map((att, i) => (
-            <div key={i} className="relative flex items-center gap-1 rounded-sm border border-[rgba(246,196,69,0.1)] bg-white/[0.03] px-2 py-1">
+            <div key={i} className="relative flex items-center gap-1 rounded-sm border border-[rgba(0,198,255,0.08)] bg-white/[0.03] px-2 py-1">
               <span className="text-[10px] text-parchment truncate max-w-[120px]">{att.name}</span>
               <button
                 onClick={() => removePendingAttachment(i)}
@@ -180,7 +181,7 @@ export default function MessageInput({
       )}
 
       {/* Input bar */}
-      <div className="relative flex items-center gap-2 rounded-sm border border-[rgba(246,196,69,0.12)] bg-black/30 px-3 py-2 focus-within:border-[rgba(246,196,69,0.25)]">
+      <div className="relative flex items-center gap-2 rounded-lg border border-[rgba(0,198,255,0.08)] bg-[rgba(14,19,23,0.8)] px-3 py-2 focus-within:border-[rgba(0,198,255,0.2)]">
         {/* @mention autocomplete */}
         <MentionAutocomplete
           query={mentionQuery}

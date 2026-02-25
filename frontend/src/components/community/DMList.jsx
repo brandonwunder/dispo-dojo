@@ -36,10 +36,10 @@ function truncate(str, max) {
 
 export default function DMList({ conversations, currentUid, activeDMId, onSelectDM, onNewDM }) {
   return (
-    <div className="px-4 pt-4 pb-1">
+    <div className="px-2 pt-3 pb-1" style={{ borderTop: '1px solid rgba(0,198,255,0.06)' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-text-dim/50">
+        <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: '#8A9AAA', fontFamily: 'var(--font-body, sans-serif)' }}>
           Direct Messages
         </span>
         <button
@@ -73,7 +73,7 @@ export default function DMList({ conversations, currentUid, activeDMId, onSelect
               <button
                 key={convo.id}
                 onClick={() => onSelectDM(convo.id)}
-                className={`flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left transition-colors duration-150
+                className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors duration-150
                   ${isActive
                     ? 'bg-[rgba(0,198,255,0.08)]'
                     : 'hover:bg-white/[0.04]'
@@ -81,7 +81,7 @@ export default function DMList({ conversations, currentUid, activeDMId, onSelect
                 `}
               >
                 {/* Avatar */}
-                <div className="hanko-seal flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[9px] font-bold">
+                <div className="hanko-seal flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[8px] font-bold">
                   {initials(other.name)}
                 </div>
 
