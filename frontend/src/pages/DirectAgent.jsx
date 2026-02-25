@@ -10,9 +10,16 @@ import {
   PenLine,
   ClipboardCheck,
 } from 'lucide-react'
-import WoodPanel from '../components/WoodPanel'
 
-const fadeUp = {
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
+  },
+}
+
+const itemVariants = {
   hidden: { opacity: 0, y: 28 },
   visible: {
     opacity: 1,
@@ -20,6 +27,8 @@ const fadeUp = {
     transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
   },
 }
+
+const stepAccents = ['#00C6FF', '#F6C445', '#A855F7', '#E53935']
 
 const steps = [
   {
@@ -54,24 +63,28 @@ const tools = [
     icon: PenLine,
     name: 'LOI Generator',
     desc: 'Create professional Letters of Intent',
+    accent: '#00C6FF',
   },
   {
     to: '/contract-generator',
     icon: FileCheck,
     name: 'Contract Generator',
     desc: 'Build and sign contracts instantly',
+    accent: '#F6C445',
   },
   {
     to: '/underwriting',
     icon: ClipboardCheck,
     name: 'Free Underwriting',
     desc: 'Get deals underwritten at no cost',
+    accent: '#A855F7',
   },
   {
     to: '/agent-finder',
     icon: Search,
     name: 'Agent Finder',
     desc: 'Find listing agents for any property',
+    accent: '#E53935',
   },
 ]
 
@@ -167,13 +180,13 @@ export default function DirectAgent() {
           className="mb-14 text-center"
         >
           <motion.h1
-            variants={fadeUp}
+            variants={itemVariants}
             className="font-display text-4xl text-gold tracking-[0.06em] mb-3"
           >
             The Messenger Hawk Post
           </motion.h1>
           <motion.p
-            variants={fadeUp}
+            variants={itemVariants}
             className="font-heading text-text-dim tracking-wide text-lg"
           >
             How We Close Deals With Listing Agents
@@ -188,38 +201,60 @@ export default function DirectAgent() {
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, margin: '-60px' }}
-                variants={fadeUp}
+                variants={itemVariants}
               >
-                <WoodPanel withBrackets>
-                  <div className="flex items-start gap-5">
-                    {/* Hanko-seal numbered circle */}
-                    <div className="shrink-0 flex items-center justify-center w-12 h-12 rounded-full hanko-seal text-white font-display text-lg font-bold">
-                      {step.num}
-                    </div>
+                <div
+                  className="rounded-sm border border-gold-dim/20 overflow-hidden"
+                  style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
+                >
+                  {/* Colored accent line at top */}
+                  <div
+                    className="h-[2px]"
+                    style={{ background: `linear-gradient(90deg, transparent, ${stepAccents[index]}, transparent)` }}
+                  />
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <step.icon size={18} className="text-gold shrink-0" />
-                        <h3 className="font-heading text-parchment text-lg font-semibold tracking-wide">
-                          {step.title}
-                        </h3>
+                  <div className="p-5">
+                    <div className="flex items-start gap-5">
+                      {/* Numbered indicator */}
+                      <div
+                        className="shrink-0 flex items-center justify-center w-12 h-12 rounded-sm font-heading text-lg font-bold border"
+                        style={{
+                          color: stepAccents[index],
+                          borderColor: `${stepAccents[index]}33`,
+                          background: `${stepAccents[index]}0D`,
+                        }}
+                      >
+                        {String(step.num).padStart(2, '0')}
                       </div>
-                      <p className="text-text-dim text-sm leading-relaxed">
-                        {step.body}
-                      </p>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <step.icon size={18} className="shrink-0" style={{ color: stepAccents[index] }} />
+                          <h3 className="font-heading text-parchment text-lg font-semibold tracking-wide">
+                            {step.title}
+                          </h3>
+                        </div>
+                        <p className="text-text-dim text-sm leading-relaxed">
+                          {step.body}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </WoodPanel>
+                </div>
               </motion.div>
 
-              {/* Dotted gold connector between steps */}
+              {/* Connector between steps */}
               {index < steps.length - 1 && (
                 <div className="flex justify-center py-3">
                   <div className="flex flex-col items-center gap-1">
-                    <div className="w-px h-6 border-l-2 border-dashed border-gold-dim/30" />
+                    <div
+                      className="w-px h-6 border-l-2 border-dashed"
+                      style={{ borderColor: `${stepAccents[index]}30` }}
+                    />
                     <ArrowRight
                       size={14}
-                      className="text-gold-dim/40 rotate-90"
+                      className="rotate-90"
+                      style={{ color: `${stepAccents[index]}50` }}
                     />
                   </div>
                 </div>
@@ -228,18 +263,18 @@ export default function DirectAgent() {
           ))}
         </div>
 
-        {/* ---- Katana divider ---- */}
-        <div className="katana-line mb-10" />
+        {/* ---- Divider ---- */}
+        <div className="h-[1px] mb-10" style={{ background: 'linear-gradient(90deg, transparent, #00C6FF33, transparent)' }} />
 
         {/* ---- Tools callout ---- */}
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-40px' }}
-          variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+          variants={containerVariants}
         >
           <motion.h2
-            variants={fadeUp}
+            variants={itemVariants}
             className="font-display text-2xl text-gold tracking-[0.06em] mb-6 text-center"
           >
             Everything You Need, Built In
@@ -247,22 +282,43 @@ export default function DirectAgent() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tools.map((tool) => (
-              <motion.div key={tool.to} variants={fadeUp}>
+              <motion.div key={tool.to} variants={itemVariants}>
                 <Link to={tool.to} className="block h-full group">
-                  <WoodPanel hover className="h-full">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl hanko-seal mb-4">
-                      <tool.icon size={18} className="text-white" />
+                  <div
+                    className="rounded-sm border border-gold-dim/20 overflow-hidden h-full transition-transform duration-200 hover:-translate-y-1"
+                    style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
+                  >
+                    {/* Colored accent line */}
+                    <div
+                      className="h-[2px]"
+                      style={{ background: `linear-gradient(90deg, transparent, ${tool.accent}, transparent)` }}
+                    />
+
+                    <div className="p-5">
+                      <div
+                        className="flex items-center justify-center w-10 h-10 rounded-sm mb-4 border"
+                        style={{
+                          color: tool.accent,
+                          borderColor: `${tool.accent}33`,
+                          background: `${tool.accent}0D`,
+                        }}
+                      >
+                        <tool.icon size={18} />
+                      </div>
+                      <h4 className="font-heading text-lg font-semibold tracking-wide text-parchment mb-1">
+                        {tool.name}
+                      </h4>
+                      <p className="text-text-dim text-xs leading-relaxed flex-1">
+                        {tool.desc}
+                      </p>
+                      <span
+                        className="inline-flex items-center gap-1 text-xs font-heading font-medium uppercase tracking-wide mt-3 group-hover:gap-2 transition-[gap] duration-200"
+                        style={{ color: tool.accent }}
+                      >
+                        Use Tool <ArrowRight size={12} />
+                      </span>
                     </div>
-                    <h4 className="font-heading text-lg font-semibold tracking-wide text-parchment mb-1">
-                      {tool.name}
-                    </h4>
-                    <p className="text-text-dim text-xs leading-relaxed flex-1">
-                      {tool.desc}
-                    </p>
-                    <span className="inline-flex items-center gap-1 text-gold text-xs font-heading font-medium uppercase tracking-wide mt-3 group-hover:gap-2 transition-all">
-                      Use Tool <ArrowRight size={12} />
-                    </span>
-                  </WoodPanel>
+                  </div>
                 </Link>
               </motion.div>
             ))}
