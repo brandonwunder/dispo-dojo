@@ -38,7 +38,7 @@ const navSections = [
     ],
   },
   {
-    title: 'Sales Tools',
+    title: 'Subject To Tools',
     items: [
       { to: '/website-explainer', icon: Monitor, label: 'Subject-To Explainer' },
       { to: '/offer-comparison', icon: BarChart3, label: 'Offer Comparison' },
