@@ -606,8 +606,8 @@ export default function Login() {
           alt="Dispo Dojo"
           className="h-48 md:h-60 w-auto object-contain mb-6"
           style={{
-            filter: 'drop-shadow(0 0 24px rgba(246,196,69,0.4))',
-            animation: 'logoFloat 6s ease-in-out infinite',
+            filter: 'drop-shadow(0 0 36px rgba(246,196,69,0.55)) drop-shadow(0 0 80px rgba(246,196,69,0.25))',
+            animation: 'logoFloat 3s ease-in-out infinite',
           }}
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -625,9 +625,7 @@ export default function Login() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1.8, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          THE #1 WHOLESALING
-          <br />
-          JV TEAM
+          THE #1 JV TEAM
         </motion.h1>
 
         {/* Subtitle */}
@@ -664,7 +662,7 @@ export default function Login() {
           }}
           whileTap={{ scale: 0.97 }}
         >
-          Enter the Dojo
+          LET'S STACK DEALS!
         </motion.button>
       </div>
 
