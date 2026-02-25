@@ -508,12 +508,20 @@ export default function Login() {
         }}
       />
 
-      {/* Layer 1: Vignette overlay */}
+      {/* Layer 1: Vignette + premium fade overlay */}
       <div
         className="fixed inset-0 z-[1] pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse 70% 60% at 50% 40%, transparent 0%, rgba(11,15,20,0.5) 50%, rgba(11,15,20,0.85) 100%)',
+          background: [
+            'radial-gradient(ellipse 70% 60% at 50% 40%, transparent 0%, rgba(11,15,20,0.6) 45%, rgba(11,15,20,0.92) 100%)',
+            'linear-gradient(180deg, rgba(11,15,20,0.55) 0%, rgba(11,15,20,0.25) 35%, rgba(11,15,20,0.35) 65%, rgba(11,15,20,0.8) 100%)',
+          ].join(', '),
         }}
+      />
+      {/* Extra dark wash to push background further back */}
+      <div
+        className="fixed inset-0 z-[1] pointer-events-none"
+        style={{ background: 'rgba(11,15,20,0.45)' }}
       />
 
       {/* Layer 2: Rain (calmer, no lightning) */}
@@ -591,20 +599,6 @@ export default function Login() {
 
       {/* ═══ Layer 10: HERO SECTION ═══ */}
       <div className="relative z-[10] min-h-screen flex flex-col items-center justify-center p-4 text-center">
-
-        {/* Logo — floating */}
-        <motion.img
-          src="/dispo-dojo-logo.png"
-          alt="Dispo Dojo"
-          className="h-20 md:h-24 w-auto object-contain mb-8"
-          style={{
-            filter: 'drop-shadow(0 0 16px rgba(246,196,69,0.4))',
-            animation: 'logoFloat 6s ease-in-out infinite',
-          }}
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-        />
 
         {/* Main Headline */}
         <motion.h1
