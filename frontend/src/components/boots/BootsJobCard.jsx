@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Star, MapPin, Users, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { MapPin, Users, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import GlassPanel from '../GlassPanel'
 import ApplicantsList from './ApplicantsList'
+import StarRating from './StarRating'
+import useBootsRating from './useBootsRating'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -60,6 +62,7 @@ export default function BootsJobCard({
   const [showApplicants, setShowApplicants] = useState(false)
   const firstLetter = (post.userName || 'A').charAt(0).toUpperCase()
   const isUrgent = post.urgency === 'urgent'
+  const { avg, count, loading: ratingLoading } = useBootsRating(post.userId)
 
   const isAuthor = currentUserId && post.userId === currentUserId
   const hasApplied = userApplications.includes(post.id)
@@ -84,12 +87,21 @@ export default function BootsJobCard({
               {post.userName || 'Anonymous'}
             </p>
           </div>
-          <span
-            className="shrink-0 flex items-center gap-1 text-[10px] font-heading font-semibold tracking-wider"
-            style={{ color: '#C8D1DA' }}
-          >
-            <Star size={12} style={{ color: '#F6C445', opacity: 0.5 }} />
-            New
+          <span className="shrink-0 flex items-center gap-1.5">
+            {ratingLoading ? (
+              <span className="text-[10px] font-heading font-semibold tracking-wider" style={{ color: '#C8D1DA', opacity: 0.4 }}>...</span>
+            ) : count > 0 ? (
+              <>
+                <StarRating value={avg} readOnly size={12} />
+                <span className="text-[10px] font-heading font-semibold tracking-wider" style={{ color: '#C8D1DA' }}>
+                  ({count})
+                </span>
+              </>
+            ) : (
+              <span className="text-[10px] font-heading font-semibold tracking-wider" style={{ color: '#C8D1DA', opacity: 0.5 }}>
+                New
+              </span>
+            )}
           </span>
         </div>
 

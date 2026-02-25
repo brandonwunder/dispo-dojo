@@ -22,6 +22,8 @@ import BootsJobCard from '../components/boots/BootsJobCard'
 import ApplyModal from '../components/boots/ApplyModal'
 import ApplicantsList from '../components/boots/ApplicantsList'
 import MessagePanel from '../components/boots/MessagePanel'
+import ReviewForm from '../components/boots/ReviewForm'
+import ReviewsList from '../components/boots/ReviewsList'
 
 // ─── Tab Components ──────────────────────────────────────────────────────────
 
@@ -510,12 +512,13 @@ function MyApplicationsSection({ firebaseUid, onOpenMessages }) {
 
 // ─── Section 3: My Jobs ──────────────────────────────────────────────────────
 
-function MyJobsSection({ firebaseUid }) {
+function MyJobsSection({ firebaseUid, profile }) {
   const [acceptedJobs, setAcceptedJobs] = useState([])
   const [authorJobs, setAuthorJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingAuthor, setLoadingAuthor] = useState(true)
   const [updatingId, setUpdatingId] = useState(null)
+  const [reviewTarget, setReviewTarget] = useState(null)
 
   // Jobs where the user was accepted as the boots operator
   useEffect(() => {
@@ -577,93 +580,163 @@ function MyJobsSection({ firebaseUid }) {
   }
 
   return (
-    <motion.div
-      className="flex flex-col gap-4"
-      initial="hidden"
-      animate="visible"
-      variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-    >
-      {allJobs.map((job) => {
-        const statusKey = job.status === 'filled' ? 'filled' : job.status === 'complete' ? 'complete' : 'in-progress'
-        const statusCfg = JOB_STATUS_CONFIG[statusKey] || JOB_STATUS_CONFIG.filled
-        const isAuthor = job.userId === firebaseUid
-        const otherParty = isAuthor ? (job.acceptedUserName || 'Boots Operator') : (job.userName || 'Investor')
-        const canComplete = job.status === 'filled' || job.status === 'in-progress'
-        const isComplete = job.status === 'complete'
+    <>
+      <motion.div
+        className="flex flex-col gap-4"
+        initial="hidden"
+        animate="visible"
+        variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
+      >
+        {allJobs.map((job) => {
+          const statusKey = job.status === 'filled' ? 'filled' : job.status === 'complete' ? 'complete' : 'in-progress'
+          const statusCfg = JOB_STATUS_CONFIG[statusKey] || JOB_STATUS_CONFIG.filled
+          const isAuthor = job.userId === firebaseUid
+          const otherParty = isAuthor ? (job.acceptedUserName || 'Boots Operator') : (job.userName || 'Investor')
+          const canComplete = job.status === 'filled' || job.status === 'in-progress'
+          const isComplete = job.status === 'complete'
 
-        return (
-          <motion.div
-            key={job.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <GlassPanel className="p-5">
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex-1 min-w-0">
-                  <h3
-                    className="text-sm font-heading font-semibold tracking-wider mb-0.5"
-                    style={{ color: '#F4F7FA' }}
-                  >
-                    {job.title}
-                  </h3>
-                  <p className="text-xs font-body" style={{ color: '#C8D1DA' }}>
-                    {isAuthor ? 'Filled by' : 'Posted by'} {otherParty}
-                  </p>
+          return (
+            <motion.div
+              key={job.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <GlassPanel className="p-5">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <h3
+                      className="text-sm font-heading font-semibold tracking-wider mb-0.5"
+                      style={{ color: '#F4F7FA' }}
+                    >
+                      {job.title}
+                    </h3>
+                    <p className="text-xs font-body" style={{ color: '#C8D1DA' }}>
+                      {isAuthor ? 'Filled by' : 'Posted by'} {otherParty}
+                    </p>
+                  </div>
+                  <StatusBadge config={statusCfg} />
                 </div>
-                <StatusBadge config={statusCfg} />
-              </div>
 
-              {/* Action buttons */}
-              <div className="flex gap-2 mt-3">
-                {canComplete && (
-                  <button
-                    onClick={() => handleMarkComplete(job.id)}
-                    disabled={updatingId === job.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10b981]/40 disabled:opacity-40 disabled:pointer-events-none"
-                    style={{
-                      backgroundColor: 'rgba(16,185,129,0.12)',
-                      borderColor: 'rgba(16,185,129,0.35)',
-                      color: '#10b981',
-                    }}
-                  >
-                    <CheckCircle size={12} />
-                    Mark Complete
-                  </button>
-                )}
-                {isComplete && (
-                  <button
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F6C445]/40"
-                    style={{
-                      backgroundColor: 'rgba(246,196,69,0.10)',
-                      borderColor: 'rgba(246,196,69,0.3)',
-                      color: '#F6C445',
-                    }}
-                    onClick={() => {
-                      /* Task 9: Leave Review */
-                    }}
-                  >
-                    <Star size={12} />
-                    Leave Review
-                  </button>
-                )}
-              </div>
-            </GlassPanel>
-          </motion.div>
-        )
-      })}
-    </motion.div>
+                {/* Action buttons */}
+                <div className="flex gap-2 mt-3">
+                  {canComplete && (
+                    <button
+                      onClick={() => handleMarkComplete(job.id)}
+                      disabled={updatingId === job.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10b981]/40 disabled:opacity-40 disabled:pointer-events-none"
+                      style={{
+                        backgroundColor: 'rgba(16,185,129,0.12)',
+                        borderColor: 'rgba(16,185,129,0.35)',
+                        color: '#10b981',
+                      }}
+                    >
+                      <CheckCircle size={12} />
+                      Mark Complete
+                    </button>
+                  )}
+                  {isComplete && (
+                    <button
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F6C445]/40"
+                      style={{
+                        backgroundColor: 'rgba(246,196,69,0.10)',
+                        borderColor: 'rgba(246,196,69,0.3)',
+                        color: '#F6C445',
+                      }}
+                      onClick={() => {
+                        const revieweeId = isAuthor ? job.acceptedUserId : job.userId
+                        const revieweeName = isAuthor ? (job.acceptedUserName || 'Boots Operator') : (job.userName || 'Investor')
+                        setReviewTarget({ postId: job.id, revieweeId, revieweeName })
+                      }}
+                    >
+                      <Star size={12} />
+                      Leave Review
+                    </button>
+                  )}
+                </div>
+              </GlassPanel>
+            </motion.div>
+          )
+        })}
+      </motion.div>
+
+      <ReviewForm
+        isOpen={!!reviewTarget}
+        onClose={() => setReviewTarget(null)}
+        postId={reviewTarget?.postId}
+        revieweeId={reviewTarget?.revieweeId}
+        revieweeName={reviewTarget?.revieweeName}
+        firebaseUid={firebaseUid}
+        reviewerName={profile?.displayName}
+      />
+    </>
   )
 }
 
-// ─── Section 4: My Reviews (placeholder for Task 9) ─────────────────────────
+// ─── Section 4: My Reviews ───────────────────────────────────────────────────
 
-function MyReviewsSection() {
+function MyReviewsSection({ firebaseUid }) {
+  const [viewMode, setViewMode] = useState('received')
+
   return (
-    <GlassPanel className="p-6 text-center">
-      <Star size={28} className="mx-auto mb-3 text-text-dim/25" />
-      <p className="text-text-dim font-body text-sm">Reviews will appear here after completing jobs.</p>
-    </GlassPanel>
+    <div className="flex flex-col gap-5">
+      {/* Toggle: Reviews About Me / Reviews I've Written */}
+      <div className="flex gap-1">
+        {[
+          { id: 'received', label: 'Reviews About Me' },
+          { id: 'given', label: "Reviews I've Written" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setViewMode(tab.id)}
+            className={[
+              'px-3 py-1.5 rounded-sm text-[10px] font-heading font-semibold tracking-wider uppercase border transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F6C445]/30',
+              viewMode === tab.id ? '' : 'hover:brightness-125',
+            ].join(' ')}
+            style={
+              viewMode === tab.id
+                ? {
+                    backgroundColor: 'rgba(246,196,69,0.12)',
+                    borderColor: 'rgba(246,196,69,0.35)',
+                    color: '#F6C445',
+                  }
+                : {
+                    backgroundColor: 'rgba(200,209,218,0.05)',
+                    borderColor: 'rgba(200,209,218,0.1)',
+                    color: '#C8D1DA',
+                  }
+            }
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Reviews content */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={viewMode}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2 }}
+        >
+          {viewMode === 'received' ? (
+            <ReviewsList
+              userId={firebaseUid}
+              field="revieweeId"
+              emptyMessage="No reviews about you yet. Complete jobs to receive reviews!"
+            />
+          ) : (
+            <ReviewsList
+              userId={firebaseUid}
+              field="reviewerId"
+              emptyMessage="You haven't written any reviews yet."
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </div>
   )
 }
 
@@ -716,8 +789,8 @@ function MyActivityTab({ firebaseUid, profile, user, onOpenMessages }) {
         >
           {activeSubTab === 'posts' && <MyPostsSection firebaseUid={firebaseUid} />}
           {activeSubTab === 'applications' && <MyApplicationsSection firebaseUid={firebaseUid} onOpenMessages={onOpenMessages} />}
-          {activeSubTab === 'jobs' && <MyJobsSection firebaseUid={firebaseUid} />}
-          {activeSubTab === 'reviews' && <MyReviewsSection />}
+          {activeSubTab === 'jobs' && <MyJobsSection firebaseUid={firebaseUid} profile={profile} />}
+          {activeSubTab === 'reviews' && <MyReviewsSection firebaseUid={firebaseUid} />}
         </motion.div>
       </AnimatePresence>
     </div>
