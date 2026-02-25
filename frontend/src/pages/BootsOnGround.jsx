@@ -5,7 +5,6 @@ import {
   collection,
   query,
   where,
-  orderBy,
   onSnapshot,
   doc,
   getDoc,
@@ -27,7 +26,7 @@ import ReviewsList from '../components/boots/ReviewsList'
 
 // ─── Tab Components ──────────────────────────────────────────────────────────
 
-function FindBootsTab() {
+function FindBootsTab({ firebaseUid }) {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
@@ -35,18 +34,23 @@ function FindBootsTab() {
   const [availabilityFilter, setAvailabilityFilter] = useState('all')
 
   useEffect(() => {
+    if (!firebaseUid) return
     const q = query(
       collection(db, 'boots_posts'),
       where('type', '==', 'service'),
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc'),
     )
     const unsub = onSnapshot(q, (snap) => {
-      setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        .filter((d) => d.status === 'active')
+      docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+      setPosts(docs)
+      setLoading(false)
+    }, (err) => {
+      console.error('Find Boots query error:', err)
       setLoading(false)
     })
     return unsub
-  }, [])
+  }, [firebaseUid])
 
   // Client-side filtering
   const filtered = posts.filter((post) => {
@@ -117,18 +121,23 @@ function FindJobsTab({ firebaseUid, profile }) {
 
   // Subscribe to job posts
   useEffect(() => {
+    if (!firebaseUid) return
     const q = query(
       collection(db, 'boots_posts'),
       where('type', '==', 'job'),
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc'),
     )
     const unsub = onSnapshot(q, (snap) => {
-      setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        .filter((d) => d.status === 'active')
+      docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+      setPosts(docs)
+      setLoading(false)
+    }, (err) => {
+      console.error('Find Jobs query error:', err)
       setLoading(false)
     })
     return unsub
-  }, [])
+  }, [firebaseUid])
 
   // Track which posts the current user has applied to
   useEffect(() => {
@@ -286,10 +295,11 @@ function MyPostsSection({ firebaseUid }) {
     const q = query(
       collection(db, 'boots_posts'),
       where('userId', '==', firebaseUid),
-      orderBy('createdAt', 'desc'),
     )
     const unsub = onSnapshot(q, (snap) => {
-      setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+      setPosts(docs)
       setLoading(false)
     })
     return unsub
@@ -406,10 +416,11 @@ function MyApplicationsSection({ firebaseUid, onOpenMessages }) {
     const q = query(
       collection(db, 'boots_applications'),
       where('applicantId', '==', firebaseUid),
-      orderBy('createdAt', 'desc'),
     )
     const unsub = onSnapshot(q, (snap) => {
-      setApplications(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+      setApplications(docs)
       setLoading(false)
     })
     return unsub
@@ -526,10 +537,11 @@ function MyJobsSection({ firebaseUid, profile }) {
     const q = query(
       collection(db, 'boots_posts'),
       where('acceptedUserId', '==', firebaseUid),
-      orderBy('updatedAt', 'desc'),
     )
     const unsub = onSnapshot(q, (snap) => {
-      setAcceptedJobs(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      docs.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0))
+      setAcceptedJobs(docs)
       setLoading(false)
     })
     return unsub
@@ -541,11 +553,12 @@ function MyJobsSection({ firebaseUid, profile }) {
     const q = query(
       collection(db, 'boots_posts'),
       where('userId', '==', firebaseUid),
-      where('status', 'in', ['filled', 'complete']),
-      orderBy('updatedAt', 'desc'),
     )
     const unsub = onSnapshot(q, (snap) => {
-      setAuthorJobs(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        .filter((d) => d.status === 'filled' || d.status === 'complete')
+      docs.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0))
+      setAuthorJobs(docs)
       setLoadingAuthor(false)
     })
     return unsub
@@ -928,7 +941,7 @@ export default function BootsOnGround() {
           </div>
 
           {/* Tab content */}
-          {activeTab === 'find-boots' && <FindBootsTab />}
+          {activeTab === 'find-boots' && <FindBootsTab firebaseUid={uid} />}
           {activeTab === 'find-jobs' && <FindJobsTab firebaseUid={uid} profile={profile} />}
           {activeTab === 'my-activity' && (
             <MyActivityTab firebaseUid={uid} profile={profile} user={user} onOpenMessages={() => setShowMessages(true)} />
