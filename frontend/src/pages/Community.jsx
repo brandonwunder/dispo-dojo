@@ -563,7 +563,7 @@ export default function Community() {
                                 if (convoId) { setActiveDMId(convoId); setViewMode('dm') }
                                 setProfilePopover(null)
                               }}
-                              onViewProfile={(uid) => { navigate(`/community/profile/${uid}`); setProfilePopover(null) }}
+                              onViewProfile={(uid) => { navigate(`/ninja-profile/${uid}`); setProfilePopover(null) }}
                             />
                           </div>
                         )}

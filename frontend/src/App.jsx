@@ -7,7 +7,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import AgentFinder from './pages/AgentFinder'
 import FindBuyers from './pages/FindBuyers'
 import Community from './pages/Community'
-import CommunityProfile from './pages/CommunityProfile'
+import NinjaProfile from './pages/NinjaProfile'
 import LeadScrubbing from './pages/LeadScrubbing'
 import Underwriting from './pages/Underwriting'
 import LOISender from './pages/LOISender'
@@ -64,7 +64,9 @@ function App() {
             <Route path="scripts" element={<Scripts />} />
             <Route path="website-explainer" element={<WebsiteExplainer />} />
             <Route path="community" element={<Community />} />
-            <Route path="community/profile/:uid" element={<CommunityProfile />} />
+            <Route path="ninja-profile" element={<NinjaProfile />} />
+            <Route path="ninja-profile/:uid" element={<NinjaProfile />} />
+            <Route path="community/profile/:uid" element={<Navigate to="/ninja-profile" replace />} />
             <Route path="bird-dog" element={<BirdDog />} />
             <Route path="boots-on-ground" element={<BootsOnGround />} />
             <Route path="offer-comparison" element={<OfferComparison />} />

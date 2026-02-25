@@ -18,13 +18,13 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import NinjaAvatar from './NinjaAvatar'
-import QuickSettingsPanel from './QuickSettingsPanel'
 
 const navSections = [
   {
     title: '',
     items: [
       { to: '/', icon: LayoutDashboard, label: 'JV Dashboard' },
+      { to: '/ninja-profile', icon: ShurikenIcon, label: 'Ninja Profile' },
       { to: '/community', icon: MessageSquare, label: 'Message Board' },
       { to: '/live-deals', icon: Briefcase, label: 'View Active Deals' },
     ],
@@ -131,7 +131,6 @@ export default function Sidebar({ isOpen, onClose }) {
   const { isAdmin, user, logout, profile } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const navRef = useRef(null)
   const sectionRefs = useRef({})
 
@@ -273,8 +272,8 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* User info at bottom */}
       <div className="px-4 py-4 border-t border-[rgba(0,198,255,0.1)] flex items-center gap-3">
         <button
-          onClick={() => setSettingsOpen(true)}
-          title="Open settings"
+          onClick={() => navigate('/ninja-profile')}
+          title="View profile"
           className="w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-[rgba(246,196,69,0.15)] hover:ring-[rgba(0,198,255,0.4)] transition-all duration-200"
         >
           <NinjaAvatar config={profile?.avatarConfig} size={32} rank={profile?.rank || 'initiate'} />
@@ -327,7 +326,6 @@ export default function Sidebar({ isOpen, onClose }) {
         )}
       </AnimatePresence>
 
-      <QuickSettingsPanel isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   )
 }
