@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Navigation2, Plus } from 'lucide-react'
+import { Navigation2, Plus, Briefcase } from 'lucide-react'
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
@@ -9,6 +9,7 @@ import ProfileSetupModal from '../components/boots/ProfileSetupModal'
 import CreatePostModal from '../components/boots/CreatePostModal'
 import BootsOperatorCard from '../components/boots/BootsOperatorCard'
 import BootsFilterBar from '../components/boots/BootsFilterBar'
+import BootsJobCard from '../components/boots/BootsJobCard'
 
 // ─── Tab Components ──────────────────────────────────────────────────────────
 
@@ -93,10 +94,79 @@ function FindBootsTab() {
 }
 
 function FindJobsTab() {
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchText, setSearchText] = useState('')
+  const [taskTypeFilter, setTaskTypeFilter] = useState('')
+
+  useEffect(() => {
+    const q = query(
+      collection(db, 'boots_posts'),
+      where('type', '==', 'job'),
+      where('status', '==', 'active'),
+      orderBy('createdAt', 'desc'),
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      setLoading(false)
+    })
+    return unsub
+  }, [])
+
+  // Client-side filtering
+  const filtered = posts.filter((post) => {
+    if (
+      searchText &&
+      !post.title?.toLowerCase().includes(searchText.toLowerCase()) &&
+      !post.description?.toLowerCase().includes(searchText.toLowerCase())
+    )
+      return false
+    if (taskTypeFilter && !post.taskTypes?.includes(taskTypeFilter)) return false
+    return true
+  })
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div
+          className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
+          style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
+        />
+      </div>
+    )
+  }
+
   return (
-    <GlassPanel className="p-8 text-center">
-      <p className="text-text-dim font-body text-sm">Job postings coming soon...</p>
-    </GlassPanel>
+    <div>
+      <BootsFilterBar
+        searchText={searchText}
+        onSearchChange={setSearchText}
+        taskTypeFilter={taskTypeFilter}
+        onTaskTypeChange={setTaskTypeFilter}
+        searchPlaceholder="Search jobs..."
+      />
+
+      {filtered.length === 0 ? (
+        <GlassPanel className="p-8 text-center">
+          <Briefcase size={32} className="mx-auto mb-3 text-text-dim/25" />
+          <p className="text-text-dim font-body text-sm">No jobs posted yet.</p>
+          <p className="text-text-dim/40 text-xs mt-1 font-body">
+            Post a job to find boots operators in your market!
+          </p>
+        </GlassPanel>
+      ) : (
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          initial="hidden"
+          animate="visible"
+          variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+        >
+          {filtered.map((post) => (
+            <BootsJobCard key={post.id} post={post} onApply={() => {}} />
+          ))}
+        </motion.div>
+      )}
+    </div>
   )
 }
 

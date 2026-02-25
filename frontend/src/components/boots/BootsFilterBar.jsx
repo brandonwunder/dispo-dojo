@@ -34,7 +34,10 @@ export default function BootsFilterBar({
   onTaskTypeChange,
   availabilityFilter,
   onAvailabilityChange,
+  searchPlaceholder = 'Search operators...',
 }) {
+  const showAvailability = availabilityFilter !== undefined && onAvailabilityChange !== undefined
+
   return (
     <div className="flex flex-col gap-3 mb-5">
       {/* Search input */}
@@ -47,7 +50,7 @@ export default function BootsFilterBar({
         <input
           type="text"
           className={inputCls + ' pl-8'}
-          placeholder="Search operators..."
+          placeholder={searchPlaceholder}
           value={searchText}
           onChange={(e) => onSearchChange(e.target.value)}
         />
@@ -75,30 +78,34 @@ export default function BootsFilterBar({
           )
         })}
 
-        {/* Separator */}
-        <div className="w-px h-5 bg-white/10 mx-1" />
+        {/* Availability filter (only shown when props are provided) */}
+        {showAvailability && (
+          <>
+            {/* Separator */}
+            <div className="w-px h-5 bg-white/10 mx-1" />
 
-        {/* Availability filter */}
-        {[
-          { id: 'all', label: 'All' },
-          { id: 'available', label: 'Available Only' },
-        ].map(({ id, label }) => {
-          const isActive = availabilityFilter === id
-          return (
-            <button
-              key={id}
-              onClick={() => onAvailabilityChange(id)}
-              className="px-2 py-1 rounded-sm text-[10px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/30"
-              style={{
-                backgroundColor: isActive ? 'rgba(0,198,255,0.15)' : 'transparent',
-                borderColor: isActive ? 'rgba(0,198,255,0.4)' : 'rgba(255,255,255,0.07)',
-                color: isActive ? '#00C6FF' : '#C8D1DA',
-              }}
-            >
-              {label}
-            </button>
-          )
-        })}
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'available', label: 'Available Only' },
+            ].map(({ id, label }) => {
+              const isActive = availabilityFilter === id
+              return (
+                <button
+                  key={id}
+                  onClick={() => onAvailabilityChange(id)}
+                  className="px-2 py-1 rounded-sm text-[10px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/30"
+                  style={{
+                    backgroundColor: isActive ? 'rgba(0,198,255,0.15)' : 'transparent',
+                    borderColor: isActive ? 'rgba(0,198,255,0.4)' : 'rgba(255,255,255,0.07)',
+                    color: isActive ? '#00C6FF' : '#C8D1DA',
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </>
+        )}
       </div>
     </div>
   )
