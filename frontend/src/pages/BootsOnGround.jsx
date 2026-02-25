@@ -21,6 +21,7 @@ import BootsFilterBar from '../components/boots/BootsFilterBar'
 import BootsJobCard from '../components/boots/BootsJobCard'
 import ApplyModal from '../components/boots/ApplyModal'
 import ApplicantsList from '../components/boots/ApplicantsList'
+import MessagePanel from '../components/boots/MessagePanel'
 
 // ─── Tab Components ──────────────────────────────────────────────────────────
 
@@ -392,7 +393,7 @@ function MyPostsSection({ firebaseUid }) {
 
 // ─── Section 2: My Applications ──────────────────────────────────────────────
 
-function MyApplicationsSection({ firebaseUid }) {
+function MyApplicationsSection({ firebaseUid, onOpenMessages }) {
   const [applications, setApplications] = useState([])
   const [postsMap, setPostsMap] = useState({})
   const [loading, setLoading] = useState(true)
@@ -492,7 +493,7 @@ function MyApplicationsSection({ firebaseUid }) {
                     color: '#00C6FF',
                   }}
                   onClick={() => {
-                    /* Task 8: Open Messages */
+                    if (onOpenMessages) onOpenMessages()
                   }}
                 >
                   <MessageSquare size={12} />
@@ -668,7 +669,7 @@ function MyReviewsSection() {
 
 // ─── My Activity Tab ─────────────────────────────────────────────────────────
 
-function MyActivityTab({ firebaseUid, profile, user }) {
+function MyActivityTab({ firebaseUid, profile, user, onOpenMessages }) {
   const [activeSubTab, setActiveSubTab] = useState('posts')
 
   return (
@@ -714,7 +715,7 @@ function MyActivityTab({ firebaseUid, profile, user }) {
           transition={{ duration: 0.2 }}
         >
           {activeSubTab === 'posts' && <MyPostsSection firebaseUid={firebaseUid} />}
-          {activeSubTab === 'applications' && <MyApplicationsSection firebaseUid={firebaseUid} />}
+          {activeSubTab === 'applications' && <MyApplicationsSection firebaseUid={firebaseUid} onOpenMessages={onOpenMessages} />}
           {activeSubTab === 'jobs' && <MyJobsSection firebaseUid={firebaseUid} />}
           {activeSubTab === 'reviews' && <MyReviewsSection />}
         </motion.div>
@@ -731,6 +732,7 @@ export default function BootsOnGround() {
   const [activeTab, setActiveTab] = useState('find-boots')
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPostModal, setShowPostModal] = useState(false)
+  const [showMessages, setShowMessages] = useState(false)
 
   const TABS = [
     { id: 'find-boots', label: 'Find Boots People' },
@@ -829,20 +831,34 @@ export default function BootsOnGround() {
                 </button>
               ))}
             </div>
-            <button
-              onClick={handleCreatePost}
-              className="flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-heading font-semibold tracking-wider text-white bg-[#E53935] border border-[#E53935]/40 hover:bg-[#ef5350] active:scale-[0.98] transition-colors shadow-[0_4px_20px_rgba(229,57,53,0.25)]"
-            >
-              <Plus size={14} />
-              Create Post
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowMessages((prev) => !prev)}
+                className="relative flex items-center gap-2 px-3 py-2 rounded-sm text-sm font-heading tracking-wider border transition-colors active:scale-[0.98] hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/30"
+                style={{
+                  color: '#00C6FF',
+                  borderColor: 'rgba(0,198,255,0.3)',
+                  backgroundColor: 'rgba(0,198,255,0.05)',
+                }}
+              >
+                <MessageSquare size={14} />
+                Messages
+              </button>
+              <button
+                onClick={handleCreatePost}
+                className="flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-heading font-semibold tracking-wider text-white bg-[#E53935] border border-[#E53935]/40 hover:bg-[#ef5350] active:scale-[0.98] transition-colors shadow-[0_4px_20px_rgba(229,57,53,0.25)]"
+              >
+                <Plus size={14} />
+                Create Post
+              </button>
+            </div>
           </div>
 
           {/* Tab content */}
           {activeTab === 'find-boots' && <FindBootsTab />}
           {activeTab === 'find-jobs' && <FindJobsTab firebaseUid={uid} profile={profile} />}
           {activeTab === 'my-activity' && (
-            <MyActivityTab firebaseUid={uid} profile={profile} user={user} />
+            <MyActivityTab firebaseUid={uid} profile={profile} user={user} onOpenMessages={() => setShowMessages(true)} />
           )}
         </div>
       </div>
@@ -858,6 +874,12 @@ export default function BootsOnGround() {
         onClose={() => setShowPostModal(false)}
         firebaseUid={uid}
         profile={profile}
+      />
+
+      <MessagePanel
+        isOpen={showMessages}
+        onClose={() => setShowMessages(false)}
+        firebaseUid={uid}
       />
     </>
   )

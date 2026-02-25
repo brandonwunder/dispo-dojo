@@ -9,6 +9,8 @@ import {
   onSnapshot,
   doc,
   updateDoc,
+  addDoc,
+  serverTimestamp,
 } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import GlassPanel from '../GlassPanel'
@@ -69,6 +71,21 @@ export default function ApplicantsList({ postId, post, firebaseUid }) {
       await updateDoc(doc(db, 'boots_posts', postId), {
         acceptedUserId: application.applicantId,
         status: 'filled',
+      })
+
+      // Create DM thread between poster and accepted applicant
+      await addDoc(collection(db, 'boots_threads'), {
+        postId: postId,
+        postTitle: post?.title || 'Boots Job',
+        participants: [firebaseUid, application.applicantId],
+        participantNames: {
+          [firebaseUid]: post?.userName || 'Investor',
+          [application.applicantId]: application.applicantName,
+        },
+        lastMessage: '',
+        lastMessageAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        unreadBy: [],
       })
     } catch (err) {
       console.error('Failed to accept applicant:', err)
