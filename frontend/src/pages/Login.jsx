@@ -672,6 +672,7 @@ export default function Login() {
           style={{
             background: 'linear-gradient(135deg, #E53935, #B3261E)',
             boxShadow: '0 0 30px rgba(229, 57, 53, 0.4), 0 0 60px rgba(229, 57, 53, 0.15)',
+            animation: 'ctaGlow 2.5s ease-in-out infinite',
           }}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
