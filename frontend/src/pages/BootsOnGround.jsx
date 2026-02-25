@@ -10,6 +10,7 @@ import CreatePostModal from '../components/boots/CreatePostModal'
 import BootsOperatorCard from '../components/boots/BootsOperatorCard'
 import BootsFilterBar from '../components/boots/BootsFilterBar'
 import BootsJobCard from '../components/boots/BootsJobCard'
+import ApplyModal from '../components/boots/ApplyModal'
 
 // ─── Tab Components ──────────────────────────────────────────────────────────
 
@@ -93,12 +94,15 @@ function FindBootsTab() {
   )
 }
 
-function FindJobsTab() {
+function FindJobsTab({ firebaseUid, profile }) {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
   const [taskTypeFilter, setTaskTypeFilter] = useState('')
+  const [applyPost, setApplyPost] = useState(null)
+  const [userApplications, setUserApplications] = useState([])
 
+  // Subscribe to job posts
   useEffect(() => {
     const q = query(
       collection(db, 'boots_posts'),
@@ -112,6 +116,19 @@ function FindJobsTab() {
     })
     return unsub
   }, [])
+
+  // Track which posts the current user has applied to
+  useEffect(() => {
+    if (!firebaseUid) return
+    const q = query(
+      collection(db, 'boots_applications'),
+      where('applicantId', '==', firebaseUid),
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      setUserApplications(snap.docs.map((d) => d.data().postId))
+    })
+    return unsub
+  }, [firebaseUid])
 
   // Client-side filtering
   const filtered = posts.filter((post) => {
@@ -162,10 +179,24 @@ function FindJobsTab() {
           variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
         >
           {filtered.map((post) => (
-            <BootsJobCard key={post.id} post={post} onApply={() => {}} />
+            <BootsJobCard
+              key={post.id}
+              post={post}
+              currentUserId={firebaseUid}
+              userApplications={userApplications}
+              onApply={(p) => setApplyPost(p)}
+            />
           ))}
         </motion.div>
       )}
+
+      <ApplyModal
+        isOpen={!!applyPost}
+        onClose={() => setApplyPost(null)}
+        post={applyPost}
+        firebaseUid={firebaseUid}
+        profile={profile}
+      />
     </div>
   )
 }
@@ -295,7 +326,7 @@ export default function BootsOnGround() {
 
           {/* Tab content */}
           {activeTab === 'find-boots' && <FindBootsTab />}
-          {activeTab === 'find-jobs' && <FindJobsTab />}
+          {activeTab === 'find-jobs' && <FindJobsTab firebaseUid={uid} profile={profile} />}
           {activeTab === 'my-activity' && (
             <MyActivityTab firebaseUid={uid} profile={profile} user={user} />
           )}

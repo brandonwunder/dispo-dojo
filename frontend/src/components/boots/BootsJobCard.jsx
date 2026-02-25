@@ -1,6 +1,8 @@
-import { motion } from 'framer-motion'
-import { Star, MapPin } from 'lucide-react'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Star, MapPin, Users, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import GlassPanel from '../GlassPanel'
+import ApplicantsList from './ApplicantsList'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -49,9 +51,18 @@ function timeAgo(timestamp) {
 
 // ─── Card Component ──────────────────────────────────────────────────────────
 
-export default function BootsJobCard({ post, onApply }) {
+export default function BootsJobCard({
+  post,
+  onApply,
+  currentUserId,
+  userApplications = [],
+}) {
+  const [showApplicants, setShowApplicants] = useState(false)
   const firstLetter = (post.userName || 'A').charAt(0).toUpperCase()
   const isUrgent = post.urgency === 'urgent'
+
+  const isAuthor = currentUserId && post.userId === currentUserId
+  const hasApplied = userApplications.includes(post.id)
 
   return (
     <motion.div variants={cardVariants}>
@@ -145,19 +156,73 @@ export default function BootsJobCard({ post, onApply }) {
           )}
         </div>
 
-        {/* Apply button */}
+        {/* Action button — three states */}
         <div className="mt-auto pt-1">
-          <button
-            onClick={() => onApply?.(post)}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:bg-[rgba(246,196,69,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F6C445]/40"
-            style={{
-              borderColor: 'rgba(246,196,69,0.35)',
-              color: '#F6C445',
-            }}
-          >
-            Apply
-          </button>
+          {isAuthor ? (
+            /* Post author sees "View Applicants" */
+            <button
+              onClick={() => setShowApplicants((prev) => !prev)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:bg-[rgba(0,198,255,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6FF]/40"
+              style={{
+                borderColor: 'rgba(0,198,255,0.35)',
+                color: '#00C6FF',
+              }}
+            >
+              <Users size={13} />
+              View Applicants ({post.applicantCount || 0})
+              {showApplicants ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            </button>
+          ) : hasApplied ? (
+            /* User has already applied */
+            <button
+              disabled
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider border cursor-default opacity-50"
+              style={{
+                borderColor: 'rgba(200,209,218,0.2)',
+                color: '#C8D1DA',
+              }}
+            >
+              <CheckCircle size={13} />
+              Applied
+            </button>
+          ) : (
+            /* Default: Apply */
+            <button
+              onClick={() => onApply?.(post)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:bg-[rgba(246,196,69,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F6C445]/40"
+              style={{
+                borderColor: 'rgba(246,196,69,0.35)',
+                color: '#F6C445',
+              }}
+            >
+              Apply
+            </button>
+          )}
         </div>
+
+        {/* Inline applicants list (expanded for post author) */}
+        <AnimatePresence>
+          {isAuthor && showApplicants && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="overflow-hidden"
+            >
+              <div
+                className="border-t pt-3 mt-1"
+                style={{ borderColor: 'rgba(255,255,255,0.07)' }}
+              >
+                <ApplicantsList
+                  postId={post.id}
+                  post={post}
+                  firebaseUid={currentUserId}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </GlassPanel>
 
       {/* Pulsing glow keyframes for urgent badge */}
