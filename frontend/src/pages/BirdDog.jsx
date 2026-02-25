@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  MapPin, CheckCircle, Send, Clock, Plus, Edit3, XCircle, Briefcase, FileText, Star,
+  MapPin, CheckCircle, Send, Clock, Plus, Edit3, XCircle, Briefcase, FileText, Star, MessageCircle,
 } from 'lucide-react'
 import {
   collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp,
@@ -17,6 +17,7 @@ import ApplyModal from '../components/birddog/ApplyModal'
 import FilterBar from '../components/birddog/FilterBar'
 import BirdDogCard from '../components/birddog/BirdDogCard'
 import JobCard from '../components/birddog/JobCard'
+import MessagePanel from '../components/birddog/MessagePanel'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -858,7 +859,7 @@ function MyPostsSection({ firebaseUid, onCreatePost }) {
   )
 }
 
-function MyApplicationsSection({ firebaseUid }) {
+function MyApplicationsSection({ firebaseUid, onOpenMessages }) {
   const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -953,8 +954,8 @@ function MyApplicationsSection({ firebaseUid }) {
 
                   {appStatus === 'accepted' && (
                     <button
-                      onClick={() => {/* placeholder for Task 8 messaging */}}
-                      className="text-[10px] font-heading font-semibold tracking-wider"
+                      onClick={() => onOpenMessages?.()}
+                      className="text-[10px] font-heading font-semibold tracking-wider hover:underline transition-colors active:scale-[0.97]"
                       style={{ color: '#00C6FF' }}
                     >
                       Open Messages
@@ -1011,7 +1012,7 @@ function PendingReviewsSection() {
   )
 }
 
-function MyActivityTab({ firebaseUid, profile, user, onCreatePost }) {
+function MyActivityTab({ firebaseUid, profile, user, onCreatePost, onOpenMessages }) {
   const { firebaseReady } = useAuth()
 
   return (
@@ -1020,7 +1021,7 @@ function MyActivityTab({ firebaseUid, profile, user, onCreatePost }) {
       <MyPostsSection firebaseUid={firebaseUid} onCreatePost={onCreatePost} />
 
       {/* Section 2: My Applications */}
-      <MyApplicationsSection firebaseUid={firebaseUid} />
+      <MyApplicationsSection firebaseUid={firebaseUid} onOpenMessages={onOpenMessages} />
 
       {/* Section 3: Pending Reviews (placeholder for Task 9) */}
       <PendingReviewsSection />
@@ -1061,6 +1062,22 @@ export default function BirdDog() {
   const [activeTab, setActiveTab] = useState('find-birddogs')
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPostModal, setShowPostModal] = useState(false)
+  const [showMessages, setShowMessages] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // ─── Unread message count listener ────────────────────────────────────────
+  useEffect(() => {
+    if (!firebaseUid) return
+    const q = query(
+      collection(db, 'bird_dog_threads'),
+      where('participants', 'array-contains', firebaseUid),
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      const count = snap.docs.filter((d) => d.data().unreadBy?.includes(firebaseUid)).length
+      setUnreadCount(count)
+    })
+    return () => unsub()
+  }, [firebaseUid])
 
   function handleCreatePost() {
     if (!profile?.birdDogProfile) {
@@ -1149,20 +1166,33 @@ export default function BirdDog() {
               </button>
             ))}
           </div>
-          <button
-            onClick={handleCreatePost}
-            className="flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-heading font-semibold tracking-wider text-white bg-[#E53935] border border-[#E53935]/40 hover:bg-[#ef5350] active:scale-[0.98] transition-colors shadow-[0_4px_20px_rgba(229,57,53,0.25)]"
-          >
-            <Plus size={14} />
-            Create Post
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowMessages(!showMessages)}
+              className="relative p-2 rounded-sm text-text-dim hover:text-cyan transition-colors active:scale-95"
+            >
+              <MessageCircle size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#E53935] text-white text-[9px] font-heading font-bold flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={handleCreatePost}
+              className="flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-heading font-semibold tracking-wider text-white bg-[#E53935] border border-[#E53935]/40 hover:bg-[#ef5350] active:scale-[0.98] transition-colors shadow-[0_4px_20px_rgba(229,57,53,0.25)]"
+            >
+              <Plus size={14} />
+              Create Post
+            </button>
+          </div>
         </div>
 
         {/* Tab content */}
         {activeTab === 'find-birddogs' && <FindBirdDogsTab />}
         {activeTab === 'find-jobs' && <FindJobsTab currentUserId={firebaseUid} profile={profile} firebaseUid={firebaseUid} />}
         {activeTab === 'my-activity' && (
-          <MyActivityTab firebaseUid={firebaseUid} profile={profile} user={user} onCreatePost={handleCreatePost} />
+          <MyActivityTab firebaseUid={firebaseUid} profile={profile} user={user} onCreatePost={handleCreatePost} onOpenMessages={() => setShowMessages(true)} />
         )}
       </div>
     </div>
@@ -1178,6 +1208,13 @@ export default function BirdDog() {
         onClose={() => setShowPostModal(false)}
         profile={profile}
         firebaseUid={firebaseUid}
+      />
+
+      <MessagePanel
+        isOpen={showMessages}
+        onClose={() => setShowMessages(false)}
+        firebaseUid={firebaseUid}
+        profile={profile}
       />
     </>
   )

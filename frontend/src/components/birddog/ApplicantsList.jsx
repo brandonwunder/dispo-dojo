@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, XCircle, Clock, UserCheck } from 'lucide-react'
-import { doc, updateDoc } from 'firebase/firestore'
+import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -32,6 +32,24 @@ export default function ApplicantsList({ post, firebaseUid }) {
         updates.status = 'in_progress'
       }
       await updateDoc(postRef, updates)
+
+      // Create a message thread when accepting an applicant
+      if (newStatus === 'accepted') {
+        const applicant = post.applicants.find((a) => a.userId === applicantUserId)
+        await addDoc(collection(db, 'bird_dog_threads'), {
+          jobPostId: post.id,
+          jobTitle: post.title,
+          participants: [post.userId, applicantUserId],
+          participantNames: {
+            [post.userId]: post.authorName,
+            [applicantUserId]: applicant?.name || 'Unknown',
+          },
+          lastMessage: '',
+          lastMessageAt: serverTimestamp(),
+          unreadBy: [],
+          createdAt: serverTimestamp(),
+        })
+      }
     } catch (err) {
       console.error('Update applicant status error:', err)
     } finally {
