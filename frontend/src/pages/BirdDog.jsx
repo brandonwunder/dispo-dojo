@@ -12,6 +12,7 @@ import { incrementStat } from '../lib/userProfile'
 import GlassPanel from '../components/GlassPanel'
 import ProfileSetupModal from '../components/birddog/ProfileSetupModal'
 import CreatePostModal from '../components/birddog/CreatePostModal'
+import ApplyModal from '../components/birddog/ApplyModal'
 import FilterBar from '../components/birddog/FilterBar'
 import BirdDogCard from '../components/birddog/BirdDogCard'
 import JobCard from '../components/birddog/JobCard'
@@ -565,10 +566,11 @@ function FindBirdDogsTab() {
   )
 }
 
-function FindJobsTab({ currentUserId }) {
+function FindJobsTab({ currentUserId, profile, firebaseUid }) {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ location: '', taskType: '', urgency: '' })
+  const [applyPost, setApplyPost] = useState(null)
 
   useEffect(() => {
     const q = query(
@@ -630,10 +632,23 @@ function FindJobsTab({ currentUserId }) {
       {!loading && filtered.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((post) => (
-            <JobCard key={post.id} post={post} currentUserId={currentUserId} />
+            <JobCard
+              key={post.id}
+              post={post}
+              currentUserId={currentUserId}
+              onApply={(p) => setApplyPost(p)}
+            />
           ))}
         </div>
       )}
+
+      <ApplyModal
+        isOpen={!!applyPost}
+        onClose={() => setApplyPost(null)}
+        post={applyPost}
+        profile={profile}
+        firebaseUid={firebaseUid}
+      />
     </div>
   )
 }
@@ -767,7 +782,7 @@ export default function BirdDog() {
 
         {/* Tab content */}
         {activeTab === 'find-birddogs' && <FindBirdDogsTab />}
-        {activeTab === 'find-jobs' && <FindJobsTab currentUserId={firebaseUid} />}
+        {activeTab === 'find-jobs' && <FindJobsTab currentUserId={firebaseUid} profile={profile} firebaseUid={firebaseUid} />}
         {activeTab === 'my-activity' && (
           <MyActivityTab firebaseUid={firebaseUid} profile={profile} user={user} />
         )}

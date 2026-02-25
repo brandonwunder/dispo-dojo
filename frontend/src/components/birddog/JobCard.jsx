@@ -1,6 +1,8 @@
-import { motion } from 'framer-motion'
-import { Eye, Send, Users } from 'lucide-react'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Eye, Send, Users, ChevronUp } from 'lucide-react'
 import GlassPanel from '../GlassPanel'
+import ApplicantsList from './ApplicantsList'
 
 // ─── Urgency color map ───────────────────────────────────────────────────────
 
@@ -26,10 +28,13 @@ function formatDeadline(dateStr) {
 // ─── JobCard ─────────────────────────────────────────────────────────────────
 
 export default function JobCard({ post, onApply, currentUserId }) {
+  const [showApplicants, setShowApplicants] = useState(false)
+
   const initial = (post.authorName || '?')[0].toUpperCase()
   const isOwner = post.userId === currentUserId
   const urgencyColor = URGENCY_COLORS[post.urgency] || '#C8D1DA'
   const deadlineText = formatDeadline(post.deadline)
+  const applicantCount = post.applicants?.length || 0
 
   return (
     <motion.div
@@ -172,17 +177,38 @@ export default function JobCard({ post, onApply, currentUserId }) {
           ) : (
             <button
               type="button"
+              onClick={() => setShowApplicants((prev) => !prev)}
               className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:bg-[rgba(0,198,255,0.08)]"
               style={{
                 color: '#00C6FF',
                 borderColor: 'rgba(0,198,255,0.35)',
               }}
             >
-              <Users size={12} />
-              View Applicants
+              {showApplicants ? (
+                <ChevronUp size={12} />
+              ) : (
+                <Users size={12} />
+              )}
+              {showApplicants ? 'Hide Applicants' : `View Applicants${applicantCount > 0 ? ` (${applicantCount})` : ''}`}
             </button>
           )}
         </div>
+
+        {/* Applicants list — inline expandable section for post owner */}
+        <AnimatePresence>
+          {isOwner && showApplicants && (
+            <motion.div
+              key="applicants-section"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+              style={{ overflow: 'hidden' }}
+            >
+              <ApplicantsList post={post} firebaseUid={currentUserId} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </GlassPanel>
     </motion.div>
   )
