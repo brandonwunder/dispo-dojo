@@ -1,0 +1,189 @@
+import { motion } from 'framer-motion'
+import { Eye, Send, Users } from 'lucide-react'
+import GlassPanel from '../GlassPanel'
+
+// ─── Urgency color map ───────────────────────────────────────────────────────
+
+const URGENCY_COLORS = {
+  Low:    '#10b981',
+  Medium: '#F6C445',
+  High:   '#f97316',
+  ASAP:   '#E53935',
+}
+
+// ─── Format deadline ─────────────────────────────────────────────────────────
+
+function formatDeadline(dateStr) {
+  if (!dateStr) return null
+  try {
+    const d = new Date(dateStr + 'T00:00:00')
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  } catch {
+    return dateStr
+  }
+}
+
+// ─── JobCard ─────────────────────────────────────────────────────────────────
+
+export default function JobCard({ post, onApply, currentUserId }) {
+  const initial = (post.authorName || '?')[0].toUpperCase()
+  const isOwner = post.userId === currentUserId
+  const urgencyColor = URGENCY_COLORS[post.urgency] || '#C8D1DA'
+  const deadlineText = formatDeadline(post.deadline)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+    >
+      <GlassPanel className="p-4">
+        {/* Top row — Avatar + Name + Rating */}
+        <div className="flex items-center gap-3 mb-3">
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-heading font-bold text-sm"
+            style={{
+              backgroundColor: 'rgba(246,196,69,0.15)',
+              color: '#F6C445',
+              boxShadow: '0 0 12px rgba(246,196,69,0.2)',
+            }}
+          >
+            {initial}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-heading font-semibold text-sm text-parchment truncate">
+              {post.authorName || 'Unknown'}
+            </p>
+          </div>
+          <span
+            className="inline-block px-2 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-widest"
+            style={{
+              color: '#F6C445',
+              backgroundColor: 'rgba(246,196,69,0.12)',
+              border: '1px solid rgba(246,196,69,0.25)',
+            }}
+          >
+            New
+          </span>
+        </div>
+
+        {/* Title */}
+        <h3 className="font-heading font-bold text-parchment tracking-wider text-sm mb-2.5 leading-snug">
+          {post.title || 'Untitled Job'}
+        </h3>
+
+        {/* Target area tags */}
+        {post.area?.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2.5">
+            {post.area.map((area) => (
+              <span
+                key={area}
+                className="inline-block px-2 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-wider"
+                style={{
+                  color: '#F6C445',
+                  backgroundColor: 'rgba(246,196,69,0.10)',
+                  border: '1px solid rgba(246,196,69,0.30)',
+                }}
+              >
+                {area}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Task type badge */}
+        {post.taskType && (
+          <div className="mb-2.5">
+            <span
+              className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-wider"
+              style={{
+                color: '#00C6FF',
+                backgroundColor: 'rgba(0,198,255,0.10)',
+                border: '1px solid rgba(0,198,255,0.30)',
+              }}
+            >
+              {post.taskType}
+            </span>
+          </div>
+        )}
+
+        {/* Payout */}
+        {post.payout && (
+          <p
+            className="font-heading font-bold text-xl tracking-wider mb-2"
+            style={{ color: '#F6C445' }}
+          >
+            {post.payout}
+          </p>
+        )}
+
+        {/* Urgency badge */}
+        {post.urgency && (
+          <div className="mb-2">
+            <span
+              className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-widest"
+              style={{
+                color: urgencyColor,
+                backgroundColor: `${urgencyColor}18`,
+                border: `1px solid ${urgencyColor}33`,
+              }}
+            >
+              {post.urgency}
+            </span>
+          </div>
+        )}
+
+        {/* Deadline */}
+        {deadlineText && (
+          <p className="text-[11px] text-text-dim/50 font-body mb-3">
+            Due: {deadlineText}
+          </p>
+        )}
+
+        {/* Bottom row — Buttons */}
+        <div className="flex gap-2 mt-1">
+          {!isOwner ? (
+            <>
+              <button
+                type="button"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:bg-[rgba(0,198,255,0.08)]"
+                style={{
+                  color: '#00C6FF',
+                  borderColor: 'rgba(0,198,255,0.35)',
+                }}
+              >
+                <Eye size={12} />
+                View Details
+              </button>
+              <button
+                type="button"
+                onClick={() => onApply?.(post)}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider text-white transition-colors active:scale-[0.98] hover:bg-[#ef5350]"
+                style={{
+                  backgroundColor: '#E53935',
+                  border: '1px solid rgba(229,57,53,0.40)',
+                  boxShadow: '0 4px 16px rgba(229,57,53,0.20)',
+                }}
+              >
+                <Send size={12} />
+                Apply
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:bg-[rgba(0,198,255,0.08)]"
+              style={{
+                color: '#00C6FF',
+                borderColor: 'rgba(0,198,255,0.35)',
+              }}
+            >
+              <Users size={12} />
+              View Applicants
+            </button>
+          )}
+        </div>
+      </GlassPanel>
+    </motion.div>
+  )
+}

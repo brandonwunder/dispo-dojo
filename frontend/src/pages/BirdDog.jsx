@@ -12,6 +12,9 @@ import { incrementStat } from '../lib/userProfile'
 import GlassPanel from '../components/GlassPanel'
 import ProfileSetupModal from '../components/birddog/ProfileSetupModal'
 import CreatePostModal from '../components/birddog/CreatePostModal'
+import FilterBar from '../components/birddog/FilterBar'
+import BirdDogCard from '../components/birddog/BirdDogCard'
+import JobCard from '../components/birddog/JobCard'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -492,18 +495,146 @@ function MySubmissions({ firebaseUid }) {
 // ─── Tab Components ──────────────────────────────────────────────────────────
 
 function FindBirdDogsTab() {
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState({ location: '', methods: [], availableOnly: false })
+
+  useEffect(() => {
+    const q = query(
+      collection(db, 'bird_dog_posts'),
+      where('postType', '==', 'bird_dog'),
+      where('status', '==', 'active'),
+      orderBy('createdAt', 'desc'),
+    )
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+        setLoading(false)
+      },
+      (err) => {
+        console.error('Bird dog posts listener error:', err)
+        setLoading(false)
+      },
+    )
+    return () => unsub()
+  }, [])
+
+  // Client-side filtering
+  const filtered = posts.filter((post) => {
+    if (filters.location) {
+      const loc = filters.location.toLowerCase()
+      if (!post.area?.some((a) => a.toLowerCase().includes(loc))) return false
+    }
+    if (filters.methods?.length > 0) {
+      if (!filters.methods.some((m) => post.methods?.includes(m))) return false
+    }
+    if (filters.availableOnly && post.availability !== 'available' && post.availability !== 'now') return false
+    return true
+  })
+
   return (
-    <GlassPanel className="p-8 text-center">
-      <p className="text-text-dim font-body text-sm">Bird dog listings coming soon...</p>
-    </GlassPanel>
+    <div>
+      <FilterBar type="bird_dog" filters={filters} onFilterChange={setFilters} />
+
+      {loading && (
+        <div className="flex items-center justify-center py-16">
+          <div
+            className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
+            style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
+          />
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && (
+        <GlassPanel className="p-8 text-center">
+          <p className="text-text-dim/50 font-body text-sm">
+            No bird dogs available yet. Be the first to post!
+          </p>
+        </GlassPanel>
+      )}
+
+      {!loading && filtered.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((post) => (
+            <BirdDogCard key={post.id} post={post} />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
-function FindJobsTab() {
+function FindJobsTab({ currentUserId }) {
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState({ location: '', taskType: '', urgency: '' })
+
+  useEffect(() => {
+    const q = query(
+      collection(db, 'bird_dog_posts'),
+      where('postType', '==', 'job'),
+      where('status', '==', 'active'),
+      orderBy('createdAt', 'desc'),
+    )
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setPosts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+        setLoading(false)
+      },
+      (err) => {
+        console.error('Job posts listener error:', err)
+        setLoading(false)
+      },
+    )
+    return () => unsub()
+  }, [])
+
+  // Client-side filtering
+  const filtered = posts.filter((post) => {
+    if (filters.location) {
+      const loc = filters.location.toLowerCase()
+      if (!post.area?.some((a) => a.toLowerCase().includes(loc))) return false
+    }
+    if (filters.taskType) {
+      if (post.taskType !== filters.taskType) return false
+    }
+    if (filters.urgency) {
+      if (post.urgency !== filters.urgency) return false
+    }
+    return true
+  })
+
   return (
-    <GlassPanel className="p-8 text-center">
-      <p className="text-text-dim font-body text-sm">Job postings coming soon...</p>
-    </GlassPanel>
+    <div>
+      <FilterBar type="job" filters={filters} onFilterChange={setFilters} />
+
+      {loading && (
+        <div className="flex items-center justify-center py-16">
+          <div
+            className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
+            style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
+          />
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && (
+        <GlassPanel className="p-8 text-center">
+          <p className="text-text-dim/50 font-body text-sm">
+            No jobs posted yet. Be the first to post!
+          </p>
+        </GlassPanel>
+      )}
+
+      {!loading && filtered.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((post) => (
+            <JobCard key={post.id} post={post} currentUserId={currentUserId} />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -636,7 +767,7 @@ export default function BirdDog() {
 
         {/* Tab content */}
         {activeTab === 'find-birddogs' && <FindBirdDogsTab />}
-        {activeTab === 'find-jobs' && <FindJobsTab />}
+        {activeTab === 'find-jobs' && <FindJobsTab currentUserId={firebaseUid} />}
         {activeTab === 'my-activity' && (
           <MyActivityTab firebaseUid={firebaseUid} profile={profile} user={user} />
         )}
