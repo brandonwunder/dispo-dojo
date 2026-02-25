@@ -91,8 +91,8 @@ export default function Dashboard() {
         className="fixed inset-0 -z-10"
         style={{
           background: `
-            radial-gradient(ellipse 80% 60% at 50% 25%, rgba(6,6,15,0.45) 0%, rgba(6,6,15,0.65) 50%, rgba(6,6,15,0.85) 100%),
-            linear-gradient(180deg, rgba(6,6,15,0.35) 0%, rgba(6,6,15,0.55) 40%, rgba(6,6,15,0.82) 100%)
+            radial-gradient(ellipse 80% 60% at 50% 25%, rgba(11,15,20,0.3) 0%, rgba(11,15,20,0.5) 50%, rgba(11,15,20,0.75) 100%),
+            linear-gradient(180deg, rgba(11,15,20,0.2) 0%, rgba(11,15,20,0.4) 40%, rgba(11,15,20,0.7) 100%)
           `,
         }}
       />

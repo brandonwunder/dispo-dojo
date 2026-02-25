@@ -50,31 +50,32 @@ const CATEGORIES = [
 
 export default function CallRecordings() {
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="max-w-[900px] mx-auto relative z-10 px-6 py-16"
-    >
+    <>
       {/* Background Image */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 2 }}>
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: 'url(/call-recordings-bg.png)',
-            backgroundSize: '120%',
-            backgroundPosition: 'center 30%',
-            backgroundRepeat: 'no-repeat',
-          }}
-        />
-        <div className="absolute inset-0" style={{
+      <div
+        className="fixed inset-0 -z-20 bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/call-recordings-bg.png)',
+          backgroundSize: '120%',
+          backgroundPosition: 'center 30%',
+        }}
+      />
+      <div
+        className="fixed inset-0 -z-10"
+        style={{
           background: `
             radial-gradient(ellipse 80% 60% at 50% 30%, rgba(11,15,20,0.3) 0%, rgba(11,15,20,0.6) 55%, rgba(11,15,20,0.88) 100%),
             linear-gradient(180deg, rgba(11,15,20,0.25) 0%, rgba(11,15,20,0.5) 40%, rgba(11,15,20,0.85) 100%)
           `,
-        }} />
-      </div>
+        }}
+      />
 
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="max-w-[900px] mx-auto relative z-10 px-6 py-16"
+      >
       {/* Hero header */}
       <motion.div variants={itemVariants}>
         <div className="text-center mb-8 max-w-[680px] mx-auto">
@@ -136,5 +137,6 @@ export default function CallRecordings() {
         </motion.p>
       </GlassShell>
     </motion.div>
+    </>
   )
 }
