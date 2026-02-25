@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import {
   collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp,
-  doc, updateDoc,
+  doc, updateDoc, getDocs,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
@@ -18,6 +18,7 @@ import FilterBar from '../components/birddog/FilterBar'
 import BirdDogCard from '../components/birddog/BirdDogCard'
 import JobCard from '../components/birddog/JobCard'
 import MessagePanel from '../components/birddog/MessagePanel'
+import ReviewForm from '../components/birddog/ReviewForm'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -989,7 +990,90 @@ function MyApplicationsSection({ firebaseUid, onOpenMessages }) {
   )
 }
 
-function PendingReviewsSection() {
+function PendingReviewsSection({ firebaseUid, profile }) {
+  const [pendingReviews, setPendingReviews] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!firebaseUid) {
+      setLoading(false)
+      return
+    }
+
+    // Listen to completed job posts where user is a participant
+    const q = query(
+      collection(db, 'bird_dog_posts'),
+      where('status', '==', 'completed'),
+    )
+
+    const unsub = onSnapshot(
+      q,
+      async (snap) => {
+        const allCompleted = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+
+        // Filter to posts where user is either owner or accepted applicant
+        const myCompleted = allCompleted.filter((post) => {
+          const isOwner = post.userId === firebaseUid
+          const isAccepted = post.applicants?.some(
+            (a) => a.userId === firebaseUid && a.status === 'accepted',
+          )
+          return isOwner || isAccepted
+        })
+
+        // For each completed post, check if user already left a review
+        const pending = []
+        for (const post of myCompleted) {
+          const reviewQ = query(
+            collection(db, 'bird_dog_reviews'),
+            where('jobPostId', '==', post.id),
+            where('reviewerId', '==', firebaseUid),
+          )
+          const reviewSnap = await getDocs(reviewQ)
+          if (reviewSnap.empty) {
+            // Determine who to review
+            const isOwner = post.userId === firebaseUid
+            if (isOwner) {
+              // Review each accepted applicant
+              const accepted = post.applicants?.filter((a) => a.status === 'accepted') || []
+              for (const app of accepted) {
+                pending.push({
+                  post,
+                  otherUserId: app.userId,
+                  otherUserName: app.name || 'Applicant',
+                  reviewerRole: 'investor',
+                })
+              }
+            } else {
+              // Review the post owner
+              pending.push({
+                post,
+                otherUserId: post.userId,
+                otherUserName: post.authorName || 'Investor',
+                reviewerRole: 'bird_dog',
+              })
+            }
+          }
+        }
+
+        setPendingReviews(pending)
+        setLoading(false)
+      },
+      (err) => {
+        console.error('Pending reviews listener error:', err)
+        setLoading(false)
+      },
+    )
+
+    return () => unsub()
+  }, [firebaseUid])
+
+  function handleReviewComplete(postId, otherUserId) {
+    // Remove completed review from the list
+    setPendingReviews((prev) =>
+      prev.filter((r) => !(r.post.id === postId && r.otherUserId === otherUserId)),
+    )
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -1003,10 +1087,38 @@ function PendingReviewsSection() {
 
         <SectionDivider />
 
-        <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-          <Star size={24} className="text-text-dim/25" />
-          <p className="text-xs text-text-dim/40 font-body">No pending reviews</p>
-        </div>
+        {loading && (
+          <div className="flex items-center justify-center py-10">
+            <div
+              className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
+              style={{ borderColor: 'rgba(0,198,255,0.4)', borderTopColor: 'transparent' }}
+            />
+          </div>
+        )}
+
+        {!loading && pendingReviews.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+            <Star size={24} className="text-text-dim/25" />
+            <p className="text-xs text-text-dim/40 font-body">No pending reviews</p>
+          </div>
+        )}
+
+        {!loading && pendingReviews.length > 0 && (
+          <div className="flex flex-col gap-3">
+            {pendingReviews.map((item, i) => (
+              <ReviewForm
+                key={`${item.post.id}-${item.otherUserId}`}
+                post={item.post}
+                otherUserId={item.otherUserId}
+                otherUserName={item.otherUserName}
+                firebaseUid={firebaseUid}
+                reviewerRole={item.reviewerRole}
+                reviewerName={profile?.displayName || 'Unknown'}
+                onComplete={() => handleReviewComplete(item.post.id, item.otherUserId)}
+              />
+            ))}
+          </div>
+        )}
       </GlassPanel>
     </motion.div>
   )
@@ -1023,8 +1135,8 @@ function MyActivityTab({ firebaseUid, profile, user, onCreatePost, onOpenMessage
       {/* Section 2: My Applications */}
       <MyApplicationsSection firebaseUid={firebaseUid} onOpenMessages={onOpenMessages} />
 
-      {/* Section 3: Pending Reviews (placeholder for Task 9) */}
-      <PendingReviewsSection />
+      {/* Section 3: Pending Reviews */}
+      <PendingReviewsSection firebaseUid={firebaseUid} profile={profile} />
 
       {/* Section 4: Lead Submissions */}
       <motion.div

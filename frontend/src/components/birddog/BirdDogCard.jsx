@@ -1,11 +1,42 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { MessageSquare, User } from 'lucide-react'
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
+import { db } from '../../lib/firebase'
 import GlassPanel from '../GlassPanel'
+import StarRating from './StarRating'
+
+// ─── useUserRating hook ──────────────────────────────────────────────────────
+
+function useUserRating(userId) {
+  const [data, setData] = useState({ avgRating: 0, reviewCount: 0, loading: true })
+
+  useEffect(() => {
+    if (!userId) {
+      setData({ avgRating: 0, reviewCount: 0, loading: false })
+      return
+    }
+    const q = query(
+      collection(db, 'bird_dog_reviews'),
+      where('revieweeId', '==', userId),
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      const reviews = snap.docs.map((d) => d.data())
+      const count = reviews.length
+      const avg = count > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / count : 0
+      setData({ avgRating: Math.round(avg * 10) / 10, reviewCount: count, loading: false })
+    })
+    return () => unsub()
+  }, [userId])
+
+  return data
+}
 
 // ─── BirdDogCard ─────────────────────────────────────────────────────────────
 
 export default function BirdDogCard({ post }) {
   const initial = (post.authorName || '?')[0].toUpperCase()
+  const { avgRating, reviewCount } = useUserRating(post.userId)
 
   // Determine availability display
   const isAvailable = post.availability === 'available' || post.availability === 'now'
@@ -37,16 +68,25 @@ export default function BirdDogCard({ post }) {
               {post.authorName || 'Unknown'}
             </p>
           </div>
-          <span
-            className="inline-block px-2 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-widest"
-            style={{
-              color: '#F6C445',
-              backgroundColor: 'rgba(246,196,69,0.12)',
-              border: '1px solid rgba(246,196,69,0.25)',
-            }}
-          >
-            New
-          </span>
+          {reviewCount > 0 ? (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <StarRating rating={avgRating} size={12} />
+              <span className="text-[10px] text-text-dim/50 font-body">
+                ({reviewCount})
+              </span>
+            </div>
+          ) : (
+            <span
+              className="inline-block px-2 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-widest"
+              style={{
+                color: '#F6C445',
+                backgroundColor: 'rgba(246,196,69,0.12)',
+                border: '1px solid rgba(246,196,69,0.25)',
+              }}
+            >
+              New
+            </span>
+          )}
         </div>
 
         {/* Title */}

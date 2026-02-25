@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, Send, Users, ChevronUp } from 'lucide-react'
+import { Eye, Send, Users, ChevronUp, CheckCircle } from 'lucide-react'
+import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore'
+import { db } from '../../lib/firebase'
 import GlassPanel from '../GlassPanel'
 import ApplicantsList from './ApplicantsList'
+import StarRating from './StarRating'
 
 // ─── Urgency color map ───────────────────────────────────────────────────────
 
@@ -25,16 +28,62 @@ function formatDeadline(dateStr) {
   }
 }
 
+// ─── useUserRating hook ──────────────────────────────────────────────────────
+
+function useUserRating(userId) {
+  const [data, setData] = useState({ avgRating: 0, reviewCount: 0, loading: true })
+
+  useEffect(() => {
+    if (!userId) {
+      setData({ avgRating: 0, reviewCount: 0, loading: false })
+      return
+    }
+    const q = query(
+      collection(db, 'bird_dog_reviews'),
+      where('revieweeId', '==', userId),
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      const reviews = snap.docs.map((d) => d.data())
+      const count = reviews.length
+      const avg = count > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / count : 0
+      setData({ avgRating: Math.round(avg * 10) / 10, reviewCount: count, loading: false })
+    })
+    return () => unsub()
+  }, [userId])
+
+  return data
+}
+
 // ─── JobCard ─────────────────────────────────────────────────────────────────
 
 export default function JobCard({ post, onApply, currentUserId }) {
   const [showApplicants, setShowApplicants] = useState(false)
+  const [completing, setCompleting] = useState(false)
 
   const initial = (post.authorName || '?')[0].toUpperCase()
   const isOwner = post.userId === currentUserId
+  const { avgRating, reviewCount } = useUserRating(post.userId)
   const urgencyColor = URGENCY_COLORS[post.urgency] || '#C8D1DA'
   const deadlineText = formatDeadline(post.deadline)
   const applicantCount = post.applicants?.length || 0
+
+  // Mark Complete logic
+  const isAcceptedApplicant = post.applicants?.some(
+    (a) => a.userId === currentUserId && a.status === 'accepted',
+  )
+  const canComplete =
+    post.status === 'in_progress' && (post.userId === currentUserId || isAcceptedApplicant)
+
+  async function handleMarkComplete() {
+    setCompleting(true)
+    try {
+      await updateDoc(doc(db, 'bird_dog_posts', post.id), { status: 'completed' })
+    } catch (err) {
+      console.error('Error marking complete:', err)
+    } finally {
+      setCompleting(false)
+    }
+  }
 
   return (
     <motion.div
@@ -60,16 +109,25 @@ export default function JobCard({ post, onApply, currentUserId }) {
               {post.authorName || 'Unknown'}
             </p>
           </div>
-          <span
-            className="inline-block px-2 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-widest"
-            style={{
-              color: '#F6C445',
-              backgroundColor: 'rgba(246,196,69,0.12)',
-              border: '1px solid rgba(246,196,69,0.25)',
-            }}
-          >
-            New
-          </span>
+          {reviewCount > 0 ? (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <StarRating rating={avgRating} size={12} />
+              <span className="text-[10px] text-text-dim/50 font-body">
+                ({reviewCount})
+              </span>
+            </div>
+          ) : (
+            <span
+              className="inline-block px-2 py-0.5 rounded-full text-[10px] font-heading font-semibold tracking-widest"
+              style={{
+                color: '#F6C445',
+                backgroundColor: 'rgba(246,196,69,0.12)',
+                border: '1px solid rgba(246,196,69,0.25)',
+              }}
+            >
+              New
+            </span>
+          )}
         </div>
 
         {/* Title */}
@@ -160,37 +218,70 @@ export default function JobCard({ post, onApply, currentUserId }) {
                 <Eye size={12} />
                 View Details
               </button>
-              <button
-                type="button"
-                onClick={() => onApply?.(post)}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider text-white transition-colors active:scale-[0.98] hover:bg-[#ef5350]"
-                style={{
-                  backgroundColor: '#E53935',
-                  border: '1px solid rgba(229,57,53,0.40)',
-                  boxShadow: '0 4px 16px rgba(229,57,53,0.20)',
-                }}
-              >
-                <Send size={12} />
-                Apply
-              </button>
+              {canComplete ? (
+                <button
+                  type="button"
+                  onClick={handleMarkComplete}
+                  disabled={completing}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:bg-[rgba(16,185,129,0.08)] disabled:opacity-50"
+                  style={{
+                    color: '#10b981',
+                    borderColor: 'rgba(16,185,129,0.35)',
+                  }}
+                >
+                  <CheckCircle size={12} />
+                  {completing ? 'Completing...' : 'Mark Complete'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onApply?.(post)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider text-white transition-colors active:scale-[0.98] hover:bg-[#ef5350]"
+                  style={{
+                    backgroundColor: '#E53935',
+                    border: '1px solid rgba(229,57,53,0.40)',
+                    boxShadow: '0 4px 16px rgba(229,57,53,0.20)',
+                  }}
+                >
+                  <Send size={12} />
+                  Apply
+                </button>
+              )}
             </>
           ) : (
-            <button
-              type="button"
-              onClick={() => setShowApplicants((prev) => !prev)}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:bg-[rgba(0,198,255,0.08)]"
-              style={{
-                color: '#00C6FF',
-                borderColor: 'rgba(0,198,255,0.35)',
-              }}
-            >
-              {showApplicants ? (
-                <ChevronUp size={12} />
-              ) : (
-                <Users size={12} />
+            <div className="flex gap-2 w-full">
+              <button
+                type="button"
+                onClick={() => setShowApplicants((prev) => !prev)}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:bg-[rgba(0,198,255,0.08)]"
+                style={{
+                  color: '#00C6FF',
+                  borderColor: 'rgba(0,198,255,0.35)',
+                }}
+              >
+                {showApplicants ? (
+                  <ChevronUp size={12} />
+                ) : (
+                  <Users size={12} />
+                )}
+                {showApplicants ? 'Hide Applicants' : `View Applicants${applicantCount > 0 ? ` (${applicantCount})` : ''}`}
+              </button>
+              {canComplete && (
+                <button
+                  type="button"
+                  onClick={handleMarkComplete}
+                  disabled={completing}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-heading font-semibold tracking-wider border transition-colors active:scale-[0.97] hover:bg-[rgba(16,185,129,0.08)] disabled:opacity-50"
+                  style={{
+                    color: '#10b981',
+                    borderColor: 'rgba(16,185,129,0.35)',
+                  }}
+                >
+                  <CheckCircle size={12} />
+                  {completing ? '...' : 'Complete'}
+                </button>
               )}
-              {showApplicants ? 'Hide Applicants' : `View Applicants${applicantCount > 0 ? ` (${applicantCount})` : ''}`}
-            </button>
+            </div>
           )}
         </div>
 
