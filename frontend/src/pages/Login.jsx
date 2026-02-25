@@ -645,21 +645,30 @@ export default function Login() {
           {' '}TO SUCCEED IN WHOLESALING{' '}
           <span className="relative inline-block">
             FOR FREE!
+            {/* Calligraphic brush stroke — filled shape, tapered ends */}
             <svg
-              className="absolute -bottom-1 left-0 w-full"
-              viewBox="0 0 120 8"
+              className="absolute -bottom-1.5 left-[-8%] w-[116%]"
+              viewBox="0 0 200 16"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               preserveAspectRatio="none"
-              style={{ height: '6px' }}
+              style={{ height: 'clamp(5px, 1vw, 8px)' }}
             >
+              <defs>
+                <filter id="brushGlow" x="-20%" y="-40%" width="140%" height="180%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" />
+                </filter>
+              </defs>
+              {/* Soft glow layer behind */}
               <path
-                d="M2 5.5C12 2.5 28 1.5 42 3.5C56 5.5 72 6 85 4C98 2 110 3 118 4.5"
-                stroke="#E53935"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ filter: 'drop-shadow(0 0 4px rgba(229,57,53,0.5))' }}
+                d="M0 8 C5 7,15 4,40 4 C70 3,100 3,130 4 C155 5,180 5,198 6 Q200 8,198 10 C180 11,155 11,130 10 C100 9,70 10,40 11 C15 12,5 9,0 8Z"
+                fill="rgba(244,247,250,0.15)"
+                filter="url(#brushGlow)"
+              />
+              {/* Main brush stroke */}
+              <path
+                d="M0 8 C5 7,15 4,40 4 C70 3,100 3,130 4 C155 5,180 5,198 6 Q200 8,198 10 C180 11,155 11,130 10 C100 9,70 10,40 11 C15 12,5 9,0 8Z"
+                fill="rgba(244,247,250,0.75)"
               />
             </svg>
           </span>
