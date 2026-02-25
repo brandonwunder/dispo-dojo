@@ -63,7 +63,7 @@ const SAMPLE_DEALS = [
     sqft: 1850,
     yearBuilt: 2018,
     status: 'active',
-    image: 'https://placehold.co/600x400/1a2332/334155?text=4217+Magnolia+Creek+Dr',
+    image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&h=400&fit=crop',
     pitch: 'Assumable VA loan at 2.75% — seller is relocating for work and needs a fast, clean exit. Property is in great condition with a new roof (2024) and updated kitchen.',
     highlights: [
       'Assumable VA loan at 2.75% fixed rate',
@@ -87,7 +87,7 @@ const SAMPLE_DEALS = [
     sqft: 1320,
     yearBuilt: 1994,
     status: 'active',
-    image: 'https://placehold.co/600x400/1a2332/334155?text=1903+Ridgewood+Ln',
+    image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&h=400&fit=crop',
     pitch: 'Probate property — estate is motivated. Needs cosmetic rehab (~$15K). Strong rental area with $1,800/mo market rent. Perfect for a buy-and-hold investor.',
     highlights: [
       'Probate sale — estate motivated to close fast',
@@ -111,7 +111,7 @@ const SAMPLE_DEALS = [
     sqft: 1640,
     yearBuilt: 2012,
     status: 'active',
-    image: 'https://placehold.co/600x400/1a2332/334155?text=762+Birchwood+Ave',
+    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&h=400&fit=crop',
     pitch: 'Layered equity + DOM + price reduction signals. Seller has been on market 90+ days with two price drops. Open to creative structure — Sub-To with seller carry on the gap.',
     highlights: [
       '90+ days on market with 2 price reductions',
@@ -135,10 +135,15 @@ function DetailModal({ deal, onClose, onInquire }) {
       exit={{ opacity: 0 }}
     >
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <WoodPanel
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto"
-        noPad
-        glow
+      <motion.div
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border relative z-10"
+        style={{
+          background: 'rgba(11,15,20,0.85)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderColor: 'rgba(255,255,255,0.07)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+        }}
         initial={{ opacity: 0, scale: 0.92, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.92, y: 30 }}
@@ -224,7 +229,7 @@ function DetailModal({ deal, onClose, onInquire }) {
             )}
           </div>
 
-          <div className="katana-line my-4" />
+          <div className="my-4 h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.07)] to-transparent" />
 
           {/* Pitch */}
           {deal.pitch && (
@@ -257,7 +262,7 @@ function DetailModal({ deal, onClose, onInquire }) {
             <Send size={14} /> Inquire About This Deal
           </button>
         </div>
-      </WoodPanel>
+      </motion.div>
     </motion.div>
   )
 }
@@ -301,16 +306,21 @@ function InquiryModal({ deal, onClose }) {
       exit={{ opacity: 0 }}
     >
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <WoodPanel
-        className="w-full max-w-md"
-        noPad
-        glow
+      <motion.div
+        className="w-full max-w-md rounded-2xl border relative z-10"
+        style={{
+          background: 'rgba(11,15,20,0.85)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderColor: 'rgba(255,255,255,0.07)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+        }}
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ duration: 0.25 }}
       >
-        <div className="lacquer-bar px-5 py-3 flex items-center justify-between">
+        <div className="px-5 py-3 flex items-center justify-between border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
           <span className="font-heading text-gold text-sm tracking-widest uppercase">Inquire About Deal</span>
           <button onClick={onClose} className="text-text-dim hover:text-parchment transition-colors">
             <X size={18} />
@@ -393,7 +403,7 @@ function InquiryModal({ deal, onClose }) {
             </div>
           )}
         </div>
-      </WoodPanel>
+      </motion.div>
     </motion.div>
   )
 }
@@ -516,8 +526,8 @@ export default function LiveDeals() {
         />
         <div className="absolute inset-0" style={{
           background: `
-            radial-gradient(ellipse 80% 60% at 50% 30%, rgba(11,15,20,0.3) 0%, rgba(11,15,20,0.6) 55%, rgba(11,15,20,0.88) 100%),
-            linear-gradient(180deg, rgba(11,15,20,0.25) 0%, rgba(11,15,20,0.5) 40%, rgba(11,15,20,0.85) 100%)
+            radial-gradient(ellipse 80% 60% at 50% 30%, rgba(11,15,20,0.45) 0%, rgba(11,15,20,0.7) 55%, rgba(11,15,20,0.92) 100%),
+            linear-gradient(180deg, rgba(11,15,20,0.35) 0%, rgba(11,15,20,0.6) 40%, rgba(11,15,20,0.9) 100%)
           `,
         }} />
       </div>

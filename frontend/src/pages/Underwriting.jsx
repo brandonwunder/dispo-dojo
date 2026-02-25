@@ -6,7 +6,7 @@ import {
   Building2, Landmark, MapPin, BedDouble, Bath, Ruler, Calendar,
   Zap, Droplets, Wrench, ImagePlus, Link
 } from 'lucide-react'
-import WoodPanel from '../components/WoodPanel'
+import GlassPanel from '../components/GlassPanel'
 
 /* ─── Animation Variants ───────────────────────────────────────────────────── */
 
@@ -43,9 +43,9 @@ const labelClass =
 
 function GlassCard({ children, className = '' }) {
   return (
-    <WoodPanel glow noPad className={className}>
+    <GlassPanel className={className}>
       {children}
-    </WoodPanel>
+    </GlassPanel>
   )
 }
 
@@ -891,10 +891,15 @@ function WizardModal({ dealType, onClose }) {
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <WoodPanel
-        glow
-        noPad
-        className="w-full max-w-xl max-h-[90vh] flex flex-col"
+      <motion.div
+        className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl border relative z-10"
+        style={{
+          background: 'rgba(11,15,20,0.88)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderColor: 'rgba(255,255,255,0.07)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+        }}
         initial={{ opacity: 0, scale: 0.92, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.92, y: 30 }}
@@ -950,7 +955,7 @@ function WizardModal({ dealType, onClose }) {
         </div>
 
         {/* Footer Buttons */}
-        <div className="px-6 py-4 border-t border-gold-dim/10 flex items-center justify-between gap-3">
+        <div className="px-6 py-4 border-t flex items-center justify-between gap-3" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
           {step > 0 ? (
             <button
               type="button"
@@ -990,7 +995,7 @@ function WizardModal({ dealType, onClose }) {
             </button>
           )}
         </div>
-      </WoodPanel>
+      </motion.div>
     </motion.div>
   )
 }
@@ -1005,23 +1010,23 @@ export default function Underwriting() {
   return (
     <>
       {/* Background Image */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 2 }}>
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: 'url(/underwriting-bg.png)',
-            backgroundSize: '120%',
-            backgroundPosition: 'center 30%',
-            backgroundRepeat: 'no-repeat',
-          }}
-        />
-        <div className="absolute inset-0" style={{
+      <div
+        className="fixed inset-0 -z-20 bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/underwriting-bg.png)',
+          backgroundSize: '120%',
+          backgroundPosition: 'center 30%',
+        }}
+      />
+      <div
+        className="fixed inset-0 -z-10"
+        style={{
           background: `
-            radial-gradient(ellipse 80% 60% at 50% 30%, rgba(11,15,20,0.3) 0%, rgba(11,15,20,0.6) 55%, rgba(11,15,20,0.88) 100%),
-            linear-gradient(180deg, rgba(11,15,20,0.25) 0%, rgba(11,15,20,0.5) 40%, rgba(11,15,20,0.85) 100%)
+            radial-gradient(ellipse 80% 60% at 50% 30%, rgba(11,15,20,0.4) 0%, rgba(11,15,20,0.65) 55%, rgba(11,15,20,0.9) 100%),
+            linear-gradient(180deg, rgba(11,15,20,0.35) 0%, rgba(11,15,20,0.55) 40%, rgba(11,15,20,0.88) 100%)
           `,
-        }} />
-      </div>
+        }}
+      />
 
       <motion.div
         variants={containerVariants}
