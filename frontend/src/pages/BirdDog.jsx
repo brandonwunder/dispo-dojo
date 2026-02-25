@@ -90,14 +90,6 @@ const itemVariants = {
 function HeroExplainer({ showCta, onCtaClick }) {
   return (
     <section className="relative w-full overflow-hidden">
-      {/* Background image */}
-      <div
-        className="absolute inset-0 -z-20 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/bird-dog-bg.png')" }}
-      />
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-bg/40 via-bg/70 to-bg" />
-
       <div className="relative max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
         {/* Icon */}
         <motion.div
@@ -239,7 +231,10 @@ function SignupForm({ onComplete, user }) {
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
 
-  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }))
+  function set(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }))
+  }
 
   const validate = () => {
     const e = {}
@@ -470,9 +465,13 @@ function SubmitLeadForm({ firebaseUid, profile, user }) {
   const [form, setForm] = useState({ ...EMPTY_LEAD_FORM })
   const [submitting, setSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
   const [errors, setErrors] = useState({})
 
-  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }))
+  function set(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }))
+  }
 
   const validate = () => {
     const e = {}
@@ -489,11 +488,12 @@ function SubmitLeadForm({ firebaseUid, profile, user }) {
     e.preventDefault()
     if (!validate()) return
     setSubmitting(true)
+    setSubmitError(null)
     try {
       const displayName = profile?.birdDogProfile?.name || user?.name || 'Unknown'
       await addDoc(collection(db, 'bird_dog_leads'), {
         userId: firebaseUid,
-        submitterName: displayName,
+        userName: displayName,
         propertyAddress: form.propertyAddress.trim(),
         ownerName: form.ownerName.trim(),
         ownerContact: form.ownerContact.trim(),
@@ -512,6 +512,7 @@ function SubmitLeadForm({ firebaseUid, profile, user }) {
       setTimeout(() => setShowSuccess(false), 3000)
     } catch (err) {
       console.error('Lead submission failed:', err)
+      setSubmitError('Something went wrong. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -549,6 +550,21 @@ function SubmitLeadForm({ firebaseUid, profile, user }) {
               <span className="font-body text-sm text-green-300">
                 Lead submitted successfully! We'll review it shortly.
               </span>
+            </motion.div>
+          )}
+          {submitError && (
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              className="flex items-center gap-2 px-4 py-3 rounded-lg mb-5"
+              style={{
+                background: 'rgba(229,57,53,0.15)',
+                border: '1px solid rgba(229,57,53,0.3)',
+              }}
+            >
+              <AlertTriangle size={16} className="text-crimson" />
+              <span className="font-body text-sm text-crimson">{submitError}</span>
             </motion.div>
           )}
         </AnimatePresence>
