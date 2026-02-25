@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Phone, MessageSquare, ShieldAlert, ChevronDown, Copy, Check } from 'lucide-react'
-import WoodPanel from '../components/WoodPanel'
 
 const tabs = [
   { id: 'calling', label: 'Calling Scripts', icon: Phone },
@@ -137,6 +136,23 @@ I'll send you my info so you have it on file. No pressure at all.`,
   },
 ]
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06 },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+  },
+}
+
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false)
 
@@ -149,7 +165,11 @@ function CopyButton({ text }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-gold hover:text-gold-bright text-xs font-heading uppercase tracking-wide transition-all duration-200"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-heading uppercase tracking-wide transition-colors duration-200 border border-transparent hover:border-[#00C6FF]/20 focus-visible:outline-none focus-visible:border-[#00C6FF]/40 active:scale-95"
+      style={{
+        color: copied ? '#4ade80' : '#00C6FF',
+        background: copied ? 'rgba(74, 222, 128, 0.06)' : 'rgba(0, 198, 255, 0.04)',
+      }}
     >
       {copied ? <Check size={13} /> : <Copy size={13} />}
       {copied ? 'Copied!' : 'Copy'}
@@ -161,75 +181,30 @@ function ScriptCard({ title, scenario, script, index }) {
   const [open, setOpen] = useState(index === 0)
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className="scroll-card wood-panel rounded-sm border border-gold-dim/20 overflow-hidden"
-    >
-      {/* Title bar -- lacquer-bar style */}
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3.5 text-left lacquer-bar transition-colors duration-200"
+    <motion.div variants={itemVariants}>
+      <div
+        className="rounded-sm border border-gold-dim/20 overflow-hidden"
+        style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
       >
-        <div>
-          <h3 className="font-heading text-sm font-semibold tracking-wide text-gold">{title}</h3>
-          <p className="text-xs text-text-dim mt-0.5">{scenario}</p>
-        </div>
-        <ChevronDown
-          size={18}
-          className={`text-gold-dim shrink-0 ml-4 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
-        />
-      </button>
+        {/* Cyan accent line at top */}
+        <div className="h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #00C6FF, transparent)' }} />
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden"
-          >
-            <div className="px-5 pb-5 border-t border-gold-dim/[0.1]">
-              <div className="flex justify-end mt-3 mb-2">
-                <CopyButton text={script} />
-              </div>
-              <div className="parchment-texture rounded-sm border border-gold-dim/15 p-4">
-                <pre className="text-sm text-ink whitespace-pre-wrap font-body leading-relaxed">
-                  {script}
-                </pre>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  )
-}
-
-function ObjectionCard({ objection, response, index }) {
-  const [open, setOpen] = useState(index === 0)
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
-      <WoodPanel withBrackets={false}>
+        {/* Collapsible header */}
         <button
           onClick={() => setOpen(!open)}
-          className="w-full flex items-center justify-between text-left -m-5 px-5 py-4 hover:bg-gold/[0.03] transition-colors duration-200"
+          className="w-full flex items-center justify-between px-5 py-3.5 text-left transition-colors duration-200 hover:bg-white/[0.02]"
         >
-          <div className="flex items-start gap-3 flex-1">
-            <ShieldAlert size={16} className="text-crimson-bright shrink-0 mt-0.5" />
-            <p className="font-heading text-sm font-semibold tracking-wide text-crimson-bright border-l-2 border-crimson pl-3">{objection}</p>
+          <div>
+            <h3 className="font-heading text-sm font-semibold tracking-wide text-gold">{title}</h3>
+            <p className="text-xs text-text-dim mt-0.5">{scenario}</p>
           </div>
-          <ChevronDown
-            size={18}
-            className={`text-gold-dim shrink-0 ml-4 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
-          />
+          <motion.div
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="shrink-0 ml-4"
+          >
+            <ChevronDown size={18} className="text-gold-dim" />
+          </motion.div>
         </button>
 
         <AnimatePresence>
@@ -241,13 +216,77 @@ function ObjectionCard({ objection, response, index }) {
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              <div className="pt-5 border-t border-gold-dim/[0.1] mt-4">
+              <div className="px-5 pb-5 border-t border-gold-dim/[0.08]">
+                <div className="flex justify-end mt-3 mb-2">
+                  <CopyButton text={script} />
+                </div>
+                <div
+                  className="rounded-sm border border-gold-dim/10 p-4"
+                  style={{ background: 'rgba(11, 15, 20, 0.6)' }}
+                >
+                  <pre className="text-sm text-parchment whitespace-pre-wrap font-body leading-relaxed">
+                    {script}
+                  </pre>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  )
+}
+
+function ObjectionCard({ objection, response, index }) {
+  const [open, setOpen] = useState(index === 0)
+
+  return (
+    <motion.div variants={itemVariants}>
+      <div
+        className="rounded-sm border border-gold-dim/20 overflow-hidden"
+        style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
+      >
+        {/* Crimson accent line at top */}
+        <div className="h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #E53935, transparent)' }} />
+
+        {/* Collapsible header */}
+        <button
+          onClick={() => setOpen(!open)}
+          className="w-full flex items-center justify-between text-left px-5 py-4 transition-colors duration-200 hover:bg-white/[0.02]"
+        >
+          <div className="flex items-start gap-3 flex-1">
+            <ShieldAlert size={16} className="shrink-0 mt-0.5" style={{ color: '#E53935' }} />
+            <p className="font-heading text-sm font-semibold tracking-wide border-l-2 pl-3" style={{ color: '#E53935', borderColor: '#E53935' }}>
+              {objection}
+            </p>
+          </div>
+          <motion.div
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="shrink-0 ml-4"
+          >
+            <ChevronDown size={18} className="text-gold-dim" />
+          </motion.div>
+        </button>
+
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <div className="pt-4 pb-5 px-5 border-t border-gold-dim/[0.08]">
                 <div className="flex justify-end mb-2">
                   <CopyButton text={response} />
                 </div>
                 <div className="border-l-2 border-gold pl-4">
-                  <p className="text-xs font-heading font-semibold text-gold tracking-[0.08em] uppercase mb-2">Your Response</p>
-                  <pre className="text-sm text-text-primary whitespace-pre-wrap font-body leading-relaxed">
+                  <p className="text-xs font-heading font-semibold tracking-[0.08em] uppercase mb-2" style={{ color: '#00C6FF' }}>
+                    Your Response
+                  </p>
+                  <pre className="text-sm text-parchment whitespace-pre-wrap font-body leading-relaxed">
                     {response}
                   </pre>
                 </div>
@@ -255,7 +294,7 @@ function ObjectionCard({ objection, response, index }) {
             </motion.div>
           )}
         </AnimatePresence>
-      </WoodPanel>
+      </div>
     </motion.div>
   )
 }
@@ -270,14 +309,6 @@ export default function Scripts() {
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className="relative max-w-[900px] mx-auto"
     >
-      {/* Wooden floor gradient at the bottom */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          background: 'linear-gradient(to top, rgba(42, 33, 24, 0.3) 0%, transparent 20%)',
-        }}
-      />
-
       {/* Header */}
       <div className="relative z-10 mb-6">
         <div className="flex items-center gap-3 mb-2">
@@ -292,22 +323,25 @@ export default function Scripts() {
         </p>
       </div>
 
-      {/* Tabs — wooden plaques */}
-      <div className="relative z-10 flex gap-1 mb-6">
+      {/* Tabs — cyan underline pattern (matching AdminDashboard) */}
+      <div className="relative z-10 flex gap-1 mb-6 border-b border-[rgba(0,198,255,0.12)]">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`
-              flex items-center gap-2 px-5 py-3 font-heading tracking-widest uppercase text-sm rounded-sm transition-all duration-200
-              ${activeTab === tab.id
-                ? 'wood-panel bg-gold/10 text-gold border-b-2 border-gold'
-                : 'wood-panel text-text-dim hover:text-parchment'
-              }
-            `}
+            className={`flex items-center gap-2 px-4 py-2.5 font-heading text-xs tracking-widest uppercase transition-colors duration-150 relative ${
+              activeTab === tab.id ? 'text-[#00C6FF]' : 'text-text-dim hover:text-parchment'
+            }`}
           >
-            <tab.icon size={16} />
+            <tab.icon size={15} />
             {tab.label}
+            {activeTab === tab.id && (
+              <motion.div
+                layoutId="scripts-tab-underline"
+                className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00C6FF]"
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+            )}
           </button>
         ))}
       </div>
@@ -318,8 +352,9 @@ export default function Scripts() {
           {activeTab === 'calling' && (
             <motion.div
               key="calling"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
               exit={{ opacity: 0, y: -10 }}
               className="space-y-3"
             >
@@ -332,8 +367,9 @@ export default function Scripts() {
           {activeTab === 'texting' && (
             <motion.div
               key="texting"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
               exit={{ opacity: 0, y: -10 }}
               className="space-y-3"
             >
@@ -346,8 +382,9 @@ export default function Scripts() {
           {activeTab === 'objections' && (
             <motion.div
               key="objections"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
               exit={{ opacity: 0, y: -10 }}
               className="space-y-3"
             >
