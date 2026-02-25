@@ -10,6 +10,7 @@ import {
   PenLine,
   ClipboardCheck,
 } from 'lucide-react'
+import GlassPanel from '../components/GlassPanel'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -150,10 +151,7 @@ export default function DirectAgent() {
                 viewport={{ once: true, margin: '-60px' }}
                 variants={itemVariants}
               >
-                <div
-                  className="rounded-sm border border-gold-dim/20 overflow-hidden"
-                  style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-                >
+                <GlassPanel className="overflow-hidden">
                   {/* Colored accent line at top */}
                   <div
                     className="h-[2px]"
@@ -187,7 +185,7 @@ export default function DirectAgent() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </GlassPanel>
               </motion.div>
 
               {/* Connector between steps */}
@@ -231,10 +229,7 @@ export default function DirectAgent() {
             {tools.map((tool) => (
               <motion.div key={tool.to} variants={itemVariants}>
                 <Link to={tool.to} className="block h-full group">
-                  <div
-                    className="rounded-sm border border-gold-dim/20 overflow-hidden h-full transition-transform duration-200 hover:-translate-y-1"
-                    style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
-                  >
+                  <GlassPanel className="overflow-hidden h-full transition-transform duration-200 hover:-translate-y-1">
                     {/* Colored accent line */}
                     <div
                       className="h-[2px]"
@@ -265,7 +260,7 @@ export default function DirectAgent() {
                         Use Tool <ArrowRight size={12} />
                       </span>
                     </div>
-                  </div>
+                  </GlassPanel>
                 </Link>
               </motion.div>
             ))}
