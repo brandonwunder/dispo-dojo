@@ -184,6 +184,7 @@ export function AuthProvider({ children }) {
         users,
         isLoggedIn: !!user,
         isAdmin: user?.isAdmin || false,
+        firebaseUid: user?.firebaseUid || null,
         firebaseReady,
         profile,
         login,
