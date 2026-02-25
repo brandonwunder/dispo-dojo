@@ -5,7 +5,6 @@ import {
   Building2, Hotel, Home, Landmark, Lock, FileText, CheckCircle2, Upload, X,
 } from 'lucide-react'
 import jsPDF from 'jspdf'
-import WoodPanel from '../components/WoodPanel'
 
 // ─── Animation Variants ──────────────────────────────────────────────────────
 
@@ -47,24 +46,28 @@ const PLATFORMS = [
     name: 'InvestorLift',
     tagline: 'Nationwide verified buyer network',
     desc: '#1 disposition platform for wholesalers. Verified, active buyers matched to your deal instantly.',
+    accent: '#00C6FF',
   },
   {
     icon: Users,
     name: 'InvestorBase',
     tagline: 'Curated investor database',
     desc: 'A curated database of active investors with verified proof-of-funds and recent transaction history.',
+    accent: '#A855F7',
   },
   {
     icon: Globe,
     name: 'CreativeListing.com',
     tagline: 'Creative finance marketplace',
     desc: 'The marketplace for Sub-To, seller finance, wraps, and other creative deal structures.',
+    accent: '#F6C445',
   },
   {
     icon: Crown,
     name: 'Private Buyer Lists & Groups',
     tagline: 'Exclusive proprietary lists',
     desc: 'Hand-curated lists + private buyer groups built from years of closed deals and repeat buyers.',
+    accent: '#E53935',
   },
 ]
 
@@ -156,6 +159,25 @@ function generateJVPdf(name, date) {
   doc.save(`JV-Agreement-${name.replace(/\s+/g, '-')}.pdf`)
 }
 
+// ─── Glass Card Helper ───────────────────────────────────────────────────────
+
+function GlassCard({ children, accent, className = '' }) {
+  return (
+    <div
+      className={`rounded-sm border border-gold-dim/20 overflow-hidden ${className}`}
+      style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
+    >
+      {accent && (
+        <div
+          className="h-[2px]"
+          style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
+        />
+      )}
+      <div className="p-5">{children}</div>
+    </div>
+  )
+}
+
 // ─── JV Modal Component ──────────────────────────────────────────────────────
 
 function JVModal({ show, onClose }) {
@@ -229,16 +251,23 @@ function JVModal({ show, onClose }) {
         {/* Backdrop */}
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleClose} />
 
-        {/* Modal Card */}
+        {/* Modal Card — glass */}
         <motion.div
-          className="relative z-10 w-full max-w-lg wood-panel rounded-sm border border-gold-dim/30 elevation-4 overflow-hidden"
+          className="relative z-10 w-full max-w-lg rounded-sm border border-gold-dim/30 overflow-hidden"
+          style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
+          {/* Accent line */}
+          <div
+            className="h-[2px]"
+            style={{ background: 'linear-gradient(90deg, transparent, #F6C445, transparent)' }}
+          />
+
           {/* Header bar */}
-          <div className="lacquer-bar px-5 py-3 flex items-center justify-between">
+          <div className="px-5 py-3 flex items-center justify-between border-b border-gold-dim/15">
             <span className="font-heading text-gold text-sm tracking-widest uppercase">JV Agreement</span>
             <button
               onClick={handleClose}
@@ -274,19 +303,19 @@ function JVModal({ show, onClose }) {
                   transition={{ duration: 0.25 }}
                   className="text-center"
                 >
-                  <div className="w-14 h-14 rounded-full hanko-seal flex items-center justify-center mx-auto mb-4">
+                  <div className="w-14 h-14 rounded-full bg-[#E53935]/15 border border-[#E53935]/25 flex items-center justify-center mx-auto mb-4">
                     <FileText size={24} className="text-parchment" />
                   </div>
                   <h3 className="font-heading text-xl text-gold mb-3 tracking-wide">
                     Joint Venture Agreement Required
                   </h3>
-                  <p className="text-text-dim text-sm leading-relaxed mb-6">
+                  <p className="text-text-dim text-sm leading-relaxed mb-6 font-body">
                     To work with our buyers, we require a JV agreement to be signed prior to reaching out to our buyers.
                     This protects both parties and ensures a smooth transaction process.
                   </p>
                   <button
                     onClick={() => setStep(2)}
-                    className="w-full py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-all duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)]"
+                    className="w-full py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-colors duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)]"
                   >
                     I Agree, Continue
                   </button>
@@ -311,7 +340,7 @@ function JVModal({ show, onClose }) {
                     {JV_CONTRACT_CLAUSES.map((clause) => (
                       <div key={clause.title}>
                         <p className="font-heading text-parchment text-xs tracking-wide mb-1">{clause.title}</p>
-                        <p>{clause.text}</p>
+                        <p className="font-body">{clause.text}</p>
                       </div>
                     ))}
                   </div>
@@ -327,7 +356,7 @@ function JVModal({ show, onClose }) {
                         value={sigName}
                         onChange={(e) => setSigName(e.target.value)}
                         placeholder="Enter your full legal name"
-                        className="w-full px-3 py-2.5 rounded-sm bg-black/30 border border-gold-dim/20 text-parchment text-sm placeholder:text-text-muted input-calligraphy focus:outline-none transition-all duration-200"
+                        className="w-full px-3 py-2.5 rounded-sm bg-black/30 border border-gold-dim/20 text-parchment text-sm placeholder:text-text-muted focus:outline-none focus:border-cyan/40 transition-colors duration-200 font-body"
                       />
                     </div>
                     <div>
@@ -338,7 +367,7 @@ function JVModal({ show, onClose }) {
                         type="text"
                         value={today}
                         readOnly
-                        className="w-full px-3 py-2.5 rounded-sm bg-black/20 border border-gold-dim/10 text-text-dim text-sm cursor-not-allowed"
+                        className="w-full px-3 py-2.5 rounded-sm bg-black/20 border border-gold-dim/10 text-text-dim text-sm cursor-not-allowed font-body"
                       />
                     </div>
                   </div>
@@ -346,7 +375,7 @@ function JVModal({ show, onClose }) {
                   <button
                     onClick={() => setStep(3)}
                     disabled={!sigName.trim()}
-                    className="w-full py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-all duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                    className="w-full py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-colors duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
                   >
                     Sign Agreement
                   </button>
@@ -363,19 +392,19 @@ function JVModal({ show, onClose }) {
                   transition={{ duration: 0.25 }}
                 >
                   <div className="text-center mb-5">
-                    <div className="w-14 h-14 rounded-full bg-bamboo/20 border border-bamboo/30 flex items-center justify-center mx-auto mb-3">
-                      <CheckCircle2 size={28} className="text-bamboo" />
+                    <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center mx-auto mb-3">
+                      <CheckCircle2 size={28} className="text-emerald-400" />
                     </div>
                     <h3 className="font-heading text-lg text-gold tracking-wide">
                       JV Agreement Signed
                     </h3>
-                    <p className="text-text-dim text-xs mt-1">Signed by {sigName} on {today}</p>
+                    <p className="text-text-dim text-xs mt-1 font-body">Signed by {sigName} on {today}</p>
                   </div>
 
                   {/* Download PDF button */}
                   <button
                     onClick={handleDownloadPDF}
-                    className="w-full py-2.5 mb-5 rounded-sm font-heading text-xs tracking-wider uppercase text-gold border border-gold-dim/30 hover:bg-gold/10 transition-all duration-200"
+                    className="w-full py-2.5 mb-5 rounded-sm font-heading text-xs tracking-wider uppercase text-gold border border-gold-dim/30 hover:bg-gold/10 transition-colors duration-200"
                   >
                     Download Signed JV Agreement (PDF)
                   </button>
@@ -389,9 +418,9 @@ function JVModal({ show, onClose }) {
                       onDrop={handleDrop}
                       onDragOver={handleDragOver}
                       onClick={() => fileInputRef.current?.click()}
-                      className={`border-2 border-dashed rounded-sm p-6 text-center cursor-pointer transition-all duration-200 ${
+                      className={`border-2 border-dashed rounded-sm p-6 text-center cursor-pointer transition-colors duration-200 ${
                         contractFile
-                          ? 'border-bamboo/40 bg-bamboo/5'
+                          ? 'border-emerald-500/40 bg-emerald-500/5'
                           : 'border-gold-dim/20 hover:border-gold-dim/40 bg-black/10'
                       }`}
                     >
@@ -404,15 +433,15 @@ function JVModal({ show, onClose }) {
                       />
                       {contractFile ? (
                         <div>
-                          <CheckCircle2 size={20} className="text-bamboo mx-auto mb-2" />
-                          <p className="text-parchment text-sm">{contractFile.name}</p>
-                          <p className="text-text-muted text-xs mt-1">Click or drag to replace</p>
+                          <CheckCircle2 size={20} className="text-emerald-400 mx-auto mb-2" />
+                          <p className="text-parchment text-sm font-body">{contractFile.name}</p>
+                          <p className="text-text-muted text-xs mt-1 font-body">Click or drag to replace</p>
                         </div>
                       ) : (
                         <div>
                           <Upload size={20} className="text-text-dim mx-auto mb-2" />
-                          <p className="text-text-dim text-sm">Drop your contract here or click to browse</p>
-                          <p className="text-text-muted text-xs mt-1">Accepts PDF, PNG, JPG</p>
+                          <p className="text-text-dim text-sm font-body">Drop your contract here or click to browse</p>
+                          <p className="text-text-muted text-xs mt-1 font-body">Accepts PDF, PNG, JPG</p>
                         </div>
                       )}
                     </div>
@@ -422,7 +451,7 @@ function JVModal({ show, onClose }) {
                   <button
                     onClick={handleSubmitDeal}
                     disabled={!contractFile || submitting}
-                    className="w-full py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-all duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-colors duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
                   >
                     {submitting ? (
                       <>
@@ -449,13 +478,13 @@ function JVModal({ show, onClose }) {
                   transition={{ duration: 0.3 }}
                   className="text-center"
                 >
-                  <div className="w-16 h-16 rounded-full bg-bamboo/20 border border-bamboo/30 flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle2 size={32} className="text-bamboo" />
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 size={32} className="text-emerald-400" />
                   </div>
                   <h3 className="font-heading text-xl text-gold tracking-wide mb-3">
                     Deal Submitted
                   </h3>
-                  <p className="text-text-dim text-sm leading-relaxed mb-2">
+                  <p className="text-text-dim text-sm leading-relaxed mb-2 font-body">
                     We're reviewing your contract and will reach out with next steps.
                   </p>
                   <p className="text-gold/80 text-sm leading-relaxed mb-6 font-heading">
@@ -463,7 +492,7 @@ function JVModal({ show, onClose }) {
                   </p>
                   <button
                     onClick={handleClose}
-                    className="w-full py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment border border-gold-dim/30 hover:bg-gold/10 transition-all duration-200"
+                    className="w-full py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment border border-gold-dim/30 hover:bg-gold/10 transition-colors duration-200"
                   >
                     Close
                   </button>
@@ -495,243 +524,241 @@ export default function FindBuyers() {
   return (
     <>
       <motion.div
-        className="max-w-[1000px] mx-auto px-4 py-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        className="max-w-[1000px] mx-auto"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
       >
-        <div className="parchment-texture rounded-sm border border-gold-dim/20 px-6 sm:px-10 py-10">
+        {/* ═══ 1. Hero Header ═══ */}
+        <motion.div
+          className="text-center mb-8"
+          variants={cardVariants}
+        >
+          <div className="w-16 h-16 rounded-full hanko-seal flex items-center justify-center mx-auto mb-4">
+            <Users size={28} className="text-parchment" />
+          </div>
+          <h1 className="font-display text-4xl text-gold mb-3 tracking-tight">
+            Our Buyers Network
+          </h1>
+          <p className="text-text-dim text-base leading-relaxed max-w-xl mx-auto font-body">
+            You bring the contract. We activate every channel we have.{' '}
+            <span className="text-gold font-heading font-semibold">This is what we do.</span>
+          </p>
+        </motion.div>
 
-          {/* ═══ 1. Hero Header ═══ */}
-          <motion.div
-            className="text-center mb-10"
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <div className="w-16 h-16 rounded-full hanko-seal flex items-center justify-center mx-auto mb-4">
-              <Users size={28} className="text-parchment" />
-            </div>
-            <h1 className="font-display text-4xl text-gold mb-3 tracking-tight">
-              Our Buyers Network
-            </h1>
-            <p className="text-text-dim text-base leading-relaxed max-w-xl mx-auto">
-              You bring the contract. We activate every channel we have.{' '}
-              <span className="text-gold font-heading font-semibold">This is what we do.</span>
-            </p>
-          </motion.div>
-
-          {/* ═══ 2. Advantage Banner ═══ */}
-          <motion.div
-            className="mb-8"
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <WoodPanel glow headerBar="Our Edge">
-              <div className="flex items-start gap-4">
-                <HankoIcon icon={Crown} size={22} className="mt-0.5" />
-                <div>
-                  <h2 className="font-heading text-lg text-gold tracking-wide mb-2">
-                    Dispo Is What We're Known For
-                  </h2>
-                  <p className="text-text-dim text-sm leading-relaxed">
-                    We don't post and pray. When you bring us a deal under contract, we activate InvestorLift, InvestorBase, CreativeListing, our private buyer lists, and our private buyer groups — all at once. Your deal gets maximum exposure to qualified, ready-to-close buyers.
-                  </p>
-                </div>
-              </div>
-            </WoodPanel>
-          </motion.div>
-
-          {/* ═══ Katana Line ═══ */}
-          <div className="katana-line my-8" />
-
-          {/* ═══ 3. Platform Engine Cards ═══ */}
-          <motion.div
-            className="mb-8"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <h2 className="font-heading text-lg text-gold tracking-wide mb-5 text-center uppercase">
-              Our Disposition Engine
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {PLATFORMS.map((platform) => (
-                <motion.div key={platform.name} variants={cardVariants}>
-                  <WoodPanel className="h-full">
-                    <div className="flex items-start gap-3">
-                      <HankoIcon icon={platform.icon} size={18} />
-                      <div className="min-w-0">
-                        <h3 className="font-heading text-base text-gold tracking-wide">{platform.name}</h3>
-                        <p className="text-cyan text-xs font-heading tracking-wide mb-1.5">{platform.tagline}</p>
-                        <p className="text-text-dim text-xs leading-relaxed">{platform.desc}</p>
-                      </div>
-                    </div>
-                  </WoodPanel>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* ═══ Katana Line ═══ */}
-          <div className="katana-line my-8" />
-
-          {/* ═══ 4. Buyer Types Grid ═══ */}
-          <motion.div
-            className="mb-8"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {/* Conventional */}
-            <h2 className="font-heading text-lg text-gold tracking-wide mb-1 text-center uppercase">
-              Buyer Types We Work With
-            </h2>
-            <p className="text-text-dim text-xs text-center mb-5">Conventional & Non-Conventional</p>
-
-            <h3 className="font-heading text-sm text-text-dim tracking-wider uppercase mb-3">Conventional</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-              {CONVENTIONAL_BUYERS.map((buyer) => (
-                <motion.div key={buyer.name} variants={cardVariants}>
-                  <WoodPanel className="h-full">
-                    <div className="flex items-start gap-3">
-                      <HankoIcon icon={buyer.icon} size={16} />
-                      <div className="min-w-0">
-                        <h4 className="font-heading text-sm text-parchment tracking-wide">{buyer.name}</h4>
-                        <p className="text-text-dim text-xs leading-relaxed mt-0.5">{buyer.desc}</p>
-                      </div>
-                    </div>
-                  </WoodPanel>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Non-Conventional */}
-            <h3 className="font-heading text-sm text-gold tracking-wider uppercase mb-3 flex items-center gap-2">
-              Non-Conventional
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-heading tracking-wider uppercase bg-gold/15 text-gold border border-gold-dim/20">
-                Our advantage
-              </span>
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {NON_CONVENTIONAL_BUYERS.map((buyer) => (
-                <motion.div key={buyer.name} variants={cardVariants}>
-                  <WoodPanel glow className="h-full">
-                    <div className="flex items-start gap-3">
-                      <HankoIcon icon={buyer.icon} size={16} />
-                      <div className="min-w-0">
-                        <h4 className="font-heading text-sm text-gold tracking-wide">{buyer.name}</h4>
-                        <p className="text-text-dim text-xs leading-relaxed mt-0.5">{buyer.desc}</p>
-                      </div>
-                    </div>
-                  </WoodPanel>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* ═══ Katana Line ═══ */}
-          <div className="katana-line my-8" />
-
-          {/* ═══ 5. Blurred Buyer Data Table ═══ */}
-          <motion.div
-            className="mb-8"
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <h2 className="font-heading text-lg text-gold tracking-wide mb-5 text-center uppercase">
-              Active Buyer Database
-            </h2>
-
-            <div className="relative rounded-sm overflow-hidden border border-gold-dim/15">
-              {/* Blurred table */}
-              <div className="blur-[6px] pointer-events-none select-none">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-black/30 border-b border-gold-dim/15">
-                      <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">Name</th>
-                      <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">State</th>
-                      <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">Buy Box</th>
-                      <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase hidden sm:table-cell">Property Types</th>
-                      <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase hidden sm:table-cell">Last Active</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {FAKE_BUYERS.map((buyer, i) => (
-                      <tr
-                        key={i}
-                        className={`border-b border-gold-dim/8 ${i % 2 === 0 ? 'bg-black/10' : 'bg-black/5'}`}
-                      >
-                        <td className="px-3 py-2 text-parchment">{buyer.name}</td>
-                        <td className="px-3 py-2 text-text-dim">{buyer.state}</td>
-                        <td className="px-3 py-2 text-gold">{buyer.buyBox}</td>
-                        <td className="px-3 py-2 text-text-dim hidden sm:table-cell">{buyer.types}</td>
-                        <td className="px-3 py-2 text-text-dim hidden sm:table-cell">{buyer.lastActive}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Lock overlay */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
-                <div className="w-14 h-14 rounded-full bg-black/60 border border-gold-dim/30 flex items-center justify-center mb-4">
-                  <Lock size={24} className="text-gold" />
-                </div>
-                <h3 className="font-heading text-base text-gold tracking-wide mb-2 text-center px-4">
-                  Buyer List Access Requires a Signed JV Agreement
-                </h3>
-                <p className="text-text-dim text-xs mb-5 text-center px-4">
-                  Submit a deal under contract to unlock our full buyer network
+        {/* ═══ 2. Advantage Banner ═══ */}
+        <motion.div className="mb-8" variants={cardVariants}>
+          <GlassCard accent="#F6C445">
+            <div className="flex items-start gap-4">
+              <HankoIcon icon={Crown} size={22} className="mt-0.5" />
+              <div>
+                <h2 className="font-heading text-lg text-gold tracking-wide mb-2">
+                  Dispo Is What We're Known For
+                </h2>
+                <p className="text-text-dim text-sm leading-relaxed font-body">
+                  We don't post and pray. When you bring us a deal under contract, we activate InvestorLift, InvestorBase, CreativeListing, our private buyer lists, and our private buyer groups — all at once. Your deal gets maximum exposure to qualified, ready-to-close buyers.
                 </p>
+              </div>
+            </div>
+          </GlassCard>
+        </motion.div>
+
+        {/* ═══ Divider ═══ */}
+        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }} />
+
+        {/* ═══ 3. Platform Engine Cards ═══ */}
+        <motion.div className="mb-8" variants={containerVariants}>
+          <h2 className="font-heading text-lg text-gold tracking-wide mb-5 text-center uppercase">
+            Our Disposition Engine
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {PLATFORMS.map((platform) => (
+              <motion.div key={platform.name} variants={cardVariants}>
+                <GlassCard accent={platform.accent} className="h-full">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border"
+                      style={{
+                        background: `${platform.accent}12`,
+                        borderColor: `${platform.accent}30`,
+                      }}
+                    >
+                      <platform.icon size={18} style={{ color: platform.accent }} />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-heading text-base text-parchment tracking-wide">{platform.name}</h3>
+                      <p className="text-xs font-heading tracking-wide mb-1.5" style={{ color: platform.accent }}>{platform.tagline}</p>
+                      <p className="text-text-dim text-xs leading-relaxed font-body">{platform.desc}</p>
+                    </div>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ═══ Divider ═══ */}
+        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }} />
+
+        {/* ═══ 4. Buyer Types Grid ═══ */}
+        <motion.div className="mb-8" variants={containerVariants}>
+          {/* Conventional */}
+          <h2 className="font-heading text-lg text-gold tracking-wide mb-1 text-center uppercase">
+            Buyer Types We Work With
+          </h2>
+          <p className="text-text-dim text-xs text-center mb-5 font-body">Conventional & Non-Conventional</p>
+
+          <h3 className="font-heading text-sm text-text-dim tracking-wider uppercase mb-3">Conventional</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+            {CONVENTIONAL_BUYERS.map((buyer) => (
+              <motion.div key={buyer.name} variants={cardVariants}>
+                <GlassCard accent="#00C6FF" className="h-full">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-cyan/10 border border-cyan/20">
+                      <buyer.icon size={16} className="text-cyan" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-heading text-sm text-parchment tracking-wide">{buyer.name}</h4>
+                      <p className="text-text-dim text-xs leading-relaxed mt-0.5 font-body">{buyer.desc}</p>
+                    </div>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Non-Conventional */}
+          <h3 className="font-heading text-sm text-gold tracking-wider uppercase mb-3 flex items-center gap-2">
+            Non-Conventional
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-heading tracking-wider uppercase"
+              style={{
+                background: 'rgba(246,196,69,0.1)',
+                border: '1px solid rgba(246,196,69,0.25)',
+                color: '#F6C445',
+              }}
+            >
+              Our advantage
+            </span>
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {NON_CONVENTIONAL_BUYERS.map((buyer) => (
+              <motion.div key={buyer.name} variants={cardVariants}>
+                <GlassCard accent="#F6C445" className="h-full">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-gold/10 border border-gold-dim/25">
+                      <buyer.icon size={16} className="text-gold" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-heading text-sm text-gold tracking-wide">{buyer.name}</h4>
+                      <p className="text-text-dim text-xs leading-relaxed mt-0.5 font-body">{buyer.desc}</p>
+                    </div>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ═══ Divider ═══ */}
+        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }} />
+
+        {/* ═══ 5. Blurred Buyer Data Table ═══ */}
+        <motion.div className="mb-8" variants={cardVariants}>
+          <h2 className="font-heading text-lg text-gold tracking-wide mb-5 text-center uppercase">
+            Active Buyer Database
+          </h2>
+
+          <div
+            className="relative rounded-sm overflow-hidden border border-gold-dim/20"
+            style={{ background: 'linear-gradient(180deg, #111B24 0%, #0E1720 100%)' }}
+          >
+            {/* Accent line */}
+            <div
+              className="h-[2px]"
+              style={{ background: 'linear-gradient(90deg, transparent, #00C6FF, transparent)' }}
+            />
+
+            {/* Blurred table */}
+            <div className="blur-[6px] pointer-events-none select-none">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-gold-dim/15" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">Name</th>
+                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">State</th>
+                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase">Buy Box</th>
+                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase hidden sm:table-cell">Property Types</th>
+                    <th className="px-3 py-2.5 text-left font-heading text-text-dim tracking-wider uppercase hidden sm:table-cell">Last Active</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {FAKE_BUYERS.map((buyer, i) => (
+                    <tr
+                      key={i}
+                      className={`border-b border-gold-dim/8 ${i % 2 === 0 ? 'bg-black/10' : 'bg-black/5'}`}
+                    >
+                      <td className="px-3 py-2 text-parchment font-body">{buyer.name}</td>
+                      <td className="px-3 py-2 text-text-dim font-body">{buyer.state}</td>
+                      <td className="px-3 py-2 text-gold font-body">{buyer.buyBox}</td>
+                      <td className="px-3 py-2 text-text-dim hidden sm:table-cell font-body">{buyer.types}</td>
+                      <td className="px-3 py-2 text-text-dim hidden sm:table-cell font-body">{buyer.lastActive}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Lock overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(11,15,20,0.55)' }}>
+              <div className="w-14 h-14 rounded-full bg-black/60 border border-gold-dim/30 flex items-center justify-center mb-4">
+                <Lock size={24} className="text-gold" />
+              </div>
+              <h3 className="font-heading text-base text-gold tracking-wide mb-2 text-center px-4">
+                Buyer List Access Requires a Signed JV Agreement
+              </h3>
+              <p className="text-text-dim text-xs mb-5 text-center px-4 font-body">
+                Submit a deal under contract to unlock our full buyer network
+              </p>
+              <button
+                onClick={() => setShowJVModal(true)}
+                className="px-6 py-2.5 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-colors duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)]"
+              >
+                Submit a Deal
+              </button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ═══ Divider ═══ */}
+        <div className="h-[1px] my-8" style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }} />
+
+        {/* ═══ 6. Bottom CTA ═══ */}
+        <motion.div variants={cardVariants}>
+          <GlassCard accent="#E53935">
+            <div className="text-center py-4">
+              <h2 className="font-heading text-2xl text-gold tracking-wide mb-3">
+                Ready to Move a Deal?
+              </h2>
+              <p className="text-text-dim text-sm leading-relaxed max-w-md mx-auto mb-6 font-body">
+                You're looking for buyers? Perfect. This is what we do. Bring the contract and we'll go to work.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
                   onClick={() => setShowJVModal(true)}
-                  className="px-6 py-2.5 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-all duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)]"
+                  className="px-8 py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-colors duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)]"
                 >
                   Submit a Deal
                 </button>
+                <a
+                  href="mailto:dispo@dispodojo.com"
+                  className="px-8 py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-cyan border border-cyan/30 hover:bg-cyan/10 hover:border-cyan/50 transition-colors duration-200"
+                >
+                  Contact Dispo Team
+                </a>
               </div>
             </div>
-          </motion.div>
-
-          {/* ═══ Katana Line ═══ */}
-          <div className="katana-line my-8" />
-
-          {/* ═══ 6. Bottom CTA ═══ */}
-          <motion.div
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <WoodPanel glow>
-              <div className="text-center py-4">
-                <h2 className="font-heading text-2xl text-gold tracking-wide mb-3">
-                  Ready to Move a Deal?
-                </h2>
-                <p className="text-text-dim text-sm leading-relaxed max-w-md mx-auto mb-6">
-                  You're looking for buyers? Perfect. This is what we do. Bring the contract and we'll go to work.
-                </p>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <button
-                    onClick={() => setShowJVModal(true)}
-                    className="px-8 py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-parchment bg-gradient-to-r from-crimson to-[#B3261E] hover:from-crimson-bright hover:to-crimson transition-all duration-200 shadow-[0_0_20px_rgba(229,57,53,0.3)] hover:shadow-[0_0_30px_rgba(229,57,53,0.5)]"
-                  >
-                    Submit a Deal
-                  </button>
-                  <a
-                    href="mailto:dispo@dispodojo.com"
-                    className="px-8 py-3 rounded-sm font-heading text-sm tracking-wider uppercase text-cyan border border-cyan/30 hover:bg-cyan/10 hover:border-cyan/50 transition-all duration-200"
-                  >
-                    Contact Dispo Team
-                  </a>
-                </div>
-              </div>
-            </WoodPanel>
-          </motion.div>
-
-        </div>
+          </GlassCard>
+        </motion.div>
       </motion.div>
 
       {/* JV Modal */}
