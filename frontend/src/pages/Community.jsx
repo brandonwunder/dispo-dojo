@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Hash, MessageSquare, X } from 'lucide-react'
 import { collection, query, onSnapshot } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
 import { auth, db } from '../lib/firebase'
@@ -62,8 +61,6 @@ const CHANNEL_CATEGORIES = [
 // Keep flat array for hook lookups
 const CHANNELS = CHANNEL_CATEGORIES.flatMap((cat) => cat.channels)
 
-const QUICK_REACTIONS = ['\u{1F44D}','\u{1F525}','\u{1F4AF}','\u{1F602}','\u2764\uFE0F','\u{1F3AF}']
-
 const CHANNEL_EMPTY_STATES = {
   'general': { icon: '💬', text: 'The dojo is quiet. Break the silence!' },
   'wins': { icon: '🏆', text: 'No wins shared yet — be the first to celebrate!' },
@@ -99,7 +96,6 @@ export default function Community() {
   const [activeThread, setActiveThread] = useState(null)
   const [replyingTo, setReplyingTo] = useState(null)
   const [profilePopover, setProfilePopover] = useState(null)
-  const [reactionPickerMsgId, setReactionPickerMsgId] = useState(null)
 
   // New state
   const [showMembers, setShowMembers] = useState(false)
@@ -176,7 +172,6 @@ export default function Community() {
     setActiveChannel(id)
     setActiveThread(null)
     setProfilePopover(null)
-    setReactionPickerMsgId(null)
     setViewMode('channel')
     setActiveDMId(null)
   }, [])
@@ -239,21 +234,21 @@ export default function Community() {
             backgroundRepeat: 'no-repeat',
           }}
         />
-        {/* Layer 1: Atmospheric fade — center heavily darkened for readability */}
+        {/* Layer 1: Heavy darkening for readability — panels feel solid */}
         <div
           className="absolute inset-0"
           style={{
             background: `
-              radial-gradient(ellipse 90% 70% at 50% 40%, rgba(11,15,20,0.65) 0%, rgba(11,15,20,0.85) 55%, rgba(11,15,20,0.96) 100%),
-              linear-gradient(180deg, rgba(11,15,20,0.55) 0%, rgba(11,15,20,0.78) 40%, rgba(11,15,20,0.96) 100%)
+              radial-gradient(ellipse 90% 70% at 50% 40%, rgba(11,15,20,0.80) 0%, rgba(11,15,20,0.92) 55%, rgba(11,15,20,0.98) 100%),
+              linear-gradient(180deg, rgba(11,15,20,0.75) 0%, rgba(11,15,20,0.90) 40%, rgba(11,15,20,0.98) 100%)
             `,
           }}
         />
-        {/* Layer 2: Left sidebar darkening */}
+        {/* Layer 2: Full-width darkening */}
         <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(to right, rgba(11,15,20,0.95) 0%, rgba(11,15,20,0.65) 35%, rgba(11,15,20,0.30) 65%, transparent 80%)',
+            background: 'linear-gradient(to right, rgba(11,15,20,0.98) 0%, rgba(11,15,20,0.85) 30%, rgba(11,15,20,0.70) 60%, rgba(11,15,20,0.85) 80%, rgba(11,15,20,0.98) 100%)',
           }}
         />
         {/* Layer 3: Bottom fade to page bg */}
@@ -465,38 +460,12 @@ export default function Community() {
                         currentUid={currentUid}
                         onReply={(m) => setReplyingTo(m)}
                         onScrollToMessage={scrollToMessage}
-                        onReact={(id) => setReactionPickerMsgId(reactionPickerMsgId === id ? null : id)}
                         onEdit={editMessage}
                         onDelete={deleteMessage}
                         onPin={handlePinToggle}
                         onToggleReaction={toggleReaction}
                         onAuthorClick={handleAuthorClick}
                       />
-
-                      {/* Quick reaction picker */}
-                      <AnimatePresence>
-                        {reactionPickerMsgId === msg.id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="absolute -top-8 right-12 z-50 flex gap-0.5 rounded-full border border-[rgba(246,196,69,0.15)] bg-[#111B24] px-2 py-1 shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
-                          >
-                            {QUICK_REACTIONS.map((em) => (
-                              <button
-                                key={em}
-                                onClick={() => {
-                                  toggleReaction(msg.id, em, msg.reactions, msg.authorId)
-                                  setReactionPickerMsgId(null)
-                                }}
-                                className="flex h-7 w-7 items-center justify-center rounded-full text-sm hover:scale-125 hover:bg-white/[0.08] transition-transform active:scale-95"
-                              >
-                                {em}
-                              </button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
 
                       {/* Profile popover */}
                       <AnimatePresence>
@@ -569,8 +538,8 @@ export default function Community() {
             key="thread-panel"
             className="w-[360px] flex-shrink-0 flex flex-col h-full"
             style={{
-              background: 'linear-gradient(180deg, #0B0F14 0%, #0E1820 30%, #090D12 70%, #0B0F14 100%)',
-              borderLeft: '1px solid rgba(0,198,255,0.08)',
+              background: '#0E1317',
+              borderLeft: '1px solid rgba(0,198,255,0.06)',
             }}
             initial={{ x: 400, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
