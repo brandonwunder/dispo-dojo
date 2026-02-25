@@ -489,7 +489,7 @@ export default function BirdDog() {
   const firebaseUid = user?.firebaseUid
 
   return (
-    <div className="min-h-screen bg-bg px-4 py-8 md:px-8">
+    <div className="min-h-screen px-4 py-8 md:px-8 relative z-10">
       {/* ── Header ─────────────────────────────────────── */}
       <motion.div
         className="mb-8"

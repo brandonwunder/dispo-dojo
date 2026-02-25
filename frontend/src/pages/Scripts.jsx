@@ -320,7 +320,7 @@ export default function Scripts() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="relative max-w-[900px] mx-auto"
+      className="relative z-10 max-w-[900px] mx-auto"
     >
       {/* Header */}
       <div className="relative z-10 mb-6">

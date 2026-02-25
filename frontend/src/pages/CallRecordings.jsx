@@ -54,7 +54,7 @@ export default function CallRecordings() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="max-w-[900px] mx-auto"
+      className="max-w-[900px] mx-auto relative z-10"
     >
       {/* Hero header */}
       <motion.div variants={itemVariants}>

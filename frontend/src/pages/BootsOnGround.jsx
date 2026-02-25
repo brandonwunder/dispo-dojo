@@ -133,7 +133,7 @@ function OnboardingWizard({ onComplete }) {
     'w-full rounded-sm px-4 py-3 text-parchment text-sm font-body placeholder:text-text-muted bg-black/30 border border-[rgba(255,255,255,0.07)] focus:outline-none focus:border-cyan/40 transition-colors'
 
   return (
-    <div className="min-h-screen bg-[#0B0F14] flex items-center justify-center px-4 py-16">
+    <div className="min-h-screen flex items-center justify-center px-4 py-16 relative z-10">
       <motion.div
         className="relative w-full max-w-lg"
         initial={{ opacity: 0, y: 24 }}
@@ -446,7 +446,7 @@ function MainView({ bootsProfile, onEditSetup, firebaseUid, profile, user }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0F14] px-4 py-10">
+    <div className="min-h-screen px-4 py-10 relative z-10">
       <div className="relative max-w-5xl mx-auto">
         {/* Page header */}
         <motion.div
@@ -611,6 +611,26 @@ export default function BootsOnGround() {
   }
 
   return (
+    <>
+    {/* Background Image */}
+    <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 2 }}>
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'url(/boots-on-ground-bg.png)',
+          backgroundSize: '120%',
+          backgroundPosition: 'center 30%',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
+      <div className="absolute inset-0" style={{
+        background: `
+          radial-gradient(ellipse 80% 60% at 50% 30%, rgba(11,15,20,0.3) 0%, rgba(11,15,20,0.6) 55%, rgba(11,15,20,0.88) 100%),
+          linear-gradient(180deg, rgba(11,15,20,0.25) 0%, rgba(11,15,20,0.5) 40%, rgba(11,15,20,0.85) 100%)
+        `,
+      }} />
+    </div>
+
     <AnimatePresence mode="wait">
       {!bootsProfile ? (
         <motion.div key="onboarding" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
@@ -628,5 +648,6 @@ export default function BootsOnGround() {
         </motion.div>
       )}
     </AnimatePresence>
+    </>
   )
 }
