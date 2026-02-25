@@ -495,7 +495,7 @@ export default function Login() {
   }
 
   return (
-    <div className="h-screen relative overflow-hidden bg-[#0B0F14]">
+    <div className="h-dvh relative overflow-hidden bg-[#0B0F14]">
 
       {/* Layer 0: Background photo with cinematic zoom */}
       <div
@@ -598,13 +598,13 @@ export default function Login() {
       </div>
 
       {/* ═══ Layer 10: HERO SECTION ═══ */}
-      <div className="relative z-[10] h-screen flex flex-col items-center justify-center p-4 text-center overflow-hidden">
+      <div className="relative z-[10] h-dvh flex flex-col items-center justify-center p-4 text-center overflow-hidden">
 
         {/* Company Logo — 3x large */}
         <motion.img
           src="/dispo-dojo-logo.png"
           alt="Dispo Dojo"
-          className="h-28 sm:h-40 md:h-60 w-auto object-contain mb-3 sm:mb-6 shrink-0"
+          className="h-[21rem] sm:h-48 md:h-60 w-auto object-contain mb-2 sm:mb-6 shrink-0"
           style={{
             filter: 'drop-shadow(0 0 36px rgba(246,196,69,0.55)) drop-shadow(0 0 80px rgba(246,196,69,0.25))',
             animation: 'logoFloat 3s ease-in-out infinite',
@@ -630,7 +630,7 @@ export default function Login() {
 
         {/* Subtitle */}
         <motion.p
-          className="font-heading text-[#C8D1DA] tracking-[0.15em] uppercase mt-3 sm:mt-5 px-6 max-w-2xl shrink-0"
+          className="font-heading text-[#C8D1DA] tracking-[0.15em] uppercase mt-2 sm:mt-5 px-6 max-w-2xl shrink-0"
           style={{
             fontSize: 'clamp(0.7rem, 1.8vw, 1.1rem)',
             textShadow: '0 2px 12px rgba(0,0,0,0.6)',
@@ -677,7 +677,7 @@ export default function Login() {
         {/* CTA Button */}
         <motion.button
           onClick={() => setShowLoginModal(true)}
-          className="mt-6 sm:mt-10 px-8 sm:px-10 py-3 sm:py-4 text-white font-heading font-bold tracking-[0.2em] uppercase rounded-lg text-base sm:text-lg md:text-xl cursor-pointer shrink-0"
+          className="mt-4 sm:mt-10 px-8 sm:px-10 py-2.5 sm:py-4 text-white font-heading font-bold tracking-[0.2em] uppercase rounded-lg text-base sm:text-lg md:text-xl cursor-pointer shrink-0"
           style={{
             background: 'linear-gradient(135deg, #E53935, #B3261E)',
             boxShadow: '0 0 30px rgba(229, 57, 53, 0.4), 0 0 60px rgba(229, 57, 53, 0.15)',
