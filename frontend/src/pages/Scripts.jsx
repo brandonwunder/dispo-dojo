@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Phone, MessageSquare, ShieldAlert, ChevronDown, Copy, Check } from 'lucide-react'
-import GlassShell from '../components/GlassShell'
 
 const tabs = [
   { id: 'calling', label: 'Calling Scripts', icon: Phone },
@@ -365,7 +364,6 @@ export default function Scripts() {
         </div>
       </div>
 
-      <GlassShell orbColors="default" maxWidth="max-w-[900px]">
         {/* Tabs — cyan underline pattern (matching AdminDashboard) */}
         <div className="flex gap-1 mb-6 border-b border-[rgba(0,198,255,0.12)]">
           {tabs.map((tab) => (
@@ -438,7 +436,6 @@ export default function Scripts() {
             )}
           </AnimatePresence>
         </div>
-      </GlassShell>
     </motion.div>
     </>
   )

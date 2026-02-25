@@ -11,7 +11,6 @@ import {
   Type,
   RotateCcw,
 } from 'lucide-react'
-import GlassShell from '../components/GlassShell'
 import GlassPanel from '../components/GlassPanel'
 
 /* ------------------------------------------------------------------ */
@@ -917,8 +916,6 @@ export default function ContractGenerator() {
         </div>
       </div>
 
-      {/* GlassShell wraps step indicator + step content + contract history */}
-      <GlassShell orbColors="default" maxWidth="max-w-[1200px]">
         {/* Step indicator */}
         <StepIndicator currentStep={currentStep} />
 
@@ -948,7 +945,6 @@ export default function ContractGenerator() {
 
         {/* Contract History -- always visible */}
         <ContractHistory />
-      </GlassShell>
     </motion.div>
   )
 }

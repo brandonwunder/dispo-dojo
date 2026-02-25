@@ -10,7 +10,6 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { db } from '../lib/firebase'
 import { incrementStat } from '../lib/userProfile'
-import GlassShell from '../components/GlassShell'
 import GlassPanel from '../components/GlassPanel'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -140,7 +139,6 @@ function OnboardingWizard({ onComplete }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
-        <GlassShell orbColors="purple" maxWidth="max-w-lg">
           {/* Step indicator */}
           <div className="flex items-center justify-center gap-3 mb-8">
             {[1, 2, 3].map((n) => (
@@ -331,7 +329,6 @@ function OnboardingWizard({ onComplete }) {
               </button>
             )}
           </div>
-        </GlassShell>
       </motion.div>
     </div>
   )
@@ -487,7 +484,6 @@ function MainView({ bootsProfile, onEditSetup, firebaseUid, profile, user }) {
         </motion.div>
 
         {/* Two-column grid */}
-        <GlassShell orbColors="emerald">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* ── Left: Open Tasks ── */}
             <div>
@@ -586,7 +582,6 @@ function MainView({ bootsProfile, onEditSetup, firebaseUid, profile, user }) {
               )}
             </div>
           </div>
-        </GlassShell>
       </div>
     </div>
   )

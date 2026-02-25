@@ -5,7 +5,6 @@ import { jsPDF } from 'jspdf'
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
-import GlassShell from '../components/GlassShell'
 import GlassPanel from '../components/GlassPanel'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:9000'
@@ -321,7 +320,6 @@ export default function OfferComparison() {
         )}
       </motion.div>
 
-      <GlassShell orbColors="default" maxWidth="max-w-[1000px]">
       {/* Disclaimer Banner */}
       <motion.div variants={itemVariants} className="mb-6">
         <div
@@ -589,7 +587,6 @@ export default function OfferComparison() {
           </motion.div>
         )}
       </AnimatePresence>
-      </GlassShell>
     </motion.div>
     </>
   )

@@ -5,7 +5,6 @@ import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimest
 import { useAuth } from '../context/AuthContext'
 import { db } from '../lib/firebase'
 import CountUp from 'react-countup'
-import GlassShell from '../components/GlassShell'
 import GlassPanel from '../components/GlassPanel'
 
 const statConfig = [
@@ -364,7 +363,6 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <GlassShell orbColors="default" maxWidth="max-w-[1200px]">
       {/* Members tab */}
       {activeTab === 'members' && (
         <>
@@ -582,7 +580,6 @@ export default function AdminDashboard() {
 
       {/* Buyer List tab */}
       {activeTab === 'buyer-list' && <BuyerListAdmin />}
-      </GlassShell>
     </motion.div>
     </>
   )

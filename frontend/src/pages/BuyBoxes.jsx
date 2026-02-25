@@ -4,7 +4,6 @@ import { Target, CheckCircle2 } from 'lucide-react'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
-import GlassShell from '../components/GlassShell'
 import GlassPanel from '../components/GlassPanel'
 
 const containerVariants = {
@@ -129,7 +128,6 @@ export default function BuyBoxes() {
         </div>
       </motion.div>
 
-      <GlassShell orbColors="gold" maxWidth="max-w-[900px]">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left -- Form */}
         <motion.div variants={itemVariants}>
@@ -345,7 +343,6 @@ export default function BuyBoxes() {
           )}
         </motion.div>
       </div>
-      </GlassShell>
     </motion.div>
     </>
   )

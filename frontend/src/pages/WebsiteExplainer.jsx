@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Globe, Copy, Check, ExternalLink, Link2, Share2 } from 'lucide-react'
-import GlassShell from '../components/GlassShell'
 import GlassPanel from '../components/GlassPanel'
 
 const PLACEHOLDER_URL = 'https://dispodojo.com/subto-explained'
@@ -87,7 +86,6 @@ export default function WebsiteExplainer() {
         </p>
       </div>
 
-      <GlassShell orbColors="default">
         {/* URL Section */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -216,7 +214,6 @@ export default function WebsiteExplainer() {
             </span>
           </div>
         </div>
-      </GlassShell>
     </motion.div>
     </>
   )

@@ -5,7 +5,6 @@ import {
   Building2, Hotel, Home, Landmark, Lock, FileText, CheckCircle2, Upload, X,
 } from 'lucide-react'
 import jsPDF from 'jspdf'
-import GlassShell from '../components/GlassShell'
 import GlassPanel from '../components/GlassPanel'
 
 // ─── Animation Variants ──────────────────────────────────────────────────────
@@ -540,7 +539,6 @@ export default function FindBuyers() {
           </p>
         </motion.div>
 
-        <GlassShell orbColors="default" maxWidth="max-w-[1000px]">
         {/* ═══ 2. Advantage Banner ═══ */}
         <motion.div className="mb-8" variants={cardVariants}>
           <GlassPanel className="p-5">
@@ -747,7 +745,6 @@ export default function FindBuyers() {
             </div>
           </GlassPanel>
         </motion.div>
-        </GlassShell>
       </motion.div>
 
       {/* JV Modal */}
