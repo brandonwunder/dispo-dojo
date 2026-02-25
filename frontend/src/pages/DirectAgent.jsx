@@ -177,20 +177,27 @@ export default function DirectAgent() {
           initial="hidden"
           animate="visible"
           variants={{ visible: { transition: { staggerChildren: 0.08 } } }}
-          className="mb-14 text-center"
+          className="mb-14"
         >
-          <motion.h1
-            variants={itemVariants}
-            className="font-display text-4xl text-gold tracking-[0.06em] mb-3"
-          >
-            The Messenger Hawk Post
-          </motion.h1>
-          <motion.p
-            variants={itemVariants}
-            className="font-heading text-text-dim tracking-wide text-lg"
-          >
-            How We Close Deals With Listing Agents
-          </motion.p>
+          <div className="text-center mb-8 max-w-[680px] mx-auto">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+                <Send size={36} style={{ color: '#00C6FF' }} />
+              </div>
+              <h1
+                className="font-display text-4xl"
+                style={{
+                  color: '#F4F7FA',
+                  textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+                }}
+              >
+                The Messenger Hawk Post
+              </h1>
+            </div>
+            <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
+              How We Close Deals With Listing Agents
+            </p>
+          </div>
         </motion.div>
 
         {/* ---- Process flow — 4-step journey ---- */}

@@ -531,16 +531,24 @@ export default function FindBuyers() {
       >
         {/* ═══ 1. Hero Header ═══ */}
         <motion.div
-          className="text-center mb-8"
+          className="text-center mb-8 max-w-[680px] mx-auto"
           variants={cardVariants}
         >
-          <div className="w-16 h-16 rounded-full hanko-seal flex items-center justify-center mx-auto mb-4">
-            <Users size={28} className="text-parchment" />
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+              <Users size={36} style={{ color: '#00C6FF' }} />
+            </div>
+            <h1
+              className="font-display text-4xl"
+              style={{
+                color: '#F4F7FA',
+                textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+              }}
+            >
+              Our Buyers Network
+            </h1>
           </div>
-          <h1 className="font-display text-4xl text-gold mb-3 tracking-tight">
-            Our Buyers Network
-          </h1>
-          <p className="text-text-dim text-base leading-relaxed max-w-xl mx-auto font-body">
+          <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
             You bring the contract. We activate every channel we have.{' '}
             <span className="text-gold font-heading font-semibold">This is what we do.</span>
           </p>

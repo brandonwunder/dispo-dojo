@@ -84,24 +84,28 @@ export default function BuyBoxes() {
       animate="visible"
       className="max-w-[900px] mx-auto"
     >
-      {/* Header */}
-      <motion.div variants={itemVariants} className="mb-6">
-        <div className="flex items-center gap-4 mb-3">
-          <div className="hanko-seal w-12 h-12 rounded-full flex items-center justify-center">
-            <Target size={24} className="text-white" />
-          </div>
-          <div>
-            <h1 className="font-display text-3xl tracking-[0.08em] text-parchment brush-underline">
+      {/* Hero header */}
+      <motion.div variants={itemVariants}>
+        <div className="text-center mb-8 max-w-[680px] mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+              <Target size={36} style={{ color: '#00C6FF' }} />
+            </div>
+            <h1
+              className="font-display text-4xl"
+              style={{
+                color: '#F4F7FA',
+                textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+              }}
+            >
               Buy Boxes
             </h1>
-            <p className="text-text-dim text-base mt-1 font-body">
-              Submit your criteria and we'll match you to deals that fit
-            </p>
           </div>
+          <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
+            Submit your criteria and we'll match you to deals that fit
+          </p>
         </div>
       </motion.div>
-
-      <div className="h-[1px] my-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(246,196,69,0.25), transparent)' }} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left -- Form */}

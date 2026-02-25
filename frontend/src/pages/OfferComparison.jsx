@@ -267,34 +267,38 @@ export default function OfferComparison() {
       animate="visible"
       className="max-w-[1000px] mx-auto"
     >
-      {/* Header */}
-      <motion.div variants={itemVariants} className="mb-6">
-        <div className="flex items-center justify-between gap-4 mb-3 flex-wrap">
-          <div className="flex items-center gap-4">
-            <div className="hanko-seal w-12 h-12 rounded-full flex items-center justify-center">
-              <BarChart3 size={24} className="text-white" />
+      {/* Hero header */}
+      <motion.div variants={itemVariants}>
+        <div className="text-center mb-8 max-w-[680px] mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+              <BarChart3 size={36} style={{ color: '#00C6FF' }} />
             </div>
-            <div>
-              <h1 className="font-display text-3xl tracking-[0.08em] text-parchment brush-underline">
-                Offer Comparison
-              </h1>
-              <p className="text-text-dim text-base mt-1 font-body">
-                Our offer vs. the traditional sale — numbers don't lie
-              </p>
-            </div>
+            <h1
+              className="font-display text-4xl"
+              style={{
+                color: '#F4F7FA',
+                textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+              }}
+            >
+              Offer Comparison
+            </h1>
           </div>
-          {history.length > 0 && (
+          <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
+            Our offer vs. the traditional sale — numbers don't lie
+          </p>
+        </div>
+        {history.length > 0 && (
+          <div className="flex justify-center mb-6">
             <button
               onClick={() => setShowHistory((s) => !s)}
               className="flex items-center gap-2 px-4 py-2 rounded-sm font-heading text-xs tracking-widest uppercase text-text-dim border border-gold-dim/20 hover:text-parchment hover:border-gold-dim/40 transition-colors"
             >
               <History size={14} /> History {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </motion.div>
-
-      <div className="katana-line my-4" />
 
       {/* Disclaimer Banner */}
       <motion.div variants={itemVariants} className="mb-6">

@@ -1964,21 +1964,24 @@ export default function LOISender() {
           <motion.div
             initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mb-8">
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
+            className="text-center mb-8 max-w-[680px] mx-auto">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+                <Send size={36} style={{ color: '#00C6FF' }} />
+              </div>
+              <h1
+                className="font-display text-4xl"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(229,57,53,0.2), rgba(14,90,136,0.2))',
-                  border: '1px solid rgba(229,57,53,0.25)',
-                  boxShadow: '0 0 24px rgba(229,57,53,0.12)',
-                }}>
-                <Send className="w-5 h-5 text-[#E53935]" />
-              </div>
-              <div>
-                <h1 className="font-heading text-3xl text-white tracking-tight">LOI Sender</h1>
-                <p className="text-white/30 text-sm">Bulk Letters of Intent via Gmail — personalized, paced, professional.</p>
-              </div>
+                  color: '#F4F7FA',
+                  textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+                }}
+              >
+                LOI Sender
+              </h1>
             </div>
+            <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
+              Bulk Letters of Intent via Gmail — personalized, paced, professional.
+            </p>
           </motion.div>
 
           {/* Wizard card with animated border */}

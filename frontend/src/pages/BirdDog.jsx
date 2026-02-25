@@ -513,20 +513,25 @@ export default function BirdDog() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
-        <div className="flex items-center gap-3 mb-2">
-          <MapPin size={28} className="text-gold" />
-          <h1
-            className="font-display text-3xl tracking-wider neon-shimmer-text"
-            style={{ lineHeight: 1.2 }}
-          >
-            Bird Dog Network
-          </h1>
+        <div className="text-center mb-8 max-w-[680px] mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+              <MapPin size={36} style={{ color: '#00C6FF' }} />
+            </div>
+            <h1
+              className="font-display text-4xl"
+              style={{
+                color: '#F4F7FA',
+                textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+              }}
+            >
+              Bird Dog Network
+            </h1>
+          </div>
+          <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
+            Find motivated sellers. Earn on every deal that closes.
+          </p>
         </div>
-        <p className="text-sm text-text-dim ml-11 font-body">
-          Find motivated sellers. Earn on every deal that closes.
-        </p>
-
-        <div className="mt-5 h-px bg-gradient-to-r from-gold/30 via-cyan/15 to-transparent" />
       </motion.div>
 
       {/* ── 3-column grid ──────────────────────────────── */}

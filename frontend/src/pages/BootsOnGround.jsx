@@ -483,41 +483,41 @@ function MainView({ bootsProfile, onEditSetup, firebaseUid, profile, user }) {
       <div className="relative max-w-5xl mx-auto">
         {/* Page header */}
         <motion.div
-          className="flex items-center justify-between mb-10"
+          className="mb-10"
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-sm flex items-center justify-center bg-cyan/10 border border-cyan/25"
-              style={{ boxShadow: '0 0 12px rgba(0,198,255,0.12)' }}
-            >
-              <Navigation2 size={18} className="text-cyan" />
-            </div>
-            <div>
+          <div className="text-center mb-8 max-w-[680px] mx-auto">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+                <Navigation2 size={36} style={{ color: '#00C6FF' }} />
+              </div>
               <h1
-                className="font-heading text-2xl font-bold text-parchment"
-                style={{ letterSpacing: '-0.02em' }}
+                className="font-display text-4xl"
+                style={{
+                  color: '#F4F7FA',
+                  textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+                }}
               >
                 Boots on Ground
               </h1>
-              <p className="text-text-dim text-xs mt-0.5 font-body">
-                {userMarket || 'Your Market'} &middot; {bootsProfile?.radius || 25} mi radius
-              </p>
             </div>
+            <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
+              Field operations and property verification tasks
+            </p>
           </div>
 
-          <button
-            onClick={onEditSetup}
-            className="flex items-center gap-2 px-4 py-2 rounded-sm text-xs font-heading tracking-widest uppercase text-gold bg-gold/7 border border-gold-dim/20 hover:bg-gold/14 hover:border-gold-dim/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold active:scale-95 transition-colors"
-          >
-            <Pencil size={12} />
-            Edit Setup
-          </button>
+          <div className="flex justify-center">
+            <button
+              onClick={onEditSetup}
+              className="flex items-center gap-2 px-4 py-2 rounded-sm text-xs font-heading tracking-widest uppercase text-gold bg-gold/7 border border-gold-dim/20 hover:bg-gold/14 hover:border-gold-dim/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold active:scale-95 transition-colors"
+            >
+              <Pencil size={12} />
+              Edit Setup
+            </button>
+          </div>
         </motion.div>
-
-        <div className="mt-5 mb-8 h-px bg-gradient-to-r from-cyan/30 via-gold/15 to-transparent" />
 
         {/* Two-column grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

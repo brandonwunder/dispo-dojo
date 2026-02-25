@@ -311,16 +311,25 @@ export default function Scripts() {
     >
       {/* Header */}
       <div className="relative z-10 mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <Phone size={28} className="text-gold" />
-          <h1 className="font-display text-2xl tracking-[0.06em] brush-underline text-text-primary">
-            The Training Dojo
-          </h1>
+        <div className="text-center mb-8 max-w-[680px] mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+              <Phone size={36} style={{ color: '#00C6FF' }} />
+            </div>
+            <h1
+              className="font-display text-4xl"
+              style={{
+                color: '#F4F7FA',
+                textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+              }}
+            >
+              The Training Dojo
+            </h1>
+          </div>
+          <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
+            Proven calling scripts, text templates, and objection handlers to help you close deals with listing agents.
+          </p>
         </div>
-        <p className="text-text-dim text-base max-w-2xl">
-          Proven calling scripts, text templates, and objection handlers to help you
-          close deals with listing agents.
-        </p>
       </div>
 
       {/* Tabs — cyan underline pattern (matching AdminDashboard) */}

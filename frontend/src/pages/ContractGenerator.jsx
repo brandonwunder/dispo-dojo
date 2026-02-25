@@ -888,13 +888,25 @@ export default function ContractGenerator() {
 
       {/* Header */}
       <div className="relative z-10 mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <FilePen size={28} className="text-gold" />
-          <h1 className="font-display text-3xl text-text-primary">The Seal <span className="brush-underline">Chamber</span></h1>
+        <div className="text-center max-w-[680px] mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+              <FilePen size={36} style={{ color: '#00C6FF' }} />
+            </div>
+            <h1
+              className="font-display text-4xl"
+              style={{
+                color: '#F4F7FA',
+                textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+              }}
+            >
+              The Seal Chamber
+            </h1>
+          </div>
+          <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
+            Build, sign, and send purchase agreements in minutes. A complete contract workflow from deal info to export.
+          </p>
         </div>
-        <p className="text-text-dim text-base max-w-2xl">
-          Build, sign, and send purchase agreements in minutes. A complete contract workflow from deal info to export.
-        </p>
       </div>
 
       {/* Step indicator */}

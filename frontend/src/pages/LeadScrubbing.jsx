@@ -237,24 +237,28 @@ export default function LeadScrubbing() {
           style={{ background: 'radial-gradient(circle at 10% 50%, rgba(232, 101, 46, 0.15) 0%, transparent 50%)' }}
         />
 
-        {/* Page Header */}
-        <motion.div variants={itemVariants} className="mb-6 relative">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="hanko-seal w-12 h-12 rounded-full flex items-center justify-center">
-              <ForgeHammerIcon size={28} className="text-white" />
-            </div>
-            <div>
-              <h1 className="font-display text-3xl tracking-[0.08em] text-parchment brush-underline">
+        {/* Hero header */}
+        <motion.div variants={itemVariants}>
+          <div className="text-center mb-8 max-w-[680px] mx-auto">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div style={{ filter: 'drop-shadow(0 0 12px rgba(0,198,255,0.7))' }}>
+                <ForgeHammerIcon size={36} style={{ color: '#00C6FF' }} />
+              </div>
+              <h1
+                className="font-display text-4xl"
+                style={{
+                  color: '#F4F7FA',
+                  textShadow: '0 2px 16px rgba(0,0,0,0.9), 0 0 40px rgba(11,15,20,0.8)',
+                }}
+              >
                 Finding Leads
               </h1>
-              <p className="text-text-dim text-base mt-1 font-body">
-                On-market lead sourcing — training videos
-              </p>
             </div>
+            <p className="text-sm mt-2" style={{ color: '#C8D1DA', maxWidth: '480px', lineHeight: 1.6, textAlign: 'center', margin: '8px auto 0' }}>
+              On-market lead sourcing — training videos
+            </p>
           </div>
         </motion.div>
-
-        <div className="katana-line my-4" />
 
         {/* Info Banner */}
         <motion.div variants={itemVariants} className="mb-8">
