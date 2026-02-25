@@ -15,13 +15,13 @@ function initials(name) {
 function fmtTime(ts) {
   if (!ts) return ''
   const d = ts.toDate ? ts.toDate() : new Date(ts)
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-}
-
-function fmtDate(ts) {
-  if (!ts) return ''
-  const d = ts.toDate ? ts.toDate() : new Date(ts)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+  if (d.toDateString() === today.toDateString()) return `Today at ${time}`
+  if (d.toDateString() === yesterday.toDateString()) return `Yesterday at ${time}`
+  return d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) + ' ' + time
 }
 
 export default function MessageBubble({
@@ -41,8 +41,11 @@ export default function MessageBubble({
   currentUid,
 }) {
   const [showActions, setShowActions] = useState(false)
+  const [showReactionPicker, setShowReactionPicker] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editBody, setEditBody] = useState(msg.body)
+
+  const QUICK_REACTIONS = ['\u{1F44D}','\u{1F525}','\u{1F4AF}','\u{1F602}','\u2764\uFE0F','\u{1F3AF}']
 
   if (msg.isDeleted && !isAdmin) {
     return (
@@ -73,15 +76,15 @@ export default function MessageBubble({
 
   return (
     <div
-      className={`group relative flex gap-3 rounded-sm px-1 transition-colors duration-100 hover:bg-white/[0.02] ${
+      className={`group relative flex gap-3 rounded-sm px-1 transition-colors duration-100 hover:bg-[rgba(0,198,255,0.03)] ${
         isGrouped ? 'py-0.5' : 'py-1.5'
       } ${msg.isDeleted ? 'opacity-40' : ''}`}
       onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseLeave={() => { setShowActions(false); setShowReactionPicker(false) }}
     >
       {/* Avatar or grouped spacer */}
       {isGrouped ? (
-        <div className="w-11 flex-shrink-0 flex items-end justify-end" style={{ minWidth: '44px' }}>
+        <div className="w-10 flex-shrink-0 flex items-end justify-end" style={{ minWidth: '40px' }}>
           <span
             className="opacity-0 group-hover:opacity-100 transition-opacity duration-100 text-[10px] text-[#8A9AAA] pb-0.5 pr-1 select-none"
             style={{ fontFamily: 'var(--font-body, sans-serif)' }}
@@ -91,15 +94,15 @@ export default function MessageBubble({
         </div>
       ) : (
         <div
-          className="w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold overflow-hidden"
+          className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold overflow-hidden"
           style={{
             background: 'linear-gradient(135deg, #0E5A88 0%, #00C6FF 100%)',
             fontFamily: 'var(--font-heading, sans-serif)',
             color: '#F4F7FA',
             boxShadow: '0 0 10px -3px rgba(0,198,255,0.35)',
             border: '2px solid rgba(0,198,255,0.15)',
-            minWidth: '44px',
-            minHeight: '44px',
+            minWidth: '40px',
+            minHeight: '40px',
           }}
         >
           {initials(msg.authorName)}
@@ -140,10 +143,10 @@ export default function MessageBubble({
             )}
             <RankBadge rankName={communityRank} />
             <span
-              className="text-[11px] text-[#8A9AAA]"
+              className="text-[11px] text-[#8A9AAA] ml-1"
               style={{ fontFamily: 'var(--font-body, sans-serif)' }}
             >
-              {fmtDate(msg.createdAt)} {fmtTime(msg.createdAt)}
+              {fmtTime(msg.createdAt)}
             </span>
             {msg.isEdited && (
               <span className="text-[9px] text-text-dim/25">(edited)</span>
@@ -244,10 +247,10 @@ export default function MessageBubble({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.95 }}
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-            className="absolute -top-3 right-2 flex items-center gap-0.5 rounded-sm border border-[rgba(246,196,69,0.12)] bg-[#111B24] px-1 py-0.5 shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+            className="absolute -top-3 right-2 flex items-center gap-0.5 rounded-sm border border-[rgba(0,198,255,0.08)] bg-[#0E1317] px-1 py-0.5 shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
           >
             <button
-              onClick={() => onReact(msg.id)}
+              onClick={() => setShowReactionPicker((v) => !v)}
               className="rounded-sm p-1 text-text-dim/40 hover:bg-white/[0.06] hover:text-gold transition-colors"
               title="React"
             >
@@ -289,6 +292,30 @@ export default function MessageBubble({
                 <Pin className="h-3.5 w-3.5" />
               </button>
             )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showReactionPicker && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="absolute -top-8 right-12 z-50 flex gap-0.5 rounded-full border border-[rgba(0,198,255,0.12)] bg-[#0E1317] px-2 py-1 shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+          >
+            {QUICK_REACTIONS.map((em) => (
+              <button
+                key={em}
+                onClick={() => {
+                  onToggleReaction(msg.id, em, msg.reactions, msg.authorId)
+                  setShowReactionPicker(false)
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-sm hover:scale-125 hover:bg-white/[0.08] transition-transform active:scale-95"
+              >
+                {em}
+              </button>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
