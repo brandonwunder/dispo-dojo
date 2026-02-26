@@ -2,13 +2,7 @@ import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore'
 import { db } from './firebase'
 
 export const DEFAULT_AVATAR = {
-  base: 'male',
-  maskColor: '#1a1a2e',
-  headbandColor: '#ffffff',
-  beltColor: '#ffffff',
-  eyeColor: '#00C6FF',
-  gear: [],
-  effects: [],
+  base: 'male',  // Keep for backward compat with existing Firestore docs
 }
 
 export const RANK_THRESHOLDS = [
@@ -88,20 +82,6 @@ export function computeRank(stats) {
 
 export function computeBadges(stats) {
   return BADGE_DEFS.filter((b) => b.check(stats || {})).map((b) => b.id)
-}
-
-export function unlockedGear(rank) {
-  const order = ['initiate','scout','shinobi','shadow','blade','jonin','shadow-master','kage']
-  const idx = order.indexOf(rank)
-  const gear = []
-  if (idx >= 1) gear.push('mask-colors')
-  if (idx >= 2) gear.push('headband-colors')
-  if (idx >= 3) gear.push('smoke-wisps')
-  if (idx >= 4) gear.push('katana')
-  if (idx >= 5) gear.push('red-headband')
-  if (idx >= 6) gear.push('glow-eyes', 'black-gi')
-  if (idx >= 7) gear.push('full-aura', 'golden-trim')
-  return gear
 }
 
 export async function getOrCreateProfile(uid, localUser) {
