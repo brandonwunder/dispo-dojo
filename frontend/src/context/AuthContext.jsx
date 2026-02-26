@@ -49,18 +49,24 @@ export function AuthProvider({ children }) {
 
   // Sign in anonymously to Firebase when user is already logged in from localStorage
   useEffect(() => {
-    if (user) {
-      signInAnonymously(auth)
-        .then((cred) => {
-          const uid = cred.user.uid
-          setUser((prev) => (prev ? { ...prev, firebaseUid: uid } : prev))
-          setFirebaseReady(true)
-          return getOrCreateProfile(uid, user)
-        })
-        .then((prof) => setProfile(prof))
-        .catch(console.error)
-    }
-  }, [])
+    if (!user) return
+    let cancelled = false
+    signInAnonymously(auth)
+      .then((cred) => {
+        if (cancelled) return
+        const uid = cred.user.uid
+        setUser((prev) => (prev ? { ...prev, firebaseUid: uid } : prev))
+        setFirebaseReady(true)
+        return getOrCreateProfile(uid, user)
+      })
+      .then((prof) => {
+        if (!cancelled && prof) setProfile(prof)
+      })
+      .catch((err) => {
+        console.error('Firebase auth/profile error:', err)
+      })
+    return () => { cancelled = true }
+  }, [!!user])
 
   const login = (identifier, password) => {
     // Admin login

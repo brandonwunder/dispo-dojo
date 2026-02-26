@@ -5,7 +5,6 @@ import {
   collection,
   query,
   where,
-  orderBy,
   onSnapshot,
   doc,
   updateDoc,
@@ -51,11 +50,12 @@ export default function ApplicantsList({ postId, post, firebaseUid }) {
     const q = query(
       collection(db, 'boots_applications'),
       where('postId', '==', postId),
-      orderBy('createdAt', 'desc'),
     )
 
     const unsub = onSnapshot(q, (snap) => {
-      setApplications(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+      setApplications(docs)
       setLoading(false)
     })
 

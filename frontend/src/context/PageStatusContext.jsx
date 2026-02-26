@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { doc, onSnapshot, setDoc } from 'firebase/firestore'
+import { doc, getDoc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
 const PageStatusContext = createContext({ pageStatuses: {}, isPageLive: () => true, updatePageStatus: async () => {} })
@@ -24,15 +24,25 @@ export const TOGGLEABLE_PAGES = [
   { slug: 'community', label: 'Message Board' },
 ]
 
+const PAGE_STATUS_REF = () => doc(db, 'config', 'pageStatus')
+
 export function PageStatusProvider({ children }) {
   const [pageStatuses, setPageStatuses] = useState({})
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'config', 'pageStatus'), (snap) => {
-      if (snap.exists()) {
-        setPageStatuses(snap.data().pages || {})
+    const unsub = onSnapshot(
+      PAGE_STATUS_REF(),
+      (snap) => {
+        if (snap.exists()) {
+          setPageStatuses(snap.data().pages || {})
+        } else {
+          setPageStatuses({})
+        }
+      },
+      (err) => {
+        console.error('[PageStatus] listener error:', err.code, err.message)
       }
-    })
+    )
     return unsub
   }, [])
 
@@ -41,8 +51,17 @@ export function PageStatusProvider({ children }) {
   }
 
   async function updatePageStatus(slug, status) {
-    const updated = { ...pageStatuses, [slug]: status }
-    await setDoc(doc(db, 'config', 'pageStatus'), { pages: updated }, { merge: true })
+    const ref = PAGE_STATUS_REF()
+    try {
+      const snap = await getDoc(ref)
+      if (snap.exists()) {
+        await updateDoc(ref, { [`pages.${slug}`]: status })
+      } else {
+        await setDoc(ref, { pages: { [slug]: status } })
+      }
+    } catch (err) {
+      console.error('[PageStatus] write failed:', err.code, err.message)
+    }
   }
 
   return (

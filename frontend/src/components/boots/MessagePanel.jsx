@@ -5,7 +5,6 @@ import {
   collection,
   query,
   where,
-  orderBy,
   onSnapshot,
 } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
@@ -139,11 +138,12 @@ export default function MessagePanel({ isOpen, onClose, firebaseUid }) {
     const q = query(
       collection(db, 'boots_threads'),
       where('participants', 'array-contains', firebaseUid),
-      orderBy('lastMessageAt', 'desc'),
     )
 
     const unsub = onSnapshot(q, (snap) => {
-      setThreads(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      docs.sort((a, b) => (b.lastMessageAt?.seconds || 0) - (a.lastMessageAt?.seconds || 0))
+      setThreads(docs)
       setLoading(false)
     })
 

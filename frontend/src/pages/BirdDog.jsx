@@ -896,8 +896,8 @@ export default function BirdDog() {
     <main className="relative min-h-screen">
       {/* Background image layer */}
       <div
-        className="fixed inset-0 -z-20 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/bird-dog-bg.png')" }}
+        className="fixed inset-0 -z-20 bg-cover bg-no-repeat"
+        style={{ backgroundImage: "url('/bird-dog-bg.png')", backgroundPosition: 'center top' }}
       />
       {/* Gradient overlay */}
       <div className="fixed inset-0 -z-10 bg-gradient-to-b from-bg/60 via-bg/85 to-bg" />

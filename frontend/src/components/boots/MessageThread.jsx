@@ -4,7 +4,6 @@ import { ArrowLeft, Send } from 'lucide-react'
 import {
   collection,
   query,
-  orderBy,
   onSnapshot,
   addDoc,
   updateDoc,
@@ -53,11 +52,12 @@ export default function MessageThread({ thread, firebaseUid, onBack }) {
 
     const q = query(
       collection(db, 'boots_threads', thread.id, 'boots_messages'),
-      orderBy('createdAt', 'asc'),
     )
 
     const unsub = onSnapshot(q, (snap) => {
-      setMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      docs.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
+      setMessages(docs)
       setLoading(false)
     })
 

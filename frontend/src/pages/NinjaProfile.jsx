@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -242,7 +242,20 @@ export default function NinjaProfile() {
   const isOwnProfile = !paramUid || paramUid === currentUid
 
   const { profile: fetchedProfile, loading } = useUserProfile(isOwnProfile ? null : targetUid)
-  const profile = isOwnProfile ? ownProfile : fetchedProfile
+
+  // If own profile hasn't loaded after 3s, use a minimal fallback so the page isn't stuck on a spinner
+  const [timedOut, setTimedOut] = useState(false)
+  useEffect(() => {
+    if (ownProfile || !isOwnProfile) return
+    const id = setTimeout(() => setTimedOut(true), 3000)
+    return () => clearTimeout(id)
+  }, [ownProfile, isOwnProfile])
+
+  const fallbackProfile = timedOut && isOwnProfile && !ownProfile
+    ? { displayName: user?.name || 'Ninja', username: user?.username || '', rank: 'initiate', stats: {}, avatarConfig: {}, createdAt: new Date().toISOString() }
+    : null
+
+  const profile = isOwnProfile ? (ownProfile || fallbackProfile) : fetchedProfile
 
   // ── Draft / edit state ────────────────────────────────────────────
   const [draft, setDraft] = useState({})

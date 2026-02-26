@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Star } from 'lucide-react'
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import GlassPanel from '../GlassPanel'
 import StarRating from './StarRating'
@@ -46,10 +46,11 @@ export default function ReviewsList({ userId, field = 'revieweeId', emptyMessage
     const q = query(
       collection(db, 'boots_reviews'),
       where(field, '==', userId),
-      orderBy('createdAt', 'desc'),
     )
     const unsub = onSnapshot(q, (snap) => {
-      setReviews(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+      setReviews(docs)
       setLoading(false)
     })
     return unsub
