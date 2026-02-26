@@ -29,7 +29,7 @@ export const RANK_LABELS = {
   'shadow-master': 'Shadow Master', kage: 'Kage',
 }
 
-const PLACEHOLDER = '/avatars/placeholder.svg'
+export const PLACEHOLDER = '/avatars/placeholder.svg'
 
 /** Returns the avatar image URL for a rank, with placeholder fallback. */
 export function getRankImage(rank) {
