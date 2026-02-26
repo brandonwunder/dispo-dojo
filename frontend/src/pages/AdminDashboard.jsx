@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Shield, Users, Mail, Phone, Calendar, AtSign, Clock, TrendingUp, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, FileText, CheckCircle, Dog, DollarSign, Footprints, Briefcase, AlertTriangle } from 'lucide-react'
+import { Shield, Users, Mail, Phone, Calendar, AtSign, Clock, TrendingUp, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, FileText, CheckCircle, Dog, DollarSign, Footprints, Briefcase, AlertTriangle, Settings } from 'lucide-react'
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
+import { usePageStatus, TOGGLEABLE_PAGES } from '../context/PageStatusContext'
 import { db } from '../lib/firebase'
 import CountUp from 'react-countup'
 import GlassPanel from '../components/GlassPanel'
@@ -998,7 +999,8 @@ function BootsOnGroundAdmin() {
 // ── AdminDashboard ────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const { users } = useAuth()
-  const [activeTab, setActiveTab] = useState('members')
+  const { pageStatuses, updatePageStatus } = usePageStatus()
+  const [activeTab, setActiveTab] = useState('pages')
 
   const formatDate = (iso) => {
     const d = new Date(iso)
@@ -1074,6 +1076,7 @@ export default function AdminDashboard() {
       {/* Tab bar */}
       <div className="flex gap-1 mb-6 border-b border-[rgba(0,198,255,0.12)]">
         {[
+          { id: 'pages', label: 'Page Management' },
           { id: 'members', label: 'Members' },
           { id: 'live-deals', label: 'Live Deals' },
           { id: 'buyer-list', label: 'Buyer List' },
@@ -1094,6 +1097,46 @@ export default function AdminDashboard() {
           </button>
         ))}
       </div>
+
+      {/* Page Management tab */}
+      {activeTab === 'pages' && (
+        <div>
+          <div className="flex items-center gap-3 mb-6">
+            <Settings size={20} style={{ color: '#00C6FF' }} />
+            <h2 className="font-heading text-lg tracking-wide" style={{ color: '#F4F7FA' }}>
+              Page Visibility Control
+            </h2>
+          </div>
+          <p className="text-sm mb-6" style={{ color: '#8a9bae' }}>
+            Toggle pages on or off. Pages marked "Under Construction" will show a themed placeholder to users. Changes apply instantly.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {TOGGLEABLE_PAGES.map((page) => {
+              const isLive = pageStatuses[page.slug] !== 'construction'
+              return (
+                <GlassPanel key={page.slug} className="p-4 flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-heading text-sm tracking-wide truncate" style={{ color: '#F4F7FA' }}>
+                      {page.label}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: isLive ? '#4ade80' : '#F6C445' }}>
+                      {isLive ? 'Live' : 'Under Construction'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => updatePageStatus(page.slug, isLive ? 'construction' : 'live')}
+                    className="shrink-0"
+                    style={{ color: isLive ? '#4ade80' : '#F6C445' }}
+                    title={isLive ? 'Click to set Under Construction' : 'Click to set Live'}
+                  >
+                    {isLive ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                  </button>
+                </GlassPanel>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Members tab */}
       {activeTab === 'members' && (
