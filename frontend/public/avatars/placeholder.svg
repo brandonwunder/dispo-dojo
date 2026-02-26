@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <rect width="200" height="200" fill="#0B0F14"/>
+  <!-- Hooded ninja silhouette, upper body, facing slightly left -->
+  <g filter="url(#glow)">
+    <!-- Hood -->
+    <path d="M70 55 Q75 20 110 22 Q145 24 140 60 Q138 75 135 85 L70 85 Q68 72 70 55Z"
+          fill="#151c25" stroke="rgba(0,198,255,0.15)" stroke-width="1.5"/>
+    <!-- Head wrap / mask -->
+    <path d="M75 65 Q80 58 105 56 Q130 58 132 68 L130 80 Q115 82 100 82 Q82 82 76 78Z"
+          fill="#1a2332"/>
+    <!-- Eyes slit -->
+    <path d="M82 68 Q95 64 120 68" stroke="rgba(0,198,255,0.3)" stroke-width="2" fill="none"
+          stroke-linecap="round"/>
+    <!-- Eye glints -->
+    <ellipse cx="93" cy="67" rx="2" ry="1.2" fill="rgba(0,198,255,0.5)"/>
+    <ellipse cx="113" cy="67" rx="2" ry="1.2" fill="rgba(0,198,255,0.5)"/>
+    <!-- Shoulders / upper body -->
+    <path d="M60 95 Q65 85 80 85 L125 85 Q140 85 145 95 L155 130 Q158 145 150 155
+             L55 155 Q48 145 50 130Z"
+          fill="#151c25" stroke="rgba(0,198,255,0.12)" stroke-width="1.2"/>
+    <!-- Chest wrap -->
+    <path d="M75 95 L130 95 L125 120 L80 120Z"
+          fill="#1a2332" opacity="0.7"/>
+    <!-- Collar / neckline -->
+    <path d="M82 85 Q100 92 123 85" stroke="rgba(0,198,255,0.18)" stroke-width="1"
+          fill="none"/>
+    <!-- Lower fade -->
+    <rect x="48" y="145" width="110" height="55" fill="#0B0F14" opacity="0.85"/>
+  </g>
+</svg>
