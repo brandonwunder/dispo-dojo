@@ -1,14 +1,14 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X, User, Sword, Phone, Shield, Trophy, HelpCircle,
-  Save, ChevronRight, Lock,
+  X, User, Phone, Shield, Trophy, HelpCircle,
+  Save, ChevronRight,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import NinjaAvatar from './NinjaAvatar'
+import NinjaCard from './NinjaCard'
 import RankBadge from './RankBadge'
 import ActivityBadge from './ActivityBadge'
-import { RANK_THRESHOLDS, unlockedGear } from '../lib/userProfile'
+import { RANK_THRESHOLDS } from '../lib/userProfile'
 
 // ---------------------------------------------------------------------------
 // Style constants
@@ -45,75 +45,8 @@ const FAQ = [
 ]
 
 // ---------------------------------------------------------------------------
-// Mask / headband / eye color palettes
-// ---------------------------------------------------------------------------
-const MASK_COLORS = [
-  { hex: '#1a1a2e', label: 'Midnight' },
-  { hex: '#0E5A88', label: 'Navy' },
-  { hex: '#8B0000', label: 'Crimson' },
-  { hex: '#1a3d1a', label: 'Forest' },
-  { hex: '#3d1a5c', label: 'Violet' },
-]
-const HEADBAND_COLORS = [
-  { hex: '#ffffff', label: 'White' },
-  { hex: '#E53935', label: 'Red' },
-  { hex: '#F6C445', label: 'Gold' },
-  { hex: '#111111', label: 'Black' },
-  { hex: '#00C6FF', label: 'Cyan' },
-]
-const EYE_COLORS = [
-  { hex: '#00C6FF', label: 'Cyan' },
-  { hex: '#F6C445', label: 'Gold' },
-  { hex: '#E53935', label: 'Red' },
-  { hex: '#f0f0f0', label: 'White' },
-  { hex: '#7F00FF', label: 'Purple' },
-]
-
-// All possible accessories (ordered by unlock tier)
-const ALL_ACCESSORIES = [
-  { key: 'smoke-wisps',  label: 'Smoke Wisps',  unlockKey: 'smoke-wisps'  },
-  { key: 'katana',       label: 'Katana',        unlockKey: 'katana'       },
-  { key: 'glow-eyes',   label: 'Glow Eyes',     unlockKey: 'glow-eyes'    },
-  { key: 'black-gi',    label: 'Black Gi',      unlockKey: 'black-gi'     },
-  { key: 'golden-trim', label: 'Golden Trim',   unlockKey: 'golden-trim'  },
-  { key: 'full-aura',   label: 'Full Aura',     unlockKey: 'full-aura'    },
-]
-
-// ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
-
-/** Colour swatch strip */
-function ColorSwatches({ colors, value, onChange, locked }) {
-  return (
-    <div className="flex gap-2 flex-wrap">
-      {colors.map(({ hex, label }) => (
-        <button
-          key={hex}
-          title={label}
-          disabled={locked}
-          onClick={() => !locked && onChange(hex)}
-          className="relative w-7 h-7 rounded-sm border-2 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F6C445]/60 active:scale-90"
-          style={{
-            backgroundColor: hex,
-            borderColor: value === hex ? '#F6C445' : 'rgba(255,255,255,0.12)',
-            boxShadow: value === hex ? `0 0 8px ${hex}60` : 'none',
-            opacity: locked ? 0.35 : 1,
-            cursor: locked ? 'not-allowed' : 'pointer',
-            transform: value === hex ? 'scale(1.15)' : 'scale(1)',
-          }}
-        >
-          {locked && (
-            <Lock
-              size={10}
-              className="absolute inset-0 m-auto text-white/70"
-            />
-          )}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 /** Toggle switch */
 function Toggle({ checked, onChange, id }) {
@@ -208,14 +141,13 @@ function ProgressBar({ value, max, color = '#00C6FF' }) {
 // ---------------------------------------------------------------------------
 const TABS = [
   { id: 'identity', label: 'Identity', Icon: User },
-  { id: 'ninja',    label: 'Ninja',    Icon: Sword },
   { id: 'contact',  label: 'Contact',  Icon: Phone },
   { id: 'account',  label: 'Account',  Icon: Shield },
   { id: 'rank',     label: 'Rank',     Icon: Trophy },
   { id: 'support',  label: 'Support',  Icon: HelpCircle },
 ]
 
-const SAVE_TABS = new Set(['identity', 'ninja', 'contact'])
+const SAVE_TABS = new Set(['identity', 'contact'])
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -225,8 +157,6 @@ export default function QuickSettingsPanel({ isOpen, onClose }) {
 
   const rank = profile?.rank || 'initiate'
   const stats = profile?.stats || {}
-  const avatarConfig = profile?.avatarConfig || {}
-  const unlocked = unlockedGear(rank)
 
   // Active tab
   const [activeTab, setActiveTab] = useState('identity')
@@ -237,18 +167,10 @@ export default function QuickSettingsPanel({ isOpen, onClose }) {
 
   // Merge: profile → draft overlay
   const merged = { ...profile, ...draft }
-  const mergedAvatar = { ...(avatarConfig || {}), ...(draft.avatarConfig || {}) }
 
   const patch = useCallback((key, value) => {
     setDraft((prev) => ({ ...prev, [key]: value }))
   }, [])
-
-  const patchAvatar = useCallback((key, value) => {
-    setDraft((prev) => ({
-      ...prev,
-      avatarConfig: { ...(prev.avatarConfig || avatarConfig), [key]: value },
-    }))
-  }, [avatarConfig])
 
   const patchNotif = useCallback((key, value) => {
     setDraft((prev) => ({
@@ -270,15 +192,6 @@ export default function QuickSettingsPanel({ isOpen, onClose }) {
     } finally {
       setSaving(false)
     }
-  }
-
-  // Accessories toggle
-  const toggleAccessory = (key) => {
-    const currentGear = mergedAvatar.gear || []
-    const next = currentGear.includes(key)
-      ? currentGear.filter((g) => g !== key)
-      : [...currentGear, key]
-    patchAvatar('gear', next)
   }
 
   // Rank progress info
@@ -336,157 +249,6 @@ export default function QuickSettingsPanel({ isOpen, onClose }) {
       </div>
     </div>
   )
-
-  const renderNinja = () => {
-    const canMaskColors    = unlocked.includes('mask-colors')
-    const canHeadbandColors = unlocked.includes('headband-colors')
-
-    return (
-      <div className="space-y-5">
-        {/* Avatar preview */}
-        <div className="flex justify-center">
-          <div
-            className="relative flex items-end justify-center rounded-sm overflow-hidden"
-            style={{
-              width: 128,
-              height: 152,
-              background: 'radial-gradient(ellipse at 50% 60%, rgba(0,198,255,0.06) 0%, rgba(0,0,0,0) 70%), #0a0d12',
-              border: '1px solid rgba(246,196,69,0.1)',
-              boxShadow: 'inset 0 -20px 40px rgba(0,0,0,0.5)',
-            }}
-          >
-            <NinjaAvatar
-              config={mergedAvatar}
-              size={96}
-              rank={rank}
-              showAura={false}
-            />
-          </div>
-        </div>
-
-        {/* Base toggle */}
-        <div>
-          <span className={labelCls}>Base</span>
-          <div className="flex gap-2">
-            {['male', 'female'].map((base) => (
-              <button
-                key={base}
-                onClick={() => patchAvatar('base', base)}
-                className="flex-1 py-1.5 rounded-sm text-xs font-heading font-semibold tracking-widest uppercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F6C445]/60 active:scale-95"
-                style={{
-                  background: mergedAvatar.base === base
-                    ? 'linear-gradient(135deg, rgba(0,198,255,0.15), rgba(0,198,255,0.05))'
-                    : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${mergedAvatar.base === base ? 'rgba(0,198,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                  color: mergedAvatar.base === base ? '#00C6FF' : 'rgba(200,209,218,0.6)',
-                }}
-              >
-                {base}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Mask color */}
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className={labelCls + ' mb-0'}>Mask Color</span>
-            {!canMaskColors && (
-              <span className="text-[9px] font-heading text-text-dim/40 uppercase tracking-wider flex items-center gap-1">
-                <Lock size={8} /> Scout+
-              </span>
-            )}
-          </div>
-          <ColorSwatches
-            colors={MASK_COLORS}
-            value={mergedAvatar.maskColor}
-            onChange={(hex) => patchAvatar('maskColor', hex)}
-            locked={!canMaskColors}
-          />
-        </div>
-
-        {/* Headband color */}
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className={labelCls + ' mb-0'}>Headband Color</span>
-            {!canHeadbandColors && (
-              <span className="text-[9px] font-heading text-text-dim/40 uppercase tracking-wider flex items-center gap-1">
-                <Lock size={8} /> Shinobi+
-              </span>
-            )}
-          </div>
-          <ColorSwatches
-            colors={HEADBAND_COLORS}
-            value={mergedAvatar.headbandColor}
-            onChange={(hex) => patchAvatar('headbandColor', hex)}
-            locked={!canHeadbandColors}
-          />
-        </div>
-
-        {/* Eye color — always available */}
-        <div>
-          <span className={labelCls}>Eye Color</span>
-          <ColorSwatches
-            colors={EYE_COLORS}
-            value={mergedAvatar.eyeColor}
-            onChange={(hex) => patchAvatar('eyeColor', hex)}
-            locked={false}
-          />
-        </div>
-
-        {/* Accessories */}
-        <div>
-          <span className={labelCls}>Accessories</span>
-          <div className="space-y-1">
-            {ALL_ACCESSORIES.map(({ key, label, unlockKey }) => {
-              const isUnlocked = unlocked.includes(unlockKey)
-              const isActive   = (mergedAvatar.gear || []).includes(key)
-              return (
-                <button
-                  key={key}
-                  disabled={!isUnlocked}
-                  onClick={() => isUnlocked && toggleAccessory(key)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-sm text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#F6C445]/40 active:scale-[0.98]"
-                  style={{
-                    background: isActive
-                      ? 'rgba(0,198,255,0.08)'
-                      : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${isActive ? 'rgba(0,198,255,0.25)' : 'rgba(255,255,255,0.06)'}`,
-                    opacity: isUnlocked ? 1 : 0.4,
-                    cursor: isUnlocked ? 'pointer' : 'not-allowed',
-                  }}
-                >
-                  <span
-                    className="font-heading font-semibold tracking-wide"
-                    style={{ color: isActive ? '#00C6FF' : 'rgba(200,209,218,0.7)' }}
-                  >
-                    {label}
-                  </span>
-                  {isUnlocked ? (
-                    <span
-                      className="w-4 h-4 rounded-sm flex items-center justify-center"
-                      style={{
-                        background: isActive ? '#00C6FF' : 'rgba(255,255,255,0.08)',
-                        border: `1px solid ${isActive ? '#00C6FF' : 'rgba(255,255,255,0.12)'}`,
-                      }}
-                    >
-                      {isActive && (
-                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                          <path d="M1 4L3.5 6.5L9 1" stroke="#0B0F14" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </span>
-                  ) : (
-                    <Lock size={12} className="text-text-dim/40" />
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   const renderContact = () => {
     const notifPrefs = {
@@ -628,7 +390,7 @@ export default function QuickSettingsPanel({ isOpen, onClose }) {
             boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
           }}
         >
-          <NinjaAvatar config={mergedAvatar} size={56} rank={rank} showAura={false} />
+          <NinjaCard rank={rank} size="md" interactive={false} />
           <div className="min-w-0">
             <p className="text-xs font-heading text-text-dim/50 uppercase tracking-widest mb-1">Current Rank</p>
             <RankBadge rank={rank} size="md" />
@@ -740,7 +502,6 @@ export default function QuickSettingsPanel({ isOpen, onClose }) {
 
   const TAB_RENDERERS = {
     identity: renderIdentity,
-    ninja:    renderNinja,
     contact:  renderContact,
     account:  renderAccount,
     rank:     renderRank,
@@ -801,12 +562,7 @@ export default function QuickSettingsPanel({ isOpen, onClose }) {
                 background: 'rgba(0,0,0,0.25)',
               }}
             >
-              <NinjaAvatar
-                config={mergedAvatar}
-                size={36}
-                rank={rank}
-                showAura={false}
-              />
+              <NinjaCard rank={rank} size="xs" interactive={false} />
               <div className="flex-1 min-w-0">
                 <p className="font-heading text-sm font-semibold text-parchment truncate leading-tight">
                   {merged.displayName || user?.name || 'Ninja'}
@@ -880,7 +636,7 @@ export default function QuickSettingsPanel({ isOpen, onClose }) {
               {TAB_RENDERERS[activeTab]?.()}
             </div>
 
-            {/* Footer — Save button on identity/ninja/contact tabs */}
+            {/* Footer — Save button on identity/contact tabs */}
             {SAVE_TABS.has(activeTab) && (
               <div
                 className="flex-shrink-0 px-4 py-3"
