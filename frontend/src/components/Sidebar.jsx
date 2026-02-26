@@ -19,7 +19,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { usePageStatus } from '../context/PageStatusContext'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import NinjaAvatar from './NinjaAvatar'
+import NinjaCard from './NinjaCard'
 
 const navSections = [
   {
@@ -352,9 +352,9 @@ export default function Sidebar({ isOpen, onClose }) {
         <button
           onClick={() => navigate('/ninja-profile')}
           title="View profile"
-          className="w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-[rgba(246,196,69,0.15)] hover:ring-[rgba(0,198,255,0.4)] transition-all duration-200"
+          className="shrink-0 hover:opacity-80 transition-opacity duration-200"
         >
-          <NinjaAvatar config={profile?.avatarConfig} size={32} rank={profile?.rank || 'initiate'} />
+          <NinjaCard rank={profile?.rank || 'initiate'} size="xs" interactive={false} />
         </button>
         <span className="font-heading text-sm text-text-dim tracking-wide truncate flex-1">
           {name}

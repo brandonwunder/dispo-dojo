@@ -1,4 +1,4 @@
-import { RANK_BADGE_COLOR } from './NinjaAvatar'
+import { RANK_BADGE_COLOR } from '../lib/rankImages'
 
 const RANK_LABELS = {
   initiate: 'Initiate', scout: 'Scout', shinobi: 'Shinobi',
