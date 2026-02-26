@@ -22,12 +22,6 @@ import NinjaAvatar from './NinjaAvatar'
 
 const navSections = [
   {
-    title: '',
-    items: [
-      { to: '/live-deals', icon: Briefcase, label: 'View Active Deals' },
-    ],
-  },
-  {
     title: 'Community',
     items: [
       { to: '/', icon: LayoutDashboard, label: 'JV Dashboard' },
@@ -205,6 +199,55 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Navigation sections */}
       <nav ref={navRef} className="flex-1 min-h-0 overflow-y-auto px-3 pt-8 pb-4 flex flex-col" style={{ touchAction: 'pan-y' }}>
+        {/* Active Deals — gold glowing CTA */}
+        <div className="px-2 mb-4">
+          <NavLink to="/live-deals">
+            {({ isActive }) => (
+              <motion.div
+                className="relative flex items-center gap-3 px-4 py-3 rounded-lg overflow-hidden cursor-pointer"
+                style={{
+                  background: isActive
+                    ? 'linear-gradient(135deg, rgba(246,196,69,0.25) 0%, rgba(255,217,122,0.15) 50%, rgba(246,196,69,0.20) 100%)'
+                    : 'linear-gradient(135deg, rgba(246,196,69,0.12) 0%, rgba(255,217,122,0.06) 50%, rgba(246,196,69,0.10) 100%)',
+                  border: '1px solid rgba(246,196,69,0.3)',
+                  boxShadow: isActive
+                    ? '0 0 20px rgba(246,196,69,0.3), 0 0 40px rgba(246,196,69,0.1), inset 0 1px 0 rgba(255,217,122,0.2)'
+                    : '0 0 12px rgba(246,196,69,0.15), 0 0 24px rgba(246,196,69,0.05), inset 0 1px 0 rgba(255,217,122,0.1)',
+                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              >
+                {/* Animated shimmer overlay */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: 'linear-gradient(105deg, transparent 40%, rgba(255,217,122,0.15) 45%, rgba(246,196,69,0.25) 50%, rgba(255,217,122,0.15) 55%, transparent 60%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'goldShimmer 3s ease-in-out infinite',
+                  }}
+                />
+                <Briefcase
+                  size={20}
+                  style={{
+                    color: '#F6C445',
+                    filter: 'drop-shadow(0 0 6px rgba(246,196,69,0.6))',
+                  }}
+                />
+                <span
+                  className="font-heading text-sm tracking-wide"
+                  style={{
+                    color: '#FFD97A',
+                    textShadow: '0 0 10px rgba(246,196,69,0.5), 0 0 20px rgba(246,196,69,0.2)',
+                  }}
+                >
+                  View Active Deals
+                </span>
+              </motion.div>
+            )}
+          </NavLink>
+        </div>
+
         {sections.map((section) => {
           const isCollapsible = !!section.title
           const isExpanded = !isCollapsible || expandedSection === section.title
