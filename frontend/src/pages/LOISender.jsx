@@ -648,6 +648,7 @@ function MapStep({ rawData, columns, onComplete, onBack }) {
   const [mapping, setMapping] = useState(initialAuto.mapping)
   const confidence = initialAuto.confidence
   const [error, setError] = useState(null)
+  const [defaults, setDefaults] = useState({})
 
   const detectedCount = Object.keys(mapping).length
   const emailMapped   = !!mapping.agent_email
@@ -667,6 +668,12 @@ function MapStep({ rawData, columns, onComplete, onBack }) {
       const lead = { _idx: idx, _status: 'pending', _error: null, _sentAt: null }
       for (const [canonical, col] of Object.entries(mapping)) {
         lead[canonical] = String(row[col] || '')
+      }
+      // Apply default values for unmapped fields
+      for (const [key, val] of Object.entries(defaults)) {
+        if (!mapping[key] && val.trim()) {
+          lead[key] = val.trim()
+        }
       }
       return lead
     })
@@ -754,6 +761,38 @@ function MapStep({ rawData, columns, onComplete, onBack }) {
           )
         })}
       </div>
+
+      {/* Default values for unmapped fields */}
+      {(() => {
+        const unmapped = CANONICAL_FIELDS.filter(f => !f.required && !mapping[f.key])
+        return unmapped.length > 0 && (
+          <div className="mt-4 rounded-xl px-4 py-4"
+            style={{ background: 'rgba(246,196,69,0.04)', border: '1px solid rgba(246,196,69,0.15)' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <TriangleAlert className="w-3.5 h-3.5 text-[#F6C445]" />
+              <span className="text-[#F6C445] text-xs font-medium">Missing columns — enter default values to apply to all leads</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {unmapped.map(({ key, label }) => (
+                <div key={key} className="flex items-center gap-2">
+                  <span className="text-white/40 text-xs w-28 shrink-0">{label}</span>
+                  <input
+                    type="text"
+                    placeholder="—"
+                    value={defaults[key] || ''}
+                    onChange={e => setDefaults(prev => ({ ...prev, [key]: e.target.value }))}
+                    className="flex-1 rounded-lg px-3 py-1.5 text-white/75 text-xs placeholder:text-white/15 focus:outline-none transition-colors"
+                    style={{
+                      background: 'rgba(0,0,0,0.35)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
       {error && (
         <div className="mt-3 flex items-center gap-2 rounded-xl px-4 py-3 text-red-400 text-sm"
