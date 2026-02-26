@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { PageStatusProvider, usePageStatus } from './context/PageStatusContext'
+import UnderConstruction from './components/UnderConstruction'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -38,44 +40,54 @@ function AdminRoute({ children }) {
   return children
 }
 
+function PageGate({ slug, children }) {
+  const { isPageLive } = usePageStatus()
+  if (!isPageLive(slug)) {
+    return <UnderConstruction />
+  }
+  return children
+}
+
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Dashboard />} />
-            <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-            <Route path="agent-finder" element={<AgentFinder />} />
-            <Route path="find-buyers" element={<FindBuyers />} />
-            <Route path="lead-scrubbing" element={<LeadScrubbing />} />
-            <Route path="underwriting" element={<Underwriting />} />
-            <Route path="loi-sender" element={<LOISender />} />
-            <Route path="contract-generator" element={<ContractGenerator />} />
-            <Route path="direct-agent" element={<DirectAgent />} />
-            <Route path="scripts" element={<Scripts />} />
-            <Route path="website-explainer" element={<WebsiteExplainer />} />
-            <Route path="community" element={<Community />} />
-            <Route path="ninja-profile" element={<NinjaProfile />} />
-            <Route path="ninja-profile/:uid" element={<NinjaProfile />} />
-            <Route path="community/profile/:uid" element={<Navigate to="/ninja-profile" replace />} />
-            <Route path="bird-dog" element={<BirdDog />} />
-            <Route path="boots-on-ground" element={<BootsOnGround />} />
-            <Route path="offer-comparison" element={<OfferComparison />} />
-            <Route path="call-recordings" element={<CallRecordings />} />
-            <Route path="live-deals" element={<LiveDeals />} />
-            <Route path="buy-boxes" element={<BuyBoxes />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <PageStatusProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Dashboard />} />
+              <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+              <Route path="agent-finder" element={<PageGate slug="agent-finder"><AgentFinder /></PageGate>} />
+              <Route path="find-buyers" element={<PageGate slug="find-buyers"><FindBuyers /></PageGate>} />
+              <Route path="lead-scrubbing" element={<PageGate slug="lead-scrubbing"><LeadScrubbing /></PageGate>} />
+              <Route path="underwriting" element={<PageGate slug="underwriting"><Underwriting /></PageGate>} />
+              <Route path="loi-sender" element={<PageGate slug="loi-sender"><LOISender /></PageGate>} />
+              <Route path="contract-generator" element={<PageGate slug="contract-generator"><ContractGenerator /></PageGate>} />
+              <Route path="direct-agent" element={<PageGate slug="direct-agent"><DirectAgent /></PageGate>} />
+              <Route path="scripts" element={<PageGate slug="scripts"><Scripts /></PageGate>} />
+              <Route path="website-explainer" element={<PageGate slug="website-explainer"><WebsiteExplainer /></PageGate>} />
+              <Route path="community" element={<PageGate slug="community"><Community /></PageGate>} />
+              <Route path="ninja-profile" element={<NinjaProfile />} />
+              <Route path="ninja-profile/:uid" element={<NinjaProfile />} />
+              <Route path="community/profile/:uid" element={<Navigate to="/ninja-profile" replace />} />
+              <Route path="bird-dog" element={<PageGate slug="bird-dog"><BirdDog /></PageGate>} />
+              <Route path="boots-on-ground" element={<PageGate slug="boots-on-ground"><BootsOnGround /></PageGate>} />
+              <Route path="offer-comparison" element={<PageGate slug="offer-comparison"><OfferComparison /></PageGate>} />
+              <Route path="call-recordings" element={<PageGate slug="call-recordings"><CallRecordings /></PageGate>} />
+              <Route path="live-deals" element={<PageGate slug="live-deals"><LiveDeals /></PageGate>} />
+              <Route path="buy-boxes" element={<PageGate slug="buy-boxes"><BuyBoxes /></PageGate>} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </PageStatusProvider>
     </AuthProvider>
   )
 }
