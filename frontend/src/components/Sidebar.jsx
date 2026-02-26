@@ -17,6 +17,7 @@ import {
   NinjaIcon,
 } from '../icons/index'
 import { useAuth } from '../context/AuthContext'
+import { usePageStatus } from '../context/PageStatusContext'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import NinjaAvatar from './NinjaAvatar'
 
@@ -87,7 +88,7 @@ function getSectionForPath(sections, pathname) {
   return null
 }
 
-function NavItem({ item }) {
+function NavItem({ item, comingSoon }) {
   return (
     <NavLink to={item.to} end={item.to === '/'}>
       {({ isActive }) => (
@@ -121,6 +122,19 @@ function NavItem({ item }) {
           >
             {item.label}
           </span>
+          {comingSoon && (
+            <span
+              className="ml-auto text-[9px] font-heading tracking-wider uppercase px-1.5 py-0.5 rounded-full shrink-0"
+              style={{
+                color: '#F6C445',
+                background: 'rgba(246,196,69,0.1)',
+                border: '1px solid rgba(246,196,69,0.25)',
+                textShadow: '0 0 6px rgba(246,196,69,0.4)',
+              }}
+            >
+              Soon
+            </span>
+          )}
         </motion.div>
       )}
     </NavLink>
@@ -129,6 +143,7 @@ function NavItem({ item }) {
 
 export default function Sidebar({ isOpen, onClose }) {
   const { isAdmin, user, logout, profile } = useAuth()
+  const { isPageLive } = usePageStatus()
   const location = useLocation()
   const navigate = useNavigate()
   const navRef = useRef(null)
@@ -243,6 +258,18 @@ export default function Sidebar({ isOpen, onClose }) {
                 >
                   View Active Deals
                 </span>
+                {!isPageLive('live-deals') && (
+                  <span
+                    className="text-[9px] font-heading tracking-wider uppercase px-1.5 py-0.5 rounded-full"
+                    style={{
+                      color: '#F6C445',
+                      background: 'rgba(246,196,69,0.15)',
+                      border: '1px solid rgba(246,196,69,0.3)',
+                    }}
+                  >
+                    Soon
+                  </span>
+                )}
               </motion.div>
             )}
           </NavLink>
@@ -305,9 +332,11 @@ export default function Sidebar({ isOpen, onClose }) {
                     style={{ overflow: 'hidden' }}
                   >
                     <div className={isCollapsible ? 'pb-2' : 'mb-4'}>
-                      {section.items.map((item) => (
-                        <NavItem key={item.to} item={item} />
-                      ))}
+                      {section.items.map((item) => {
+                        const slug = item.to.replace('/', '')
+                        const comingSoon = slug && !isPageLive(slug)
+                        return <NavItem key={item.to} item={item} comingSoon={comingSoon} />
+                      })}
                     </div>
                   </motion.div>
                 )}
