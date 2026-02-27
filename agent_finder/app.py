@@ -23,7 +23,7 @@ from .pipeline import AgentFinderPipeline
 app = FastAPI(title="Agent Finder")
 
 # CORS — allow the Vercel frontend to call this backend cross-origin
-_default_origins = "http://localhost:3000,http://localhost:5173"
+_default_origins = "http://localhost:3000,http://localhost:5173,https://dispo-dojo.vercel.app,https://dispo-dojo-ionw3ihqj-airsyncs-projects.vercel.app"
 _origins = os.environ.get("ALLOWED_ORIGINS", _default_origins).split(",")
 app.add_middleware(
     CORSMiddleware,
