@@ -258,6 +258,55 @@ export default function NinjaProfile() {
                       placeholder="e.g. Dallas, TX"
                     />
                   </div>
+
+                  {/* Contact fields */}
+                  <div className="pt-3 mt-3 border-t border-white/5">
+                    <div>
+                      <label className={labelCls}>Email</label>
+                      <input
+                        className={inputCls + ' opacity-50 cursor-not-allowed'}
+                        value={merged.email || user?.email || ''}
+                        readOnly
+                      />
+                      <p className="mt-1 text-[10px] text-text-dim/30 font-body">Email cannot be changed here.</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Phone</label>
+                    <input
+                      className={inputCls}
+                      value={merged.phone || ''}
+                      onChange={e => patch('phone', e.target.value)}
+                      placeholder="+1 (555) 000-0000"
+                    />
+                  </div>
+
+                  {/* Notification toggles */}
+                  <div className="pt-3 mt-1 border-t border-white/5 space-y-2">
+                    <label className={labelCls}>Notifications</label>
+                    {[
+                      { key: 'communityReplies', label: 'Community Replies' },
+                      { key: 'dealUpdates', label: 'Deal Updates' },
+                      { key: 'taskAssignments', label: 'Task Assignments' },
+                    ].map(({ key, label: notifLabel }) => {
+                      const notifPrefs = {
+                        ...(profile?.notificationPrefs || {}),
+                        ...(draft.notificationPrefs || {}),
+                      }
+                      return (
+                        <label key={key} className="flex items-center gap-2 text-sm text-text-dim/70 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={notifPrefs[key] ?? true}
+                            onChange={() => patchNotif(key, !(notifPrefs[key] ?? true))}
+                            className="accent-[#00C6FF]"
+                          />
+                          {notifLabel}
+                        </label>
+                      )
+                    })}
+                  </div>
+
                   <div className="flex gap-2 pt-2">
                     <button
                       onClick={handleSave}
@@ -462,110 +511,6 @@ export default function NinjaProfile() {
           </motion.section>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════
-            SECTION 6 — Intel File (own profile only)
-            ═══════════════════════════════════════════════════════════ */}
-        {isOwnProfile && (
-          <motion.section
-            style={sectionCardStyle}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mb-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <SectionHeader label="Intel File" />
-              {editing !== 'contact' && (
-                <button
-                  onClick={() => { setEditing('contact'); setDraft({}) }}
-                  className="text-text-dim/30 hover:text-[#00C6FF] transition-colors"
-                >
-                  <Pencil size={14} />
-                </button>
-              )}
-            </div>
-
-            {editing === 'contact' ? (
-              /* Edit mode */
-              <div className="space-y-4">
-                <div>
-                  <label className={labelCls}>Email</label>
-                  <input
-                    className={inputCls + ' opacity-50 cursor-not-allowed'}
-                    value={merged.email || user?.email || ''}
-                    readOnly
-                  />
-                  <p className="mt-1 text-[10px] text-text-dim/30 font-body">Email cannot be changed here.</p>
-                </div>
-                <div>
-                  <label className={labelCls}>Phone</label>
-                  <input
-                    className={inputCls}
-                    value={merged.phone || ''}
-                    onChange={e => patch('phone', e.target.value)}
-                    placeholder="+1 (555) 000-0000"
-                  />
-                </div>
-                {/* Notification toggles */}
-                <div className="pt-2 border-t border-white/5 space-y-2">
-                  <label className={labelCls}>Notifications</label>
-                  {[
-                    { key: 'communityReplies', label: 'Community Replies' },
-                    { key: 'dealUpdates', label: 'Deal Updates' },
-                    { key: 'taskAssignments', label: 'Task Assignments' },
-                  ].map(({ key, label: notifLabel }) => {
-                    const notifPrefs = {
-                      ...(profile?.notificationPrefs || {}),
-                      ...(draft.notificationPrefs || {}),
-                    }
-                    return (
-                      <label key={key} className="flex items-center gap-2 text-sm text-text-dim/70 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={notifPrefs[key] ?? true}
-                          onChange={() => patchNotif(key, !(notifPrefs[key] ?? true))}
-                          className="accent-[#00C6FF]"
-                        />
-                        {notifLabel}
-                      </label>
-                    )
-                  })}
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="px-4 py-1.5 rounded-md text-[11px] font-heading font-bold uppercase tracking-wider bg-[#00C6FF]/10 text-[#00C6FF] border border-[#00C6FF]/20 hover:bg-[#00C6FF]/20 transition-colors"
-                  >
-                    <Save size={12} className="inline mr-1" /> {saving ? 'Saving...' : 'Save'}
-                  </button>
-                  <button
-                    onClick={() => { setEditing(null); setDraft({}) }}
-                    className="px-4 py-1.5 rounded-md text-[11px] font-heading uppercase tracking-wider text-text-dim/50 border border-white/5 hover:text-white/70 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* View mode */
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-heading uppercase tracking-widest text-text-dim/40">Email</span>
-                  <span className="text-sm text-parchment font-body">{profile?.email || user?.email || '—'}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-heading uppercase tracking-widest text-text-dim/40">Phone</span>
-                  <span className="text-sm text-parchment font-body">{profile?.phone || '—'}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-heading uppercase tracking-widest text-text-dim/40">Role</span>
-                  <span className="text-sm text-parchment font-body capitalize">{profile?.role || 'member'}</span>
-                </div>
-              </div>
-            )}
-          </motion.section>
-        )}
 
       </div>
     </div>
