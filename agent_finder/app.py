@@ -7,7 +7,10 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+import os
+
 from fastapi import FastAPI, APIRouter, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import StreamingResponse
@@ -18,6 +21,18 @@ from .output_handler import export_results, export_results_zip, generate_summary
 from .pipeline import AgentFinderPipeline
 
 app = FastAPI(title="Agent Finder")
+
+# CORS — allow the Vercel frontend to call this backend cross-origin
+_default_origins = "http://localhost:3000,http://localhost:5173"
+_origins = os.environ.get("ALLOWED_ORIGINS", _default_origins).split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in _origins],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 api = APIRouter(prefix="/api")
 
 # Serve static files (logo, etc.)
