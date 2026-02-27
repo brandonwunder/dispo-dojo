@@ -339,7 +339,7 @@ export default function NinjaProfile() {
           className="mb-6"
         >
           <SectionHeader label="The Path" />
-          <div className="flex items-center gap-0 overflow-x-auto py-4 scrollbar-hide">
+          <div className="flex items-center gap-0 overflow-x-auto pt-4 pb-16 scrollbar-hide relative">
             {RANK_THRESHOLDS.map((tier, i) => {
               const isCurrent = tier.rank === rank
               const isPast = rankIndex > i
@@ -373,9 +373,9 @@ export default function NinjaProfile() {
                       {tier.name}
                     </span>
                     {/* Rank tooltip */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded bg-black/95 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-white/10 whitespace-nowrap">
-                      <div className="font-heading font-semibold text-[11px] mb-0.5" style={{ color }}>{tier.name}</div>
-                      <div className="text-text-dim/60">{getRankRequirement(tier)}</div>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 rounded-lg bg-[#111B24] text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 border border-white/10 whitespace-nowrap shadow-lg shadow-black/50">
+                      <div className="font-heading font-bold text-[12px] mb-0.5" style={{ color }}>{tier.name}</div>
+                      <div className="text-[11px] text-[#C8D1DA]">{getRankRequirement(tier)}</div>
                     </div>
                   </div>
                 </React.Fragment>
@@ -446,9 +446,9 @@ export default function NinjaProfile() {
                   <div className="text-[9px] font-heading text-text-dim/50 truncate tracking-wide">{badge.label}</div>
                   {!earned && <Lock size={10} className="absolute top-1.5 right-1.5 text-white/15" />}
                   {/* Tooltip */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded bg-black/95 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-white/10 whitespace-nowrap">
-                    <div className="font-heading font-semibold text-[11px] mb-0.5">{badge.label}</div>
-                    <div className="text-text-dim/60">{BADGE_DESCRIPTIONS[badge.id] || badge.label}</div>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 rounded-lg bg-[#111B24] text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 border border-white/10 whitespace-nowrap shadow-lg shadow-black/50">
+                    <div className="font-heading font-bold text-[12px] mb-0.5">{badge.label}</div>
+                    <div className="text-[11px] text-[#C8D1DA]">{BADGE_DESCRIPTIONS[badge.id] || badge.label}</div>
                   </div>
                 </div>
               )
