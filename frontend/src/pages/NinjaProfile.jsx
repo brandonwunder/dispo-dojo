@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Pencil, Save, Lock, CheckCircle, Star,
   Calculator, Send, FileSignature, Trophy,
-  DollarSign, MessageSquare,
+  DollarSign,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import useUserProfile from '../hooks/useUserProfile'
@@ -30,18 +30,39 @@ const sectionCardStyle = {
 
 // ─── Data constants ────────────────────────────────────────────────────────────
 const STAT_CARDS = [
-  { key: 'underwrites', label: 'Underwrites', Icon: Calculator },
-  { key: 'lois', label: 'LOIs', Icon: Send },
-  { key: 'contracts', label: 'Contracts', Icon: FileSignature },
+  { key: 'underwrites', label: 'Underwrites Sent', Icon: Calculator },
+  { key: 'lois', label: "LOI's Sent", Icon: Send },
+  { key: 'contracts', label: 'Contracts Sent', Icon: FileSignature },
   { key: 'dealsClosed', label: 'Deals Closed', Icon: Trophy },
-  { key: 'totalMessages', label: 'Messages', Icon: MessageSquare },
-  { key: 'birdDogLeads', label: 'Bird Dog Leads', Icon: DollarSign },
+  { key: 'birdDogLeads', label: 'Bird Dog Leads Sent', Icon: DollarSign },
 ]
 
 const allBadges = [
   ...BADGE_DEFS.map(b => ({ ...b, icon: b.icon || '🏆' })),
   ...COMMUNITY_BADGES,
 ]
+
+const BADGE_DESCRIPTIONS = {
+  'active-voice':     'Send 100 messages',
+  'community-pillar': 'Reach Jonin community rank',
+  'deal-hunter':      'Send 10 underwrites',
+  'ink-slinger':      'Send 5 LOIs',
+  'first-blood':      'Send your first message',
+  'closer':           'Close 3 deals',
+  'top-closer':       'Close 10 deals',
+  'crowd-favorite':   'Get 10 reactions on a single message',
+  'sensei':           'Receive 50 thread replies',
+  'on-fire':          'Post 7 days in a row',
+  'legendary':        'Reach Kage community rank',
+}
+
+function getRankRequirement(tier) {
+  if (tier.minUnderwrites === 0 && tier.minDeals === 0) return 'Starting rank'
+  const parts = []
+  if (tier.minUnderwrites > 0) parts.push(`${tier.minUnderwrites} underwrite${tier.minUnderwrites > 1 ? 's' : ''} sent`)
+  if (tier.minDeals > 0) parts.push(`${tier.minDeals} deal${tier.minDeals > 1 ? 's' : ''} closed`)
+  return parts.join(' & ')
+}
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -116,6 +137,8 @@ export default function NinjaProfile() {
       await updateProfile(draft)
       setDraft({})
       setEditing(null)
+    } catch (err) {
+      console.error('Profile save failed:', err)
     } finally {
       setSaving(false)
     }
@@ -164,10 +187,6 @@ export default function NinjaProfile() {
               username={profile?.username}
               market={profile?.market}
               stats={profile?.stats}
-              bio={profile?.bio}
-              badges={profile?.badges || []}
-              communityBadges={profile?.communityBadges || []}
-              communityRank={profile?.communityRank || ''}
               size="full"
             />
           </div>
@@ -175,7 +194,7 @@ export default function NinjaProfile() {
           {/* Edit identity button (own profile only) */}
           {isOwnProfile && editing !== 'identity' && (
             <button
-              onClick={() => { setEditing('identity'); setDraft({ ...profile }) }}
+              onClick={() => { setEditing('identity'); setDraft({}) }}
               className="mt-6 flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-heading font-semibold tracking-wider uppercase text-text-dim/50 hover:text-[#00C6FF] border border-white/5 hover:border-[rgba(0,198,255,0.2)] transition-colors duration-200"
             >
               <Pencil size={13} /> Edit Profile
@@ -207,12 +226,18 @@ export default function NinjaProfile() {
                   </div>
                   <div>
                     <label className={labelCls}>Username</label>
-                    <input
-                      className={inputCls}
-                      value={merged.username || ''}
-                      onChange={e => patch('username', e.target.value)}
-                      placeholder="@handle"
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-dim/40 pointer-events-none">@</span>
+                      <input
+                        className={inputCls + ' pl-7'}
+                        value={(merged.username || '').replace(/^@/, '')}
+                        onChange={e => {
+                          const raw = e.target.value.replace(/^@/, '')
+                          patch('username', raw)
+                        }}
+                        placeholder="handle"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className={labelCls}>Bio</label>
@@ -279,7 +304,7 @@ export default function NinjaProfile() {
                       style={{ background: isPast || isCurrent ? color : 'rgba(255,255,255,0.06)' }}
                     />
                   )}
-                  <div className="flex flex-col items-center shrink-0 px-1">
+                  <div className="relative group flex flex-col items-center shrink-0 px-1">
                     <div
                       className={`rounded-full flex items-center justify-center border
                         ${isCurrent ? 'w-12 h-12 ring-2 ring-offset-1 ring-offset-[#0B0F14]' : 'w-8 h-8'}
@@ -298,6 +323,11 @@ export default function NinjaProfile() {
                       ${isCurrent ? 'font-bold text-white' : 'text-text-dim/40'}`}>
                       {tier.name}
                     </span>
+                    {/* Rank tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded bg-black/95 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-white/10 whitespace-nowrap">
+                      <div className="font-heading font-semibold text-[11px] mb-0.5" style={{ color }}>{tier.name}</div>
+                      <div className="text-text-dim/60">{getRankRequirement(tier)}</div>
+                    </div>
                   </div>
                 </React.Fragment>
               )
@@ -367,8 +397,9 @@ export default function NinjaProfile() {
                   <div className="text-[9px] font-heading text-text-dim/50 truncate tracking-wide">{badge.label}</div>
                   {!earned && <Lock size={10} className="absolute top-1.5 right-1.5 text-white/15" />}
                   {/* Tooltip */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded bg-black/90 text-[10px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-white/5">
-                    {badge.label}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded bg-black/95 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 border border-white/10 whitespace-nowrap">
+                    <div className="font-heading font-semibold text-[11px] mb-0.5">{badge.label}</div>
+                    <div className="text-text-dim/60">{BADGE_DESCRIPTIONS[badge.id] || badge.label}</div>
                   </div>
                 </div>
               )
@@ -446,7 +477,7 @@ export default function NinjaProfile() {
               <SectionHeader label="Intel File" />
               {editing !== 'contact' && (
                 <button
-                  onClick={() => { setEditing('contact'); setDraft({ ...profile }) }}
+                  onClick={() => { setEditing('contact'); setDraft({}) }}
                   className="text-text-dim/30 hover:text-[#00C6FF] transition-colors"
                 >
                   <Pencil size={14} />
