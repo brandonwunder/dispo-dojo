@@ -168,8 +168,18 @@ export default function NinjaProfile() {
 
   // ── Render ────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0B0F14] pb-16">
-      <div className="max-w-[720px] mx-auto px-4">
+    <div
+      className="relative min-h-screen pb-16"
+      style={{
+        backgroundImage: 'url(/ninja-profile-bg.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-[#0B0F14]/75 pointer-events-none" />
+      <div className="relative z-10 max-w-[720px] mx-auto px-4">
 
         {/* ═══════════════════════════════════════════════════════════════
             SECTION 1 — Hero: Ninja Card
