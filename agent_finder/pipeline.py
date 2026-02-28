@@ -62,6 +62,7 @@ class AgentFinderPipeline:
         self._partial = 0
         self._not_found = 0
         self._errors = 0
+        self._processed_addresses: set[str] = set()
 
         # Circuit breaker state per scraper
         self._consecutive_failures: dict[str, int] = {}
@@ -102,12 +103,11 @@ class AgentFinderPipeline:
                 pending_props.append(prop)
                 results.append(None)  # placeholder
 
-        # Fire one "cache loaded" event so the frontend fills in cached rows
-        # immediately and shows the correct denominator (pending only)
+        # Fire "cache loaded" event — total is ALL addresses, completed starts at cached count
         if self.progress_callback:
             self.progress_callback({
-                "completed": 0,
-                "total": len(pending_props),
+                "completed": self._cached,
+                "total": self._total,
                 "cached": self._cached,
                 "found": 0,
                 "partial": 0,
@@ -116,9 +116,6 @@ class AgentFinderPipeline:
                 "current_address": "",
                 "current_status": "cached",
             })
-
-        # Total now reflects only non-cached work so progress math is correct
-        self._total = len(pending_props)
 
         if not pending_props:
             console.print(f"[green]All {self._cached} addresses found in cache.[/green]")
@@ -204,7 +201,7 @@ class AgentFinderPipeline:
                 )
                 if self.progress_callback:
                     self.progress_callback({
-                        "completed": self._found + self._partial + self._not_found + self._errors,
+                        "completed": self._cached + self._found + self._partial + self._not_found + self._errors,
                         "total": self._total,
                         "cached": self._cached,
                         "found": self._found,
@@ -305,17 +302,23 @@ class AgentFinderPipeline:
                     )
 
             # Determine status and cache
+            already_counted = prop.raw_address in self._processed_addresses
+            self._processed_addresses.add(prop.raw_address)
+
             if agent_info and agent_info.agent_name:
                 if agent_info.has_contact_info:
                     status = LookupStatus.FOUND
-                    self._found += 1
+                    if not already_counted:
+                        self._found += 1
                 else:
                     status = LookupStatus.PARTIAL
-                    self._partial += 1
+                    if not already_counted:
+                        self._partial += 1
                 await self.cache.put(prop.search_query, agent_info, status)
             else:
                 status = LookupStatus.NOT_FOUND
-                self._not_found += 1
+                if not already_counted:
+                    self._not_found += 1
                 await self.cache.record_failure(
                     prop.search_query, sources_tried, "No agent info found"
                 )
@@ -325,7 +328,7 @@ class AgentFinderPipeline:
                 progress.advance(task_id)
 
             if self.progress_callback:
-                completed = self._found + self._partial + self._not_found + self._errors
+                completed = self._cached + self._found + self._partial + self._not_found + self._errors
                 self.progress_callback({
                     "completed": completed,
                     "total": self._total,
