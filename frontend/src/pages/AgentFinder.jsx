@@ -761,8 +761,8 @@ export default function AgentFinder() {
 
   // ── Computed values ──
 
-  const progressPct = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0
-  const remaining = progress.total - progress.completed
+  const progressPct = progress.total > 0 ? Math.min(100, Math.round((progress.completed / progress.total) * 100)) : 0
+  const remaining = Math.max(0, progress.total - progress.completed)
 
   const resultRows = useMemo(
     () => results?.results || results?.rows || [],
