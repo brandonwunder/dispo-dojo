@@ -263,6 +263,20 @@ async def cache_stats():
     return await cache.stats()
 
 
+@api.delete("/cache/clear")
+async def cache_clear():
+    """Delete all cached results and failures — start fresh."""
+    db_path = UPLOAD_DIR / "web_cache.db"
+    if db_path.exists():
+        import aiosqlite
+        async with aiosqlite.connect(str(db_path)) as db:
+            await db.execute("DELETE FROM results")
+            await db.execute("DELETE FROM failures")
+            await db.commit()
+        return {"status": "cleared"}
+    return {"status": "no_cache"}
+
+
 @api.get("/jobs/{job_id}/results")
 async def get_job_results(job_id: str):
     """Return full results for a completed job as JSON (used for inline preview and export)."""
