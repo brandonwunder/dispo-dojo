@@ -139,7 +139,7 @@ class AgentFinderPipeline:
                 scrape_tasks = []
                 for prop in pending_props:
                     scrape_tasks.append(
-                        self._process_one(prop, scrapers, client, None, None)
+                        self._process_one_with_timeout(prop, scrapers, client, None, None)
                     )
                 scrape_results = await asyncio.gather(
                     *scrape_tasks, return_exceptions=True
@@ -161,7 +161,7 @@ class AgentFinderPipeline:
                     scrape_tasks = []
                     for prop in pending_props:
                         scrape_tasks.append(
-                            self._process_one(prop, scrapers, client, progress, task_id)
+                            self._process_one_with_timeout(prop, scrapers, client, progress, task_id)
                         )
 
                     scrape_results = await asyncio.gather(
@@ -242,6 +242,53 @@ class AgentFinderPipeline:
 
         self._print_summary()
         return results
+
+    # ── Per-address timeout (60s) ──
+    ADDRESS_TIMEOUT = 60  # seconds
+
+    async def _process_one_with_timeout(
+        self,
+        prop: Property,
+        scrapers: list[BaseScraper],
+        client: httpx.AsyncClient,
+        progress: Optional[Progress],
+        task_id,
+    ) -> ScrapeResult:
+        """Wrap _process_one with a hard 60-second timeout per address."""
+        try:
+            return await asyncio.wait_for(
+                self._process_one(prop, scrapers, client, progress, task_id),
+                timeout=self.ADDRESS_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(
+                "Address timed out after %ds: %s", self.ADDRESS_TIMEOUT, prop.raw_address
+            )
+            self._not_found += 1
+            await self.cache.record_failure(
+                prop.search_query, ["timeout"], f"Timed out after {self.ADDRESS_TIMEOUT}s"
+            )
+            if progress is not None:
+                progress.advance(task_id)
+            if self.progress_callback:
+                completed = self._cached + self._found + self._partial + self._not_found + self._errors
+                self.progress_callback({
+                    "completed": completed,
+                    "total": self._total,
+                    "cached": self._cached,
+                    "found": self._found,
+                    "partial": self._partial,
+                    "not_found": self._not_found,
+                    "errors": self._errors,
+                    "current_address": prop.raw_address,
+                    "current_status": "timeout",
+                })
+            return ScrapeResult(
+                property=prop,
+                status=LookupStatus.NOT_FOUND,
+                error_message=f"Timed out after {self.ADDRESS_TIMEOUT}s",
+                sources_tried=["timeout"],
+            )
 
     async def _process_one(
         self,
@@ -375,7 +422,7 @@ class AgentFinderPipeline:
                 row_index=prop.row_index,
             )
 
-            result = await self._process_one(
+            result = await self._process_one_with_timeout(
                 variant_prop, scrapers, client, None, None
             )
             if result and result.agent_info and result.agent_info.agent_name:
