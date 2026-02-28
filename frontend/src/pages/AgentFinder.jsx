@@ -338,6 +338,22 @@ export default function AgentFinder() {
 
     await requestNotificationPermission()
 
+    // Wake up the backend (Render free tier sleeps after inactivity)
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const ping = await fetch(`${API_BASE}/api/jobs`, { signal: AbortSignal.timeout(30000) })
+        if (ping.ok) break
+      } catch {
+        if (attempt === 2) {
+          setError('Backend is waking up and taking too long. Please wait 30 seconds and try again.')
+          setPhase('error')
+          setUploading(false)
+          return
+        }
+        await new Promise(r => setTimeout(r, 5000))
+      }
+    }
+
     const formData = new FormData()
     formData.append('file', file)
     if (columnMap) {
@@ -348,6 +364,7 @@ export default function AgentFinder() {
       const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
         body: formData,
+        signal: AbortSignal.timeout(60000),
       })
 
       if (!res.ok) {
@@ -362,7 +379,7 @@ export default function AgentFinder() {
       startTimeRef.current = Date.now()
       connectSSE(data.job_id)
     } catch (err) {
-      setError(err.message || 'Failed to upload file. Make sure the backend is running on localhost:9000.')
+      setError(err.message || 'Failed to upload file. The backend may be starting up — wait 30s and try again.')
       setPhase('error')
     } finally {
       setUploading(false)
@@ -439,9 +456,16 @@ export default function AgentFinder() {
       }
     }
 
+    let sseRetries = 0
     source.onerror = () => {
       source.close()
       sseRef.current = null
+      // Retry SSE up to 3 times before giving up
+      if (sseRetries < 3) {
+        sseRetries++
+        setTimeout(() => connectSSE(id), 2000)
+        return
+      }
       // Only set error if we're still in processing phase
       setPhase((prev) => {
         if (prev === 'processing') {
@@ -1968,7 +1992,7 @@ export default function AgentFinder() {
 
         <p className="text-sm max-w-md mx-auto mb-2" style={{ color: '#C8D1DA' }}>{error}</p>
 
-        {(error?.includes('backend') || error?.includes('connection') || error?.includes('Failed to fetch')) && (
+        {(error?.includes('backend') || error?.includes('connection') || error?.includes('Failed to fetch') || error?.includes('waking up')) && (
           <div
             className="rounded-xl p-4 max-w-md mx-auto mt-4 text-left"
             style={{
@@ -1980,12 +2004,12 @@ export default function AgentFinder() {
               className="text-xs font-heading tracking-wider uppercase mb-2"
               style={{ color: '#C49A20' }}
             >
-              To start the backend:
+              The backend may be waking up
             </p>
             <div className="rounded p-3 font-mono text-xs" style={{ background: 'rgba(0,0,0,0.4)' }}>
-              <p style={{ color: '#F6C445' }}>cd backend</p>
-              <p style={{ color: '#F6C445' }}>python main.py</p>
-              <p className="mt-1" style={{ color: 'rgba(200,209,218,0.4)' }}># Runs on localhost:9000</p>
+              <p style={{ color: '#F6C445' }}>The server sleeps after inactivity.</p>
+              <p style={{ color: '#F6C445' }}>Wait 30 seconds, then hit "Try Again".</p>
+              <p className="mt-1" style={{ color: 'rgba(200,209,218,0.4)' }}># First request wakes it up automatically</p>
             </div>
           </div>
         )}
