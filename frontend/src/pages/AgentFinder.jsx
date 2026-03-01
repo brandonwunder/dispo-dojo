@@ -237,13 +237,30 @@ export default function AgentFinder() {
   const [cacheStats, setCacheStats] = useState(null)
   const [howItWorksOpen, setHowItWorksOpen] = useState(false)
 
-  // ── Load job history + cache stats on mount ──
+  // ── Load job history + cache stats on mount, auto-resume active jobs ──
   useEffect(() => {
-    loadJobs()
-    fetch(`${API_BASE}/api/cache/stats`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setCacheStats(d) })
-      .catch(() => {})
+    const init = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/jobs`)
+        if (res.ok) {
+          const data = await res.json()
+          const jobList = Array.isArray(data) ? data : data.jobs || []
+          setJobs(jobList)
+          // Auto-resume if there's a running/queued job and we're not already processing
+          const activeJob = jobList.find(j => j.status === 'running' || j.status === 'queued')
+          if (activeJob && phase === 'idle') {
+            resumeMonitoring(activeJob)
+          }
+        }
+      } catch {
+        // Backend may not be running — silently fail
+      }
+      fetch(`${API_BASE}/api/cache/stats`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setCacheStats(d) })
+        .catch(() => {})
+    }
+    init()
   }, [])
 
   // ── Cleanup SSE on unmount ──
