@@ -165,7 +165,24 @@ async def test_scrape(address: str = "123 Main St, Austin, TX 78701"):
     from .scrapers.realtor import RealtorScraper
     from .scrapers.zillow import ZillowScraper
 
-    prop = Property(raw_address=address)
+    # Parse address into components (same as input_handler)
+    parts = [p.strip() for p in address.split(",")]
+    address_line = parts[0] if parts else address
+    city = parts[1].strip() if len(parts) >= 3 else ""
+    state = ""
+    zip_code = ""
+    if len(parts) >= 3:
+        state_zip = parts[2].strip().split()
+        state = state_zip[0] if state_zip else ""
+        zip_code = state_zip[1] if len(state_zip) > 1 else ""
+
+    prop = Property(
+        raw_address=address,
+        address_line=address_line.upper(),
+        city=city.upper(),
+        state=state.upper(),
+        zip_code=zip_code,
+    )
 
     results = {}
     async with httpx.AsyncClient(
@@ -211,6 +228,13 @@ async def test_scrape(address: str = "123 Main St, Austin, TX 78701"):
 
     return {
         "test_address": address,
+        "parsed": {
+            "address_line": prop.address_line,
+            "city": prop.city,
+            "state": prop.state,
+            "zip_code": prop.zip_code,
+            "search_query": prop.search_query,
+        },
         "scraper_results": results,
         "cache_stats": cache_stats,
     }
