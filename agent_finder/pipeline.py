@@ -132,26 +132,21 @@ class AgentFinderPipeline:
             f"({self._cached} cached, {len(pending_props)} remaining)[/blue]"
         )
 
-        # Create HTTP client and scrapers
+        # Create HTTP client and scrapers (connection pool sized for 512MB RAM)
         async with httpx.AsyncClient(
             http2=True,
             follow_redirects=True,
-            limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=5),
         ) as client:
             scrapers = self._build_scrapers(client)
 
             if self.progress_callback:
-                # Web mode: use callback instead of Rich progress bar
-                scrape_tasks = []
-                for prop in pending_props:
-                    scrape_tasks.append(
-                        self._process_one_with_timeout(prop, scrapers, client, None, None)
-                    )
-                scrape_results = await asyncio.gather(
-                    *scrape_tasks, return_exceptions=True
+                # Web mode: process in batches to stay within memory limits
+                scrape_results = await self._process_in_batches(
+                    pending_props, scrapers, client, None, None
                 )
             else:
-                # CLI mode: use Rich progress bar
+                # CLI mode: use Rich progress bar + batches
                 with Progress(
                     SpinnerColumn(),
                     TextColumn("[bold blue]{task.description}"),
@@ -164,14 +159,8 @@ class AgentFinderPipeline:
                         "Scraping", total=len(pending_props)
                     )
 
-                    scrape_tasks = []
-                    for prop in pending_props:
-                        scrape_tasks.append(
-                            self._process_one_with_timeout(prop, scrapers, client, progress, task_id)
-                        )
-
-                    scrape_results = await asyncio.gather(
-                        *scrape_tasks, return_exceptions=True
+                    scrape_results = await self._process_in_batches(
+                        pending_props, scrapers, client, progress, task_id
                     )
 
             # Merge pending results back into the full results list
@@ -259,6 +248,28 @@ class AgentFinderPipeline:
 
         self._print_summary()
         return results
+
+    BATCH_SIZE = 5  # addresses per batch — keeps memory under 512MB
+
+    async def _process_in_batches(
+        self,
+        props: list[Property],
+        scrapers: list[BaseScraper],
+        client: httpx.AsyncClient,
+        progress: Optional[Progress],
+        task_id,
+    ) -> list:
+        """Process addresses in small batches to stay within memory limits."""
+        all_results = []
+        for i in range(0, len(props), self.BATCH_SIZE):
+            batch = props[i : i + self.BATCH_SIZE]
+            tasks = [
+                self._process_one_with_timeout(prop, scrapers, client, progress, task_id)
+                for prop in batch
+            ]
+            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+            all_results.extend(batch_results)
+        return all_results
 
     async def _process_one_with_timeout(
         self,

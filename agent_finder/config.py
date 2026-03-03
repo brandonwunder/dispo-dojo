@@ -18,49 +18,49 @@ class SourceConfig:
 REDFIN = SourceConfig(
     name="redfin",
     requests_per_second=2.0,
-    max_concurrent=5,
-    max_retries=3,
-    timeout_seconds=30.0,
+    max_concurrent=3,
+    max_retries=2,
+    timeout_seconds=12.0,
 )
 
 HOMEHARVEST = SourceConfig(
     name="homeharvest",
     requests_per_second=1.0,
-    max_concurrent=3,
-    max_retries=2,
-    timeout_seconds=45.0,
+    max_concurrent=2,
+    max_retries=1,
+    timeout_seconds=20.0,
 )
 
 REALTOR = SourceConfig(
     name="realtor",
     requests_per_second=0.5,
-    max_concurrent=3,
-    max_retries=2,
-    timeout_seconds=30.0,
+    max_concurrent=2,
+    max_retries=1,
+    timeout_seconds=12.0,
 )
 
 ZILLOW = SourceConfig(
     name="zillow",
     requests_per_second=0.5,
     max_concurrent=2,
-    max_retries=2,
-    timeout_seconds=30.0,
+    max_retries=1,
+    timeout_seconds=12.0,
 )
 
 GOOGLE_SEARCH = SourceConfig(
     name="google_search",
     enabled=False,  # Requires API key to enable
     requests_per_second=0.2,
-    max_concurrent=2,
+    max_concurrent=1,
     max_retries=1,
-    timeout_seconds=15.0,
+    timeout_seconds=10.0,
 )
 
 # Ordered list of sources to try (waterfall priority)
 SOURCE_PRIORITY = [REDFIN, HOMEHARVEST, REALTOR, ZILLOW, GOOGLE_SEARCH]
 
-# Global pipeline settings
-MAX_GLOBAL_CONCURRENCY = 50
+# Global pipeline settings — kept low for Render free tier (512MB RAM)
+MAX_GLOBAL_CONCURRENCY = 5
 CACHE_TTL_DAYS = 7
 CACHE_DB_PATH = "agent_finder_cache.db"
 

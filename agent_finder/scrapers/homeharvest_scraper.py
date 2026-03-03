@@ -17,7 +17,7 @@ logger = logging.getLogger("agent_finder.scrapers.homeharvest")
 
 # Dedicated bounded thread pool for HomeHarvest.
 # Prevents stuck sync calls from exhausting the global default pool.
-_HH_EXECUTOR = ThreadPoolExecutor(max_workers=3, thread_name_prefix="homeharvest")
+_HH_EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="homeharvest")
 
 # How long to wait for the sync thread before giving up.
 _HH_THREAD_TIMEOUT = 20  # seconds

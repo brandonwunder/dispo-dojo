@@ -100,10 +100,12 @@ async def startup():
 async def version():
     """Return deploy version so we can confirm which code is running."""
     return {
-        "version": "2.1.0-timeout-fix",
+        "version": "2.2.0-memory-fix",
         "address_timeout": 45,
         "scraper_timeout": 15,
         "retry_pass_timeout": 120,
+        "max_concurrency": 5,
+        "batch_size": 5,
     }
 
 
