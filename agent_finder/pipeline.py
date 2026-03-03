@@ -55,11 +55,11 @@ class AgentFinderPipeline:
     merging results across sources for better coverage and verification.
     """
 
-    # Hard timeouts
-    ADDRESS_TIMEOUT = 45       # seconds — max wall-time per address (down from 60)
-    SCRAPER_TIMEOUT = 15       # seconds — max wall-time per individual scraper
-    ENRICHMENT_TIMEOUT = 10    # seconds — max wall-time for contact enrichment
-    RETRY_PASS_TIMEOUT = 120   # seconds — max wall-time for the entire retry pass
+    # Hard timeouts (generous when using ScraperAPI proxy)
+    ADDRESS_TIMEOUT = 90       # seconds — max wall-time per address
+    SCRAPER_TIMEOUT = 35       # seconds — max wall-time per individual scraper (proxy adds latency)
+    ENRICHMENT_TIMEOUT = 15    # seconds — max wall-time for contact enrichment
+    RETRY_PASS_TIMEOUT = 180   # seconds — max wall-time for the entire retry pass
 
     def __init__(
         self,
