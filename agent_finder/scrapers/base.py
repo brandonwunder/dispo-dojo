@@ -22,7 +22,12 @@ class BaseScraper(ABC):
     def __init__(self, config: SourceConfig, client: httpx.AsyncClient):
         self.config = config
         self.client = client
-        self.rate_limiter = AsyncLimiter(config.requests_per_second, 1.0)
+        # aiolimiter requires max_rate >= acquire amount (1).
+        # For sub-1 rps (e.g. 0.5 rps = 1 req per 2s), scale the time_period.
+        if config.requests_per_second < 1.0:
+            self.rate_limiter = AsyncLimiter(1, 1.0 / config.requests_per_second)
+        else:
+            self.rate_limiter = AsyncLimiter(config.requests_per_second, 1.0)
         self.semaphore = asyncio.Semaphore(config.max_concurrent)
         self._request_count = 0
         self._success_count = 0

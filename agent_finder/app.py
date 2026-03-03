@@ -143,7 +143,7 @@ async def _auto_resume_interrupted():
 async def version():
     """Return deploy version so we can confirm which code is running."""
     return {
-        "version": "3.1.0-lite-fix",
+        "version": "3.2.0-ratelimit-fix",
         "address_timeout": 45,
         "scraper_timeout": 15,
         "retry_pass_timeout": 120,
