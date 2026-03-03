@@ -45,7 +45,6 @@ async def run_pipeline(
     logger.info("Pass 1: Google search for %d agents", total)
 
     async with httpx.AsyncClient(
-        http2=True,
         follow_redirects=True,
         limits=httpx.Limits(max_connections=5, max_keepalive_connections=2),
     ) as client:
