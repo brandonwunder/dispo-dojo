@@ -154,6 +154,81 @@ async def version():
     }
 
 
+@api.get("/test-scrape")
+async def test_scrape(address: str = "123 Main St, Austin, TX 78701"):
+    """Diagnostic: test each scraper individually on a single address."""
+    import httpx
+    import traceback
+    import time
+    from .models import Property
+    from .scrapers.redfin import RedfinScraper
+    from .scrapers.realtor import RealtorScraper
+    from .scrapers.zillow import ZillowScraper
+
+    prop = Property(raw_address=address)
+
+    results = {}
+    async with httpx.AsyncClient(
+        follow_redirects=True,
+        limits=httpx.Limits(max_connections=10, max_keepalive_connections=3),
+    ) as client:
+        for name, ScraperCls in [
+            ("redfin", RedfinScraper),
+            ("realtor", RealtorScraper),
+            ("zillow", ZillowScraper),
+        ]:
+            start = time.time()
+            try:
+                scraper = ScraperCls(client)
+                info = await asyncio.wait_for(scraper.search(prop), timeout=30)
+                elapsed = round(time.time() - start, 2)
+                if info:
+                    results[name] = {
+                        "status": "found",
+                        "agent_name": info.agent_name,
+                        "brokerage": info.brokerage,
+                        "phone": info.phone,
+                        "email": info.email,
+                        "source": info.source,
+                        "elapsed_seconds": elapsed,
+                    }
+                else:
+                    results[name] = {"status": "not_found", "elapsed_seconds": elapsed}
+            except asyncio.TimeoutError:
+                results[name] = {"status": "timeout", "elapsed_seconds": round(time.time() - start, 2)}
+            except Exception as e:
+                results[name] = {
+                    "status": "error",
+                    "error": f"{type(e).__name__}: {e}",
+                    "traceback": traceback.format_exc()[-500:],
+                    "elapsed_seconds": round(time.time() - start, 2),
+                }
+
+    # Also check cache stats
+    cache = ScrapeCache(db_path=str(UPLOAD_DIR / "web_cache.db"))
+    await cache.initialize()
+    cache_stats = await cache.stats()
+
+    return {
+        "test_address": address,
+        "scraper_results": results,
+        "cache_stats": cache_stats,
+    }
+
+
+@api.post("/clear-cache")
+async def clear_cache():
+    """Clear the scrape cache (results + failures)."""
+    cache = ScrapeCache(db_path=str(UPLOAD_DIR / "web_cache.db"))
+    await cache.initialize()
+    import aiosqlite
+    async with aiosqlite.connect(str(UPLOAD_DIR / "web_cache.db")) as db:
+        await db.execute("DELETE FROM results")
+        await db.execute("DELETE FROM failures")
+        await db.commit()
+    return {"status": "cleared", "message": "All cached results and failures deleted"}
+
+
 @api.get("/legacy-agent-finder", response_class=HTMLResponse)
 async def legacy_agent_finder():
     """Serve the legacy Agent Finder page (used inside iframe)."""
