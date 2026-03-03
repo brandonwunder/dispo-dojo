@@ -35,9 +35,11 @@ function formatDate(dateStr) {
 }
 
 const PHASE_LABELS = {
-  google: 'Google Search',
+  cache: 'Cache Lookup',
+  brokerage: 'Brokerage Directory',
+  search: 'Web Search',
   realtor: 'Realtor.com',
-  email_guess: 'Email Guess',
+  email: 'Email Lookup',
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
@@ -924,24 +926,30 @@ export default function AgentFinder() {
                     },
                     {
                       step: '2',
-                      color: '#F6C445',
-                      title: 'Pass 1: Google Search',
-                      body: 'For each agent name, the tool searches Google to find the agent\'s public listing page on real estate sites. This identifies the agent\'s brokerage and often their direct phone number.',
+                      color: '#00C6FF',
+                      title: 'Phase 1: Brokerage Directory',
+                      body: 'Agents at major franchises (Keller Williams, RE/MAX, Coldwell Banker, Compass, etc.) are looked up directly in their brokerage\'s agent directory — the most accurate source.',
                     },
                     {
                       step: '3',
-                      color: '#22C55E',
-                      title: 'Pass 2: Realtor.com Lookup',
-                      body: 'Using the Google results, the tool visits Realtor.com to cross-reference and fill in any missing brokerage info, phone number, or profile details.',
+                      color: '#F6C445',
+                      title: 'Phase 2: Web Search',
+                      body: 'For agents not found in brokerage directories, the tool searches the web for their public contact info across real estate sites, social profiles, and brokerage pages.',
                     },
                     {
                       step: '4',
-                      color: '#7F00FF',
-                      title: 'Pass 3: Email Pattern Matching',
-                      body: 'Using the agent name and brokerage, the tool generates likely email addresses based on common brokerage email patterns (firstname@brokerage.com, first.last@, etc.) and verifies them.',
+                      color: '#E53935',
+                      title: 'Phase 3: Realtor.com Lookup',
+                      body: 'Still-missing agents are searched on Realtor.com by name and location to find their profile page with phone and email.',
                     },
                     {
                       step: '5',
+                      color: '#7F00FF',
+                      title: 'Phase 4: Email Discovery',
+                      body: 'For agents with a phone but no email, the tool generates likely email patterns from their name + brokerage domain and validates them via MX records.',
+                    },
+                    {
+                      step: '6',
                       color: '#C8D1DA',
                       title: 'Download Your Results',
                       body: 'Once complete, download a CSV with all the contact data: agent name, brokerage, phone, and email. Filter and sort results before downloading to get exactly what you need.',
@@ -952,10 +960,10 @@ export default function AgentFinder() {
                       style={{
                         display: 'flex',
                         gap: '16px',
-                        marginBottom: i < 4 ? '20px' : 0,
-                        paddingBottom: i < 4 ? '20px' : 0,
+                        marginBottom: i < 5 ? '20px' : 0,
+                        paddingBottom: i < 5 ? '20px' : 0,
                         borderBottom:
-                          i < 4
+                          i < 5
                             ? '1px solid rgba(255,255,255,0.05)'
                             : 'none',
                       }}
@@ -1614,19 +1622,23 @@ export default function AgentFinder() {
                         height: '8px',
                         borderRadius: '50%',
                         background:
-                          progress.phase === 'google'
+                          progress.phase === 'brokerage'
                             ? '#00C6FF'
-                            : progress.phase === 'realtor'
+                            : progress.phase === 'search'
                               ? '#F6C445'
-                              : '#7F00FF',
+                              : progress.phase === 'realtor'
+                                ? '#E53935'
+                                : '#7F00FF',
                         display: 'inline-block',
                         animation: 'phasePulse 1.5s ease-in-out infinite',
                         boxShadow: `0 0 8px ${
-                          progress.phase === 'google'
+                          progress.phase === 'brokerage'
                             ? 'rgba(0,198,255,0.5)'
-                            : progress.phase === 'realtor'
+                            : progress.phase === 'search'
                               ? 'rgba(246,196,69,0.5)'
-                              : 'rgba(127,0,255,0.5)'
+                              : progress.phase === 'realtor'
+                                ? 'rgba(229,57,53,0.5)'
+                                : 'rgba(127,0,255,0.5)'
                         }`,
                       }}
                     />
@@ -1638,11 +1650,15 @@ export default function AgentFinder() {
                         letterSpacing: '0.1em',
                         textTransform: 'uppercase',
                         color:
-                          progress.phase === 'google'
+                          progress.phase === 'brokerage'
                             ? '#00C6FF'
-                            : progress.phase === 'realtor'
+                            : progress.phase === 'search'
                               ? '#F6C445'
-                              : '#7F00FF',
+                              : progress.phase === 'realtor'
+                                ? '#E53935'
+                                : progress.phase === 'email'
+                                  ? '#7F00FF'
+                                  : '#00C6FF',
                       }}
                     >
                       {PHASE_LABELS[progress.phase] || progress.phase}

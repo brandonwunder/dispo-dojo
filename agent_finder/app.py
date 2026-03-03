@@ -1,4 +1,4 @@
-"""FastAPI web app for Agent Contact Finder v2."""
+"""FastAPI web app for Agent Contact Finder v3."""
 
 import asyncio
 import json
@@ -21,7 +21,7 @@ from .input_handler import read_input
 from .output_handler import export_results_csv, generate_summary
 from .pipeline import run_pipeline
 
-app = FastAPI(title="Agent Contact Finder v2")
+app = FastAPI(title="Agent Contact Finder v3")
 
 _default_origins = "http://localhost:3000,http://localhost:5173,https://dispo-dojo.vercel.app,https://dispo-dojo-ionw3ihqj-airsyncs-projects.vercel.app"
 _origins = os.environ.get("ALLOWED_ORIGINS", _default_origins).split(",")
@@ -391,6 +391,6 @@ if FRONTEND_DIR.exists():
 def main():
     import uvicorn
     port = int(os.environ.get("PORT", 9000))
-    print(f"\n  Agent Contact Finder v2")
+    print(f"\n  Agent Contact Finder v3")
     print(f"  Open http://localhost:{port}\n")
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")

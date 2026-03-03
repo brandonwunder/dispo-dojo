@@ -1,50 +1,98 @@
-"""Pipeline orchestrator — runs the 3-pass search for each agent.
+"""Pipeline orchestrator — 4-phase search for agent contact info.
 
-Uses concurrent batches to speed up processing while respecting
-rate limits. Each batch runs N searches in parallel, then pauses
-briefly before the next batch.
+Phase 1: Brokerage directory lookup (batch by franchise)
+Phase 2: DuckDuckGo search (remaining agents)
+Phase 3: Realtor.com profile search (still-missing agents)
+Phase 4: Email pattern guessing (agents with phone but no email)
+
+Key improvements over v2:
+- Deduplication: same agent on multiple properties = search once
+- Brokerage-first: ~45% of agents resolved via franchise directories
+- Cross-job caching: previously found contacts skip all passes
+- Chunked processing with gc.collect() for memory safety
 """
 
-import asyncio
+import gc
 import logging
+from pathlib import Path
 from typing import Callable
 
 import httpx
 
 from .models import AgentRow, ContactResult, ContactStatus
-from .searchers.google_search import search_google
-from .searchers.realtor_profile import search_realtor_profile
-from .searchers.email_guesser import guess_email
+from .cache import FileCache
+from .searchers.brokerage_router import group_by_franchise
+from .searchers import ddg_search
+from .searchers.realtor_profile import search_batch as realtor_search_batch
+from .searchers.email_guesser import guess_batch as email_guess_batch
+
+# Brokerage scraper imports
+from .brokerages.kw import KWBrokerageScraper
+from .brokerages.remax import ReMaxBrokerageScraper
+from .brokerages.exp_realty import ExpRealtyBrokerageScraper
+from .brokerages.coldwell_banker import ColdwellBankerBrokerageScraper
+from .brokerages.compass import CompassBrokerageScraper
+from .brokerages.century21 import Century21BrokerageScraper
+from .brokerages.bhhs import BHHSBrokerageScraper
+from .brokerages.generic import GenericBrokerageScraper
 
 logger = logging.getLogger("agent_finder.pipeline")
 
-# Concurrency settings — tuned for DuckDuckGo rate limits
-DDG_BATCH_SIZE = 5       # concurrent searches per batch
-DDG_BATCH_DELAY = 2.0    # seconds between batches
-REALTOR_BATCH_SIZE = 3   # realtor.com is stricter
-REALTOR_BATCH_DELAY = 2.0
-EMAIL_BATCH_SIZE = 8     # email guessing is mostly DNS, can be aggressive
-EMAIL_BATCH_DELAY = 0.5
-AGENT_TIMEOUT = 30.0     # max seconds per agent before we skip it
+DATA_DIR = Path(__file__).parent / "data"
+
+# Map franchise keys to scraper classes
+SCRAPER_CLASSES: dict[str, type] = {
+    "keller_williams": KWBrokerageScraper,
+    "remax": ReMaxBrokerageScraper,
+    "exp_realty": ExpRealtyBrokerageScraper,
+    "coldwell_banker": ColdwellBankerBrokerageScraper,
+    "compass": CompassBrokerageScraper,
+    "century21": Century21BrokerageScraper,
+    "bhhs": BHHSBrokerageScraper,
+}
+
+# Franchises handled by the generic scraper
+GENERIC_FRANCHISES = {"homesmart", "realty_one", "exit_realty", "howard_hanna",
+                      "weichert", "long_foster", "sothebys", "redfin"}
+
+CHUNK_SIZE = 200
+
+
+def _deduplicate(agents: list[AgentRow]) -> tuple[list[AgentRow], dict[str, list[int]]]:
+    """Deduplicate agents by (name, brokerage). Returns unique agents
+    and a map from dedup key -> list of original row indices."""
+    seen: dict[str, AgentRow] = {}
+    index_map: dict[str, list[int]] = {}
+
+    for agent in agents:
+        key = f"{agent.name.strip().lower()}|{agent.brokerage.strip().lower()}"
+        if key not in seen:
+            seen[key] = agent
+            index_map[key] = [agent.row_index]
+        else:
+            index_map[key].append(agent.row_index)
+
+    unique = list(seen.values())
+    logger.info("Deduplicated: %d -> %d unique agents", len(agents), len(unique))
+    return unique, index_map
 
 
 async def run_pipeline(
     agents: list[AgentRow],
     progress_callback: Callable[[dict], None] | None = None,
 ) -> list[ContactResult]:
-    """Run the 3-pass search pipeline on a list of agents.
-
-    Pass 1: DuckDuckGo search (all agents) — batches of 5
-    Pass 2: Realtor.com profile (agents not found in Pass 1) — batches of 3
-    Pass 3: Email pattern guessing (agents with no email) — batches of 8
-    """
+    """Run the 4-phase search pipeline on a list of agents."""
     total = len(agents)
-    results: list[ContactResult] = [ContactResult(agent=a) for a in agents]
+
+    # Results indexed by row_index
+    results: dict[int, ContactResult] = {a.row_index: ContactResult(agent=a) for a in agents}
 
     found_count = 0
     completed_count = 0
+    cached_hits = 0
+    counted_rows: set[int] = set()  # Track which rows have been counted
 
-    def emit_progress(current_agent: str, phase: str):
+    def emit(current_agent: str, phase: str, phase_detail: str = ""):
         if progress_callback:
             progress_callback({
                 "completed": completed_count,
@@ -53,156 +101,180 @@ async def run_pipeline(
                 "not_found": completed_count - found_count,
                 "current_agent": current_agent,
                 "phase": phase,
+                "phase_detail": phase_detail,
+                "cached_hits": cached_hits,
             })
 
-    logger.info("Pass 1: DuckDuckGo search for %d agents", total)
+    def apply_result(r: ContactResult, dedup_key: str):
+        """Apply a result to all original rows sharing this dedup key."""
+        nonlocal found_count, completed_count
+        row_indices = index_map.get(dedup_key, [r.agent.row_index])
+        for idx in row_indices:
+            original_agent = results[idx].agent
+            was_found = results[idx].has_contact
+            results[idx] = ContactResult(
+                agent=original_agent,
+                phone=r.phone,
+                email=r.email,
+                source=r.source,
+                status=r.status,
+                error_message=r.error_message,
+            )
+            if idx not in counted_rows:
+                counted_rows.add(idx)
+                completed_count += 1
+                if r.has_contact:
+                    found_count += 1
+            elif r.has_contact and not was_found:
+                # Previously counted as not-found, now found
+                found_count += 1
+
+    # ── Step 0: Deduplicate ──
+    unique_agents, index_map = _deduplicate(agents)
+
+    def _key(a: AgentRow) -> str:
+        return f"{a.name.strip().lower()}|{a.brokerage.strip().lower()}"
+
+    # ── Step 1: Cache check ──
+    cache = FileCache(DATA_DIR / "cache.json")
+    uncached: list[AgentRow] = []
+
+    for agent in unique_agents:
+        cached = cache.get(agent)
+        if cached:
+            apply_result(cached, _key(agent))
+            cached_hits += 1
+        else:
+            uncached.append(agent)
+
+    if cached_hits:
+        logger.info("Cache hits: %d/%d", cached_hits, len(unique_agents))
+        emit("Cache lookup complete", "cache")
+
+    # ── Step 2: Group by franchise ──
+    brokerage_groups, unmatched = group_by_franchise(uncached)
+
+    # Track which unique agents still need searching
+    still_need: set[int] = {a.row_index for a in uncached}
 
     async with httpx.AsyncClient(
         follow_redirects=True,
         limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
     ) as client:
 
-        # --- Pass 1: DuckDuckGo search in concurrent batches ---
-        for batch_start in range(0, total, DDG_BATCH_SIZE):
-            batch_end = min(batch_start + DDG_BATCH_SIZE, total)
-            batch_indices = list(range(batch_start, batch_end))
+        # ── Phase 1: Brokerage directory lookups ──
+        for franchise, franchise_agents in brokerage_groups.items():
+            if not franchise_agents:
+                continue
 
-            # Show progress for first agent in batch
-            emit_progress(agents[batch_start].name, "google")
+            emit(franchise_agents[0].name, "brokerage", franchise)
+            logger.info("Phase 1: %s directory (%d agents)", franchise, len(franchise_agents))
 
-            async def search_one(idx: int) -> None:
-                nonlocal found_count, completed_count
-                agent = agents[idx]
-                try:
-                    result = await asyncio.wait_for(
-                        search_google(agent, client),
-                        timeout=AGENT_TIMEOUT,
-                    )
-                    results[idx] = result
-                    if result.has_contact:
-                        found_count += 1
-                except asyncio.TimeoutError:
-                    logger.warning("Pass 1 timed out for %s (>%ds)", agent.name, AGENT_TIMEOUT)
-                    results[idx] = ContactResult(
-                        agent=agent,
-                        status=ContactStatus.ERROR,
-                        error_message="Timeout",
-                    )
-                except Exception as e:
-                    logger.error("Pass 1 error for %s: %s", agent.name, e)
-                    results[idx] = ContactResult(
-                        agent=agent,
-                        status=ContactStatus.ERROR,
-                        error_message=str(e),
-                    )
-                completed_count += 1
+            # Get the right scraper
+            if franchise in SCRAPER_CLASSES:
+                scraper = SCRAPER_CLASSES[franchise](client)
+            elif franchise in GENERIC_FRANCHISES:
+                scraper = GenericBrokerageScraper(client, franchise_key=franchise)
+            else:
+                # No scraper — agents fall through to Phase 2
+                continue
 
-            # Run batch concurrently
-            await asyncio.gather(*(search_one(i) for i in batch_indices))
+            def on_brokerage_result(r: ContactResult, _franchise=franchise):
+                key = _key(r.agent)
+                apply_result(r, key)
+                if r.has_contact:
+                    cache.put(r)
+                    still_need.discard(r.agent.row_index)
+                emit(r.agent.name, "brokerage", _franchise)
 
-            # Emit progress after batch completes
-            emit_progress(agents[batch_end - 1].name, "google")
+            await scraper.search_batch(franchise_agents, on_result=on_brokerage_result)
+            gc.collect()
 
-            # Delay between batches (skip after last batch)
-            if batch_end < total:
-                await asyncio.sleep(DDG_BATCH_DELAY)
+        # ── Phase 2: DDG search for remaining agents ──
+        ddg_agents = [a for a in uncached if a.row_index in still_need]
 
-        # --- Pass 2: Realtor.com profiles for agents not found ---
-        not_found_indices = [
-            i for i, r in enumerate(results)
-            if not r.has_contact
+        if ddg_agents:
+            logger.info("Phase 2: DDG search for %d agents", len(ddg_agents))
+            emit(ddg_agents[0].name, "search")
+
+            def on_ddg_result(r: ContactResult):
+                key = _key(r.agent)
+                apply_result(r, key)
+                if r.has_contact:
+                    cache.put(r)
+                    still_need.discard(r.agent.row_index)
+                emit(r.agent.name, "search")
+
+            for chunk_start in range(0, len(ddg_agents), CHUNK_SIZE):
+                chunk = ddg_agents[chunk_start : chunk_start + CHUNK_SIZE]
+                await ddg_search.search_batch(chunk, on_result=on_ddg_result)
+                gc.collect()
+
+        # ── Phase 3: Realtor.com for still-missing agents ──
+        realtor_agents = [a for a in uncached if a.row_index in still_need]
+
+        if realtor_agents:
+            logger.info("Phase 3: Realtor.com for %d agents", len(realtor_agents))
+            emit(realtor_agents[0].name, "realtor")
+
+            def on_realtor_result(r: ContactResult):
+                key = _key(r.agent)
+                if r.has_contact:
+                    apply_result(r, key)
+                    cache.put(r)
+                    still_need.discard(r.agent.row_index)
+                else:
+                    apply_result(r, key)
+                emit(r.agent.name, "realtor")
+
+            for chunk_start in range(0, len(realtor_agents), CHUNK_SIZE):
+                chunk = realtor_agents[chunk_start : chunk_start + CHUNK_SIZE]
+                await realtor_search_batch(chunk, client, on_result=on_realtor_result)
+                gc.collect()
+
+        # ── Phase 4: Email guessing for agents with phone but no email ──
+        need_email = [
+            results[idx].agent
+            for idx in results
+            if results[idx].phone and not results[idx].email
         ]
 
-        if not_found_indices:
-            logger.info("Pass 2: Realtor.com profiles for %d agents", len(not_found_indices))
+        if need_email:
+            logger.info("Phase 4: Email guessing for %d agents", len(need_email))
+            emit(need_email[0].name, "email")
 
-            for batch_start in range(0, len(not_found_indices), REALTOR_BATCH_SIZE):
-                batch = not_found_indices[batch_start:batch_start + REALTOR_BATCH_SIZE]
+            def on_email_result(agent: AgentRow, email: str | None):
+                if email:
+                    r = results.get(agent.row_index)
+                    if r:
+                        r.email = email
+                        if r.source:
+                            r.source += "+email_guess"
+                        else:
+                            r.source = "email_guess"
+                        r.status = ContactStatus.FOUND
+                        cache.put(r)
+                emit(agent.name, "email")
 
-                emit_progress(agents[batch[0]].name, "realtor")
+            await email_guess_batch(need_email, on_result=on_email_result)
 
-                async def search_realtor_one(idx: int) -> None:
-                    nonlocal found_count
-                    agent = agents[idx]
-                    profile_url = ""
-                    if results[idx].error_message and results[idx].error_message.startswith("realtor_url:"):
-                        profile_url = results[idx].error_message.replace("realtor_url:", "")
+    # ── Save cache ──
+    cache.save()
 
-                    try:
-                        realtor_result = await asyncio.wait_for(
-                            search_realtor_profile(agent, client, profile_url),
-                            timeout=AGENT_TIMEOUT,
-                        )
-                        if realtor_result.has_contact:
-                            if realtor_result.phone and not results[idx].phone:
-                                results[idx].phone = realtor_result.phone
-                            if realtor_result.email and not results[idx].email:
-                                results[idx].email = realtor_result.email
-                            results[idx].source = "realtor"
-                            results[idx].status = ContactStatus.FOUND
-                            results[idx].error_message = ""
-                            found_count += 1
-                    except asyncio.TimeoutError:
-                        logger.warning("Pass 2 timed out for %s (>%ds)", agent.name, AGENT_TIMEOUT)
-                    except Exception as e:
-                        logger.error("Pass 2 error for %s: %s", agent.name, e)
-
-                await asyncio.gather(*(search_realtor_one(i) for i in batch))
-
-                emit_progress(agents[batch[-1]].name, "realtor")
-
-                if batch_start + REALTOR_BATCH_SIZE < len(not_found_indices):
-                    await asyncio.sleep(REALTOR_BATCH_DELAY)
-
-        # --- Pass 3: Email pattern guessing for agents with phone but no email ---
-        need_email_indices = [
-            i for i, r in enumerate(results)
-            if r.phone and not r.email
-        ]
-
-        if need_email_indices:
-            logger.info("Pass 3: Email guessing for %d agents", len(need_email_indices))
-
-            for batch_start in range(0, len(need_email_indices), EMAIL_BATCH_SIZE):
-                batch = need_email_indices[batch_start:batch_start + EMAIL_BATCH_SIZE]
-
-                emit_progress(agents[batch[0]].name, "email_guess")
-
-                async def guess_one(idx: int) -> None:
-                    agent = agents[idx]
-                    try:
-                        guessed = await asyncio.wait_for(
-                            guess_email(agent.name, agent.brokerage, client),
-                            timeout=AGENT_TIMEOUT,
-                        )
-                        if guessed:
-                            results[idx].email = guessed
-                            if results[idx].source:
-                                results[idx].source += "+email_guess"
-                            else:
-                                results[idx].source = "email_guess"
-                    except asyncio.TimeoutError:
-                        logger.warning("Pass 3 timed out for %s (>%ds)", agent.name, AGENT_TIMEOUT)
-                    except Exception as e:
-                        logger.debug("Email guess error for %s: %s", agent.name, e)
-
-                await asyncio.gather(*(guess_one(i) for i in batch))
-
-                emit_progress(agents[batch[-1]].name, "email_guess")
-
-                if batch_start + EMAIL_BATCH_SIZE < len(need_email_indices):
-                    await asyncio.sleep(EMAIL_BATCH_DELAY)
-
-    # Clean up temp error messages
-    for r in results:
-        if r.status == ContactStatus.ERROR and r.error_message and r.error_message.startswith("realtor_url:"):
-            r.error_message = ""
+    # ── Final cleanup ──
+    for idx, r in results.items():
+        if not r.has_contact and r.status != ContactStatus.ERROR:
             r.status = ContactStatus.NOT_FOUND
 
+    # Build ordered result list matching original input order
+    ordered = [results[a.row_index] for a in agents]
+
+    final_found = sum(1 for r in ordered if r.has_contact)
     logger.info(
-        "Pipeline complete: %d/%d found (%d%%)",
-        found_count, total,
-        round(found_count / total * 100) if total > 0 else 0,
+        "Pipeline complete: %d/%d found (%d%%) | cache hits: %d",
+        final_found, total,
+        round(final_found / total * 100) if total > 0 else 0,
+        cached_hits,
     )
 
-    return results
+    return ordered

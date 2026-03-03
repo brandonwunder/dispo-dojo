@@ -1,127 +1,237 @@
-"""Email pattern guesser — generate likely email addresses from agent name + brokerage."""
+"""Email pattern guessing + MX validation.
 
+For agents where we have a phone but no email, guess common email
+patterns from name + brokerage domain and validate via MX records.
+
+Expanded from 14 to 60+ brokerage domains. Uses dnspython for
+proper MX record validation.
+"""
+
+import asyncio
 import logging
 import re
-import socket
-from urllib.parse import quote_plus
 
-import httpx
-from bs4 import BeautifulSoup
-
-from .helpers import get_headers
+from ..models import AgentRow
 
 logger = logging.getLogger("agent_finder.searchers.email_guesser")
 
-KNOWN_DOMAINS = {
-    "keller williams": "kw.com",
-    "re/max": "remax.com",
-    "remax": "remax.com",
-    "coldwell banker": "coldwellbanker.com",
-    "century 21": "century21.com",
-    "exp realty": "exprealty.com",
-    "compass": "compass.com",
-    "sotheby": "sothebysrealty.com",
-    "berkshire hathaway": "bhhsres.com",
-    "howard hanna": "howardhanna.com",
-    "weichert": "weichert.com",
-    "long & foster": "longandfoster.com",
-    "exit": "exitrealty.com",
+# Expanded brokerage domain database (60+ entries)
+KNOWN_DOMAINS: dict[str, list[str]] = {
+    # Tier 1: Top franchises by volume
+    "keller williams": ["kw.com"],
+    "kw ": ["kw.com"],
+    "re/max": ["remax.com"],
+    "remax": ["remax.com"],
+    "re max": ["remax.com"],
+    "coldwell banker": ["coldwellbanker.com", "cbexchange.com"],
+    "coldwell": ["coldwellbanker.com"],
+    "compass": ["compass.com"],
+    "exp realty": ["exprealty.com"],
+    "exprealty": ["exprealty.com"],
+    "century 21": ["century21.com"],
+    "century21": ["century21.com"],
+    "berkshire hathaway": ["bhhsres.com"],
+    "bhhs": ["bhhsres.com"],
+    "redfin": ["redfin.com"],
+
+    # Tier 2: Medium franchises
+    "sotheby": ["sothebysrealty.com"],
+    "howard hanna": ["howardhanna.com"],
+    "weichert": ["weichert.com"],
+    "long & foster": ["longandfoster.com"],
+    "long and foster": ["longandfoster.com"],
+    "homesmart": ["hsmove.com"],
+    "exit realty": ["exitrealty.com"],
+    "exit real estate": ["exitrealty.com"],
+    "real broker": ["realbroker.com"],
+    "the real brokerage": ["realbroker.com"],
+    "realty one group": ["realtyonegroup.com"],
+    "realty one": ["realtyonegroup.com"],
+    "samson properties": ["samsonproperties.net"],
+    "douglas elliman": ["elliman.com"],
+    "united real estate": ["unitedrealestate.com"],
+    "windermere": ["windermere.com"],
+    "better homes": ["bhgre.com"],
+
+    # Tier 3: Regional / other
+    "allen tate": ["allentate.com"],
+    "crye-leike": ["crye-leike.com"],
+    "crye leike": ["crye-leike.com"],
+    "john l scott": ["johnlscott.com"],
+    "john l. scott": ["johnlscott.com"],
+    "baird & warner": ["bairdwarner.com"],
+    "baird and warner": ["bairdwarner.com"],
+    "watson realty": ["watsonrealtycorp.com"],
+    "era ": ["era.com"],
+    "lyon real": ["lyonre.com"],
+    "dream town": ["dreamtown.com"],
+    "reecenichols": ["reecenichols.com"],
+    "reece nichols": ["reecenichols.com"],
+    "lpt realty": ["lptrealty.com"],
+    "fathom realty": ["fathomrealty.com"],
+    "nextage": ["nextage.com"],
+    "iron valley": ["ironvalleyrealestate.com"],
+    "epique realty": ["epiquerealty.com"],
+    "nexthome": ["nexthome.com"],
+    "engel & volkers": ["evrealestate.com"],
+    "engel and volkers": ["evrealestate.com"],
+    "movoto": ["movoto.com"],
+    "charles rutenberg": ["crrealty.com"],
+    "real living": ["realliving.com"],
+    "benchmark": ["benchmarkrealty.com"],
+    "corcoran": ["corcoran.com"],
+    "christie": ["christiesrealestate.com"],
+    "harry norman": ["harrynorman.com"],
+    "ebby halliday": ["ebby.com"],
+    "alain pinel": ["apr.com"],
+    "william raveis": ["raveis.com"],
+    "nest seekers": ["nestseekers.com"],
+    "halstead": ["halstead.com"],
 }
 
 
-def _guess_domain(brokerage: str) -> str | None:
-    lower = brokerage.lower()
-    for key, domain in KNOWN_DOMAINS.items():
-        if key in lower:
-            return domain
-    cleaned = re.sub(r'\b(llc|inc|corp|group|realty|real estate|properties|brokerage)\b', '', lower, flags=re.IGNORECASE)
-    cleaned = re.sub(r'[^a-z\s]', '', cleaned).strip()
-    words = cleaned.split()
-    if words:
-        return "".join(words) + ".com"
-    return None
+def _find_domains(brokerage: str) -> list[str]:
+    """Find known email domains for a brokerage name."""
+    if not brokerage:
+        return []
+    normalized = brokerage.lower().strip()
+    for pattern, domains in KNOWN_DOMAINS.items():
+        if pattern in normalized:
+            return domains
+    return []
 
 
-def _check_mx_record(domain: str) -> bool:
-    try:
-        socket.getaddrinfo(domain, 25, socket.AF_INET, socket.SOCK_STREAM)
-        return True
-    except socket.gaierror:
-        pass
-    try:
-        import subprocess
-        result = subprocess.run(
-            ["nslookup", "-type=MX", domain],
-            capture_output=True, text=True, timeout=5,
-        )
-        return "mail exchanger" in result.stdout.lower() or "MX" in result.stdout
-    except Exception:
-        return False
+def _guess_domain_from_name(brokerage: str) -> str | None:
+    """Generate a plausible domain from the brokerage name."""
+    if not brokerage:
+        return None
+    cleaned = re.sub(
+        r'\b(llc|inc|corp|group|realty|real estate|properties|brokerage|'
+        r'associates|company|co|team|advisors|services)\b',
+        '', brokerage, flags=re.IGNORECASE
+    )
+    cleaned = re.sub(r'[^a-zA-Z\s]', '', cleaned).strip()
+    parts = cleaned.split()
+    if not parts:
+        return None
+    domain = "".join(parts).lower() + ".com"
+    return domain
 
 
-def generate_email_patterns(name: str, domain: str) -> list[str]:
+def _generate_patterns(name: str, domain: str) -> list[str]:
+    """Generate common email address patterns."""
     parts = name.lower().split()
-    if len(parts) < 2:
-        first = parts[0] if parts else "agent"
-        last = ""
-    else:
-        first = parts[0]
-        last = parts[-1]
+    titles = {"mr", "mrs", "ms", "dr", "jr", "sr", "iii", "iv", "ii", "pa"}
+    parts = [p.strip(".") for p in parts if p.strip(".").lower() not in titles]
+    if not parts:
+        return []
 
-    first = re.sub(r'[^a-z]', '', first)
-    last = re.sub(r'[^a-z]', '', last)
+    first = re.sub(r'[^a-z]', '', parts[0])
+    last = re.sub(r'[^a-z]', '', parts[-1]) if len(parts) > 1 else ""
+
+    if not first:
+        return []
 
     patterns = []
-    if first and last:
+    if last:
         patterns.extend([
-            f"{first}.{last}@{domain}",
-            f"{first}{last}@{domain}",
-            f"{first[0]}{last}@{domain}",
-            f"{first}@{domain}",
-            f"{first}{last[0]}@{domain}",
+            f"{first}.{last}@{domain}",       # john.smith@
+            f"{first}{last}@{domain}",         # johnsmith@
+            f"{first[0]}{last}@{domain}",      # jsmith@
+            f"{first}@{domain}",               # john@
+            f"{first}{last[0]}@{domain}",      # johns@
+            f"{last}.{first}@{domain}",        # smith.john@
         ])
-    elif first:
+    else:
         patterns.append(f"{first}@{domain}")
 
     return patterns
 
 
-async def guess_email(
-    name: str,
-    brokerage: str,
-    client: httpx.AsyncClient,
-) -> str:
-    if not name or not brokerage:
-        return ""
+async def _check_mx(domain: str) -> bool:
+    """Check if a domain has MX records using dnspython."""
+    loop = asyncio.get_event_loop()
+    try:
+        return await loop.run_in_executor(None, lambda: _resolve_mx(domain))
+    except Exception:
+        return False
 
-    domain = _guess_domain(brokerage)
 
-    if not domain:
+def _resolve_mx(domain: str) -> bool:
+    """Synchronous MX record check."""
+    try:
+        import dns.resolver
+        answers = dns.resolver.resolve(domain, 'MX')
+        return len(answers) > 0
+    except Exception:
+        # Fallback to socket
         try:
-            query = f'"{brokerage}" real estate official website'
-            url = f"https://www.google.com/search?q={quote_plus(query)}&num=5"
-            headers = get_headers()
-            resp = await client.get(url, headers=headers, timeout=10)
+            import socket
+            socket.getaddrinfo(domain, 25, socket.AF_INET, socket.SOCK_STREAM)
+            return True
+        except Exception:
+            return False
 
-            if resp.status_code == 200:
-                soup = BeautifulSoup(resp.text, "lxml")
-                for a_tag in soup.find_all("a", href=True):
-                    href = a_tag["href"]
-                    import urllib.parse
-                    parsed = urllib.parse.urlparse(href)
-                    if parsed.netloc and "google" not in parsed.netloc:
-                        domain = parsed.netloc.replace("www.", "")
-                        break
-        except Exception as e:
-            logger.debug("Domain lookup failed for %s: %s", brokerage, e)
 
-    if not domain:
-        return ""
+async def guess_email(name: str, brokerage: str) -> str | None:
+    """Guess an agent's email from their name and brokerage.
 
-    has_mx = _check_mx_record(domain)
-    if not has_mx:
-        logger.debug("Domain %s has no MX records", domain)
-        return ""
+    Returns the best-guess email if the domain has valid MX records,
+    or None if we can't determine a valid email.
+    """
+    if not name or not brokerage:
+        return None
 
-    patterns = generate_email_patterns(name, domain)
-    return patterns[0] if patterns else ""
+    domains = _find_domains(brokerage)
+
+    if not domains:
+        guessed = _guess_domain_from_name(brokerage)
+        if guessed:
+            domains = [guessed]
+
+    if not domains:
+        return None
+
+    for domain in domains:
+        has_mx = await _check_mx(domain)
+        if has_mx:
+            patterns = _generate_patterns(name, domain)
+            if patterns:
+                return patterns[0]
+
+    return None
+
+
+async def guess_batch(
+    agents: list[AgentRow],
+    on_result=None,
+) -> dict[int, str]:
+    """Guess emails for a batch of agents. Returns {row_index: email}."""
+    results: dict[int, str] = {}
+    mx_cache: dict[str, bool] = {}
+
+    for agent in agents:
+        domains = _find_domains(agent.brokerage)
+        if not domains:
+            guessed = _guess_domain_from_name(agent.brokerage)
+            if guessed:
+                domains = [guessed]
+
+        email = None
+        for domain in domains:
+            if domain not in mx_cache:
+                mx_cache[domain] = await _check_mx(domain)
+
+            if mx_cache[domain]:
+                patterns = _generate_patterns(agent.name, domain)
+                if patterns:
+                    email = patterns[0]
+                    break
+
+        if email:
+            results[agent.row_index] = email
+
+        if on_result:
+            on_result(agent, email)
+
+    return results
