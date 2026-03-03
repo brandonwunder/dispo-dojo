@@ -2,12 +2,15 @@
 
 import asyncio
 import json
+import logging
 import re as _re
 import uuid
 from datetime import datetime
 from pathlib import Path
 
 import os
+
+logger = logging.getLogger("agent_finder.app")
 
 from fastapi import FastAPI, APIRouter, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,6 +69,7 @@ def _save_jobs():
             "summary": job["summary"],
             "filename": job.get("filename", ""),
             "created_at": job.get("created_at", ""),
+            "resume_count": job.get("resume_count", 0),
         }
     JOBS_FILE.write_text(json.dumps(saveable, indent=2), encoding="utf-8")
 
@@ -79,12 +83,13 @@ def _load_jobs():
         saved = json.loads(JOBS_FILE.read_text(encoding="utf-8"))
         for jid, data in saved.items():
             restored = {**data, "progress": [], "preview_rows": None}
+            restored["resume_count"] = data.get("resume_count", 0)
             if data.get("status") in ("running", "queued"):
-                # Job was interrupted by a server restart — show in history as interrupted
+                # Job was interrupted by a server restart (likely OOM kill)
                 restored["status"] = "interrupted"
                 restored["error"] = (
                     "This job was interrupted because the server restarted. "
-                    "Re-upload the file to run again."
+                    "It will auto-resume from the cache."
                 )
             jobs[jid] = restored
     except (json.JSONDecodeError, KeyError):
@@ -94,18 +99,58 @@ def _load_jobs():
 @app.on_event("startup")
 async def startup():
     _load_jobs()
+    # Schedule auto-resume for interrupted jobs (e.g., after OOM crash)
+    asyncio.create_task(_auto_resume_interrupted())
+
+
+async def _auto_resume_interrupted():
+    """Auto-resume interrupted jobs after server restart (e.g., OOM crash).
+
+    The cache DB persists across container restarts, so already-processed
+    addresses will be skipped automatically.  Max 5 auto-resume attempts
+    per job to prevent infinite crash loops.
+    """
+    await asyncio.sleep(3)  # Let the server fully initialize
+    for jid, job in list(jobs.items()):
+        if job["status"] != "interrupted":
+            continue
+        if job.get("resume_count", 0) >= 5:
+            logger.warning("Skipping auto-resume for job %s — too many retries", jid)
+            continue
+        upload_path = Path(job.get("upload_path", ""))
+        if not upload_path.exists():
+            continue
+        try:
+            properties = read_input(str(upload_path))
+            if not properties:
+                continue
+            job["status"] = "running"
+            job["progress"] = []
+            job["error"] = None
+            job["resume_count"] = job.get("resume_count", 0) + 1
+            _save_jobs()
+            task = asyncio.create_task(_run_pipeline(jid, properties))
+            _tasks[jid] = task
+            logger.info(
+                "Auto-resumed interrupted job %s (%d addresses, attempt %d)",
+                jid, len(properties), job["resume_count"],
+            )
+        except Exception as e:
+            logger.error("Auto-resume failed for job %s: %s", jid, e)
 
 
 @api.get("/version")
 async def version():
     """Return deploy version so we can confirm which code is running."""
     return {
-        "version": "2.3.0-gc-fix",
+        "version": "3.0.0-lite-mode",
         "address_timeout": 45,
         "scraper_timeout": 15,
         "retry_pass_timeout": 120,
         "max_concurrency": 5,
-        "batch_size": 3,
+        "lite_mode_threshold": 20,
+        "lite_batch_size": 1,
+        "full_batch_size": 3,
     }
 
 

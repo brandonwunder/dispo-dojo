@@ -3,6 +3,7 @@
 import asyncio
 import gc
 import logging
+import os
 from typing import Callable, Optional
 
 import httpx
@@ -20,12 +21,30 @@ from .enrichment import enrich_contact_info
 from .models import AgentInfo, LookupStatus, Property, ScrapeResult
 from .scrapers.base import BaseScraper
 from .scrapers.redfin import RedfinScraper
-from .scrapers.homeharvest_scraper import HomeHarvestScraper
+# HomeHarvestScraper imported lazily inside _build_scrapers to avoid loading
+# pandas/numpy (~120MB) when it isn't needed (lite mode).
 from .scrapers.realtor import RealtorScraper
 from .scrapers.google_search import GoogleSearchScraper
 
 logger = logging.getLogger("agent_finder.pipeline")
 console = Console()
+
+# Jobs with more addresses than this use memory-efficient lite mode.
+# Lite mode: Redfin + Realtor only (no pandas), batch size 1, no retry pass.
+# This keeps RAM well under 512MB on Render free tier.
+LITE_MODE_THRESHOLD = 20
+
+
+def _get_rss_mb() -> float:
+    """Return current process RSS in MB (Linux /proc, else 0)."""
+    try:
+        with open(f"/proc/{os.getpid()}/status") as f:
+            for line in f:
+                if line.startswith("VmRSS:"):
+                    return int(line.split()[1]) / 1024
+    except (OSError, ValueError):
+        pass
+    return 0.0
 
 
 class AgentFinderPipeline:
@@ -61,6 +80,7 @@ class AgentFinderPipeline:
         self.enrich = enrich
         self.global_semaphore = asyncio.Semaphore(max_concurrent)
         self.progress_callback = progress_callback
+        self._lite_mode = False
 
         # Stats
         self._total = 0
@@ -83,6 +103,20 @@ class AgentFinderPipeline:
         Returns a ScrapeResult for each property (in the same order).
         """
         self._total = len(properties)
+
+        # Auto-detect lite mode for large jobs
+        self._lite_mode = self._total > LITE_MODE_THRESHOLD
+        if self._lite_mode:
+            logger.info(
+                "Lite mode: %d addresses (threshold %d) — Redfin+Realtor only, "
+                "batch=1, no retry pass, no enrichment",
+                self._total, LITE_MODE_THRESHOLD,
+            )
+            console.print(
+                f"[yellow]Lite mode enabled for {self._total} addresses "
+                f"(memory-safe for 512MB)[/yellow]"
+            )
+
         await self.cache.initialize()
 
         # Check cache for already-resolved addresses
@@ -133,18 +167,28 @@ class AgentFinderPipeline:
             f"({self._cached} cached, {len(pending_props)} remaining)[/blue]"
         )
 
-        # Create HTTP client and scrapers (connection pool sized for 512MB RAM)
+        rss = _get_rss_mb()
+        if rss:
+            logger.info("RSS before scraping: %.0f MB", rss)
+
+        # HTTP client — http2 disabled to save h2 library memory overhead
+        max_conn = 5 if self._lite_mode else 15
+        keepalive = 2 if self._lite_mode else 5
+        batch_size = 1 if self._lite_mode else 3
+
         async with httpx.AsyncClient(
-            http2=True,
             follow_redirects=True,
-            limits=httpx.Limits(max_connections=20, max_keepalive_connections=5),
+            limits=httpx.Limits(
+                max_connections=max_conn,
+                max_keepalive_connections=keepalive,
+            ),
         ) as client:
             scrapers = self._build_scrapers(client)
 
             if self.progress_callback:
                 # Web mode: process in batches to stay within memory limits
                 scrape_results = await self._process_in_batches(
-                    pending_props, scrapers, client, None, None
+                    pending_props, scrapers, client, None, None, batch_size
                 )
             else:
                 # CLI mode: use Rich progress bar + batches
@@ -161,7 +205,8 @@ class AgentFinderPipeline:
                     )
 
                     scrape_results = await self._process_in_batches(
-                        pending_props, scrapers, client, progress, task_id
+                        pending_props, scrapers, client, progress, task_id,
+                        batch_size,
                     )
 
             # Merge pending results back into the full results list
@@ -184,73 +229,72 @@ class AgentFinderPipeline:
             # Filter out any remaining None placeholders
             results = [r for r in results if r is not None]
 
-            # ── Second-pass retry for NOT_FOUND addresses (with overall timeout) ──
-            not_found_indices = [
-                i for i, r in enumerate(results)
-                if r is not None and r.status == LookupStatus.NOT_FOUND
-            ]
+            # ── Second-pass retry (SKIPPED in lite mode to save memory) ──
+            if not self._lite_mode:
+                not_found_indices = [
+                    i for i, r in enumerate(results)
+                    if r is not None and r.status == LookupStatus.NOT_FOUND
+                ]
 
-            if not_found_indices:
-                logger.info(
-                    "Retrying %d not-found addresses with simplified queries (max %ds)",
-                    len(not_found_indices), self.RETRY_PASS_TIMEOUT,
-                )
-                if self.progress_callback:
-                    self.progress_callback({
-                        "completed": self._cached + self._found + self._partial + self._not_found + self._errors,
-                        "total": self._total,
-                        "cached": self._cached,
-                        "found": self._found,
-                        "partial": self._partial,
-                        "not_found": self._not_found,
-                        "errors": self._errors,
-                        "current_address": "Retrying not-found addresses...",
-                        "current_status": "retrying",
-                    })
-
-                retry_tasks = []
-                for idx in not_found_indices:
-                    retry_tasks.append(
-                        self._retry_with_variants(results[idx].property, scrapers, client)
+                if not_found_indices:
+                    logger.info(
+                        "Retrying %d not-found addresses with simplified queries (max %ds)",
+                        len(not_found_indices), self.RETRY_PASS_TIMEOUT,
                     )
+                    if self.progress_callback:
+                        self.progress_callback({
+                            "completed": self._cached + self._found + self._partial + self._not_found + self._errors,
+                            "total": self._total,
+                            "cached": self._cached,
+                            "found": self._found,
+                            "partial": self._partial,
+                            "not_found": self._not_found,
+                            "errors": self._errors,
+                            "current_address": "Retrying not-found addresses...",
+                            "current_status": "retrying",
+                        })
 
-                # Hard cap the entire retry pass so it can't run forever
-                try:
-                    retry_results = await asyncio.wait_for(
-                        asyncio.gather(*retry_tasks, return_exceptions=True),
-                        timeout=self.RETRY_PASS_TIMEOUT,
-                    )
-                except asyncio.TimeoutError:
-                    logger.warning(
-                        "Retry pass timed out after %ds — skipping remaining retries",
-                        self.RETRY_PASS_TIMEOUT,
-                    )
-                    retry_results = []
+                    retry_tasks = []
+                    for idx in not_found_indices:
+                        retry_tasks.append(
+                            self._retry_with_variants(results[idx].property, scrapers, client)
+                        )
 
-                recovered = 0
-                for list_idx, retry_result in zip(not_found_indices, retry_results):
-                    if isinstance(retry_result, Exception):
-                        continue
-                    if (retry_result and retry_result.agent_info
-                            and retry_result.agent_info.agent_name):
-                        results[list_idx] = retry_result
-                        self._not_found -= 1
-                        if retry_result.agent_info.has_contact_info:
-                            self._found += 1
-                        else:
-                            self._partial += 1
-                        recovered += 1
+                    # Hard cap the entire retry pass so it can't run forever
+                    try:
+                        retry_results = await asyncio.wait_for(
+                            asyncio.gather(*retry_tasks, return_exceptions=True),
+                            timeout=self.RETRY_PASS_TIMEOUT,
+                        )
+                    except asyncio.TimeoutError:
+                        logger.warning(
+                            "Retry pass timed out after %ds — skipping remaining retries",
+                            self.RETRY_PASS_TIMEOUT,
+                        )
+                        retry_results = []
 
-                if recovered:
-                    logger.info("Recovered %d addresses on retry pass", recovered)
-                    console.print(
-                        f"[green]Retry pass recovered {recovered} additional addresses[/green]"
-                    )
+                    recovered = 0
+                    for list_idx, retry_result in zip(not_found_indices, retry_results):
+                        if isinstance(retry_result, Exception):
+                            continue
+                        if (retry_result and retry_result.agent_info
+                                and retry_result.agent_info.agent_name):
+                            results[list_idx] = retry_result
+                            self._not_found -= 1
+                            if retry_result.agent_info.has_contact_info:
+                                self._found += 1
+                            else:
+                                self._partial += 1
+                            recovered += 1
+
+                    if recovered:
+                        logger.info("Recovered %d addresses on retry pass", recovered)
+                        console.print(
+                            f"[green]Retry pass recovered {recovered} additional addresses[/green]"
+                        )
 
         self._print_summary()
         return results
-
-    BATCH_SIZE = 3  # addresses per batch — keeps memory under 512MB on Render free tier
 
     async def _process_in_batches(
         self,
@@ -259,20 +303,26 @@ class AgentFinderPipeline:
         client: httpx.AsyncClient,
         progress: Optional[Progress],
         task_id,
+        batch_size: int = 3,
     ) -> list:
         """Process addresses in small batches to stay within memory limits."""
         all_results = []
-        for i in range(0, len(props), self.BATCH_SIZE):
-            batch = props[i : i + self.BATCH_SIZE]
+        for i in range(0, len(props), batch_size):
+            batch = props[i : i + batch_size]
             tasks = [
                 self._process_one_with_timeout(prop, scrapers, client, progress, task_id)
                 for prop in batch
             ]
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
             all_results.extend(batch_results)
-            # Force garbage collection between batches to free pandas DataFrames
-            # and HTTP response bodies — critical for 512MB Render free tier
+            # Force garbage collection between batches to free response bodies
+            # and parsed DOM trees — critical for 512MB Render free tier
             gc.collect()
+            # Log memory every 50 addresses in lite mode
+            if self._lite_mode and (i + batch_size) % 50 == 0:
+                rss = _get_rss_mb()
+                if rss:
+                    logger.info("RSS after %d addresses: %.0f MB", i + batch_size, rss)
         return all_results
 
     async def _process_one_with_timeout(
@@ -385,8 +435,9 @@ class AgentFinderPipeline:
             # Compute confidence based on source agreement
             confidence, verified = self._compute_confidence(source_agents)
 
-            # Enrich contact info if we found an agent but missing details
-            if agent_info and not agent_info.is_complete and self.enrich:
+            # Enrich contact info (skip in lite mode to save memory + time)
+            if (agent_info and not agent_info.is_complete
+                    and self.enrich and not self._lite_mode):
                 try:
                     agent_info = await asyncio.wait_for(
                         enrich_contact_info(agent_info, client),
@@ -549,18 +600,22 @@ class AgentFinderPipeline:
         if "redfin" in self.enabled_sources:
             scrapers.append(RedfinScraper(client))
 
-        if "homeharvest" in self.enabled_sources:
+        # HomeHarvest: SKIP in lite mode — imports pandas/numpy (~120MB RAM)
+        if not self._lite_mode and "homeharvest" in self.enabled_sources:
+            from .scrapers.homeharvest_scraper import HomeHarvestScraper
             scrapers.append(HomeHarvestScraper(client))
 
         if "realtor" in self.enabled_sources:
             scrapers.append(RealtorScraper(client))
 
-        if "zillow" in self.enabled_sources:
-            try:
-                from .scrapers.zillow import ZillowScraper
-                scrapers.append(ZillowScraper(client))
-            except ImportError:
-                logger.info("Zillow scraper not available")
+        # Zillow: SKIP in lite mode — heavy HTML parsing with BeautifulSoup
+        if not self._lite_mode:
+            if "zillow" in self.enabled_sources:
+                try:
+                    from .scrapers.zillow import ZillowScraper
+                    scrapers.append(ZillowScraper(client))
+                except ImportError:
+                    logger.info("Zillow scraper not available")
 
         if "google" in self.enabled_sources or "google_search" in self.enabled_sources:
             gs = GoogleSearchScraper(
@@ -569,6 +624,8 @@ class AgentFinderPipeline:
             if gs.is_configured:
                 scrapers.append(gs)
 
+        scraper_names = [s.name for s in scrapers]
+        logger.info("Active scrapers: %s", scraper_names)
         return scrapers
 
     def _print_summary(self):
@@ -592,3 +649,7 @@ class AgentFinderPipeline:
         for name, is_open in self._circuit_open.items():
             if is_open:
                 console.print(f"  [red]Circuit breaker tripped: {name}[/red]")
+
+        rss = _get_rss_mb()
+        if rss:
+            console.print(f"  [dim]Final RSS: {rss:.0f} MB[/dim]")

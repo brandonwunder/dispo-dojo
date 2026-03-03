@@ -89,13 +89,14 @@ class ZillowScraper(BaseScraper):
 
         # Fallback: find links to /homedetails/
         links = soup.select('a[href*="/homedetails/"]')
+        detail_href = None
         if links:
-            href = links[0].get("href", "")
-            if href.startswith("/"):
-                href = f"https://www.zillow.com{href}"
-            return href
+            detail_href = links[0].get("href", "")
+            if detail_href.startswith("/"):
+                detail_href = f"https://www.zillow.com{detail_href}"
 
-        return None
+        del soup  # Free DOM tree before returning
+        return detail_href
 
     async def _fetch_detail_page(self, url: str) -> Optional[AgentInfo]:
         """Fetch a Zillow property page and extract agent info."""
@@ -110,6 +111,7 @@ class ZillowScraper(BaseScraper):
 
     def _parse_zillow_page(self, html: str, listing_url: str) -> Optional[AgentInfo]:
         """Parse agent info from Zillow's page data."""
+        # Extract all needed data from soup, then free it immediately
         soup = BeautifulSoup(html, "lxml")
 
         agent_name = ""
@@ -119,9 +121,21 @@ class ZillowScraper(BaseScraper):
 
         # Try __NEXT_DATA__
         script = soup.find("script", id="__NEXT_DATA__")
-        if script:
+        next_data_text = script.string if script else None
+
+        # Collect all application/json script texts before freeing soup
+        json_script_texts = []
+        if not next_data_text:
+            json_script_texts = [
+                tag.string or ""
+                for tag in soup.find_all("script", type="application/json")
+            ]
+
+        del soup  # Free DOM tree — all data extracted above
+
+        if next_data_text:
             try:
-                data = json.loads(script.string)
+                data = json.loads(next_data_text)
                 props = data.get("props", {}).get("pageProps", {})
 
                 # Navigate to property data
@@ -164,9 +178,9 @@ class ZillowScraper(BaseScraper):
 
         # Fallback: search all application/json script tags
         if not agent_name:
-            for script_tag in soup.find_all("script", type="application/json"):
+            for script_text in json_script_texts:
                 try:
-                    sdata = json.loads(script_tag.string or "")
+                    sdata = json.loads(script_text)
                     found_name = self._deep_find(sdata, "agentName")
                     if found_name:
                         agent_name = found_name
@@ -182,9 +196,9 @@ class ZillowScraper(BaseScraper):
         # Extract list date and days on market from Zillow data
         list_date = ""
         days_on_market = ""
-        if script:
+        if next_data_text:
             try:
-                zdata = json.loads(script.string)
+                zdata = json.loads(next_data_text)
                 zprop = (zdata.get("props", {}).get("pageProps", {})
                          .get("property", {})) or {}
                 list_date = (zprop.get("datePosted", "")

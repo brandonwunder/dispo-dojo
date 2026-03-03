@@ -110,9 +110,11 @@ class RealtorScraper(BaseScraper):
             soup = BeautifulSoup(response.text, "lxml")
             links = soup.select('a[href*="/realestateandhomes-detail/"]')
             if not links:
+                del soup  # Free DOM tree
                 return None
 
             detail_url = links[0].get("href", "")
+            del soup  # Free DOM tree before next fetch
             if detail_url.startswith("/"):
                 detail_url = f"{REALTOR_BASE_URL}{detail_url}"
 
@@ -127,12 +129,16 @@ class RealtorScraper(BaseScraper):
         soup = BeautifulSoup(html, "lxml")
         script = soup.find("script", id="__NEXT_DATA__")
         if not script:
+            del soup  # Free DOM tree
             return None
 
         try:
             data = json.loads(script.string)
         except (json.JSONDecodeError, TypeError):
+            del soup  # Free DOM tree
             return None
+
+        del soup  # Free DOM tree — we only need the parsed JSON from here
 
         # Navigate the nested structure to find agent info
         try:
