@@ -246,6 +246,94 @@ async def cancel_job(job_id: str):
     return {"ok": True}
 
 
+# ── Diagnostic endpoint — test search from this server ──
+
+@api.get("/test-search")
+async def test_search(name: str = "Ken Puckett", brokerage: str = "Reecenichols"):
+    """Test DDG search + email guess from this server to diagnose cloud IP issues."""
+    import traceback
+    from .models import AgentRow
+    from .searchers.ddg_search import search_one as ddg_search_one
+    from .searchers.email_guesser import guess_email, _find_domains
+
+    agent = AgentRow(name=name, brokerage=brokerage, row_index=0)
+    results = {"agent": name, "brokerage": brokerage, "tests": {}}
+
+    # Test 1: DDG search
+    try:
+        ddg_result = await ddg_search_one(agent)
+        results["tests"]["ddg_search"] = {
+            "status": "ok",
+            "phone": ddg_result.phone,
+            "email": ddg_result.email,
+            "source": ddg_result.source,
+            "found": ddg_result.has_contact,
+        }
+    except Exception as e:
+        results["tests"]["ddg_search"] = {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
+    # Test 2: Email domain lookup
+    try:
+        domains = _find_domains(brokerage)
+        email = await guess_email(name, brokerage)
+        results["tests"]["email_guess"] = {
+            "status": "ok",
+            "domains_found": domains,
+            "guessed_email": email,
+        }
+    except Exception as e:
+        results["tests"]["email_guess"] = {
+            "status": "error",
+            "error": str(e),
+        }
+
+    # Test 3: Raw DDG library test
+    try:
+        import asyncio
+        loop = asyncio.get_event_loop()
+
+        def _raw_ddg():
+            from ddgs import DDGS
+            with DDGS(timeout=15) as ddgs:
+                return list(ddgs.text(f'"{name}" real estate agent phone', max_results=3))
+
+        raw = await loop.run_in_executor(None, _raw_ddg)
+        results["tests"]["raw_ddg"] = {
+            "status": "ok",
+            "result_count": len(raw),
+            "results": [{"title": r.get("title", ""), "body": r.get("body", "")[:200]} for r in raw],
+        }
+    except Exception as e:
+        results["tests"]["raw_ddg"] = {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
+    # Test 4: Direct HTTP to a brokerage site
+    try:
+        import httpx
+        from .searchers.helpers import get_headers
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            resp = await client.get("https://www.remax.com/", headers=get_headers(), timeout=10)
+            results["tests"]["http_brokerage"] = {
+                "status": "ok",
+                "remax_status_code": resp.status_code,
+                "content_length": len(resp.text),
+            }
+    except Exception as e:
+        results["tests"]["http_brokerage"] = {
+            "status": "error",
+            "error": str(e),
+        }
+
+    return results
+
+
 # ── Comps endpoint (used by Underwriting page — keep from old code) ──
 
 @api.get("/comps")
@@ -360,9 +448,10 @@ async def _run_job(job_id: str, agents):
 
     except Exception as e:
         import traceback
-        traceback.print_exc()
+        tb = traceback.format_exc()
+        logger.error("Job %s failed: %s\n%s", job_id, e, tb)
         job["status"] = "error"
-        job["error"] = str(e)
+        job["error"] = f"{e}\n\nTraceback:\n{tb}"
         _save_jobs()
 
     finally:
