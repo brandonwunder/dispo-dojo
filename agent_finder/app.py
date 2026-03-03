@@ -184,11 +184,16 @@ async def test_scrape(address: str = "123 Main St, Austin, TX 78701"):
         zip_code=zip_code,
     )
 
+    from .utils import get_rotating_headers, get_api_headers
+    from urllib.parse import quote_plus, quote
+
     results = {}
+    connectivity = {}
     async with httpx.AsyncClient(
         follow_redirects=True,
         limits=httpx.Limits(max_connections=10, max_keepalive_connections=3),
     ) as client:
+        # Test each scraper
         for name, ScraperCls in [
             ("redfin", RedfinScraper),
             ("realtor", RealtorScraper),
@@ -221,40 +226,37 @@ async def test_scrape(address: str = "123 Main St, Austin, TX 78701"):
                     "elapsed_seconds": round(time.time() - start, 2),
                 }
 
-    # Also check cache stats
+        # Raw HTTP connectivity test — see actual status codes
+        query = prop.search_query
+        test_urls = {
+            "redfin_autocomplete": f"https://www.redfin.com/stingray/do/location-autocomplete?location={quote(query)}&start=0&count=5&v=2",
+            "realtor_search": f"https://www.realtor.com/realestateandhomes-search/{query.replace(' ', '-').replace(',', '')}",
+            "zillow_search": f"https://www.zillow.com/homes/{quote_plus(query)}_rb/",
+        }
+        for label, url in test_urls.items():
+            try:
+                headers = get_api_headers() if "redfin" in label else get_rotating_headers()
+                if "redfin" in label:
+                    headers["Referer"] = "https://www.redfin.com"
+                elif "realtor" in label:
+                    headers["Referer"] = "https://www.realtor.com"
+                elif "zillow" in label:
+                    headers["Referer"] = "https://www.zillow.com/"
+                resp = await client.get(url, headers=headers, timeout=15)
+                body_preview = resp.text[:500] if resp.text else ""
+                connectivity[label] = {
+                    "status_code": resp.status_code,
+                    "final_url": str(resp.url),
+                    "content_length": len(resp.text),
+                    "body_preview": body_preview,
+                }
+            except Exception as e:
+                connectivity[label] = {"error": f"{type(e).__name__}: {e}"}
+
+    # Cache stats
     cache = ScrapeCache(db_path=str(UPLOAD_DIR / "web_cache.db"))
     await cache.initialize()
     cache_stats = await cache.stats()
-
-    # Raw HTTP connectivity test to each site
-    from .utils import get_rotating_headers, get_api_headers
-    from urllib.parse import quote_plus, quote
-    connectivity = {}
-    query = prop.search_query
-    test_urls = {
-        "redfin_autocomplete": f"https://www.redfin.com/stingray/do/location-autocomplete?location={quote(query)}&start=0&count=5&v=2",
-        "realtor_search": f"https://www.realtor.com/realestateandhomes-search/{query.replace(' ', '-').replace(',', '')}",
-        "zillow_search": f"https://www.zillow.com/homes/{quote_plus(query)}_rb/",
-    }
-    for label, url in test_urls.items():
-        try:
-            headers = get_api_headers() if "redfin" in label else get_rotating_headers()
-            if "redfin" in label:
-                headers["Referer"] = "https://www.redfin.com"
-            elif "realtor" in label:
-                headers["Referer"] = "https://www.realtor.com"
-            elif "zillow" in label:
-                headers["Referer"] = "https://www.zillow.com/"
-            resp = await client.get(url, headers=headers, timeout=15)
-            body_preview = resp.text[:300] if resp.text else ""
-            connectivity[label] = {
-                "status_code": resp.status_code,
-                "url": str(resp.url),
-                "content_length": len(resp.text),
-                "body_preview": body_preview,
-            }
-        except Exception as e:
-            connectivity[label] = {"error": f"{type(e).__name__}: {e}"}
 
     return {
         "test_address": address,
