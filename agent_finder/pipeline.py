@@ -1,659 +1,150 @@
-"""Async pipeline orchestrator - coordinates scrapers, caching, and enrichment."""
+"""Pipeline orchestrator — runs the 3-pass search for each agent."""
 
 import asyncio
-import gc
 import logging
-import os
-from typing import Callable, Optional
+from typing import Callable
 
 import httpx
-from rich.progress import (
-    Progress, SpinnerColumn, BarColumn, TextColumn,
-    TimeRemainingColumn, MofNCompleteColumn,
-)
-from rich.console import Console
 
-from .cache import ScrapeCache
-from .config import (
-    SOURCE_PRIORITY, MAX_GLOBAL_CONCURRENCY, CACHE_DB_PATH, CACHE_TTL_DAYS,
-)
-from .enrichment import enrich_contact_info
-from .models import AgentInfo, LookupStatus, Property, ScrapeResult
-from .scrapers.base import BaseScraper
-from .scrapers.redfin import RedfinScraper
-# HomeHarvestScraper imported lazily inside _build_scrapers to avoid loading
-# pandas/numpy (~120MB) when it isn't needed (lite mode).
-from .scrapers.realtor import RealtorScraper
-from .scrapers.google_search import GoogleSearchScraper
+from .models import AgentRow, ContactResult, ContactStatus
+from .searchers.google_search import search_google
+from .searchers.realtor_profile import search_realtor_profile
+from .searchers.email_guesser import guess_email
+from .searchers.helpers import random_delay
 
 logger = logging.getLogger("agent_finder.pipeline")
-console = Console()
-
-# Jobs with more addresses than this use memory-efficient lite mode.
-# Lite mode: Redfin + Realtor + Zillow (no pandas/HomeHarvest), batch size 3.
-# This keeps RAM well under 512MB on Render free tier.
-LITE_MODE_THRESHOLD = 20
 
 
-def _get_rss_mb() -> float:
-    """Return current process RSS in MB (Linux /proc, else 0)."""
-    try:
-        with open(f"/proc/{os.getpid()}/status") as f:
-            for line in f:
-                if line.startswith("VmRSS:"):
-                    return int(line.split()[1]) / 1024
-    except (OSError, ValueError):
-        pass
-    return 0.0
+async def run_pipeline(
+    agents: list[AgentRow],
+    progress_callback: Callable[[dict], None] | None = None,
+) -> list[ContactResult]:
+    """Run the 3-pass search pipeline on a list of agents.
 
-
-class AgentFinderPipeline:
+    Pass 1: Google search (all agents)
+    Pass 2: Realtor.com profile (agents not found in Pass 1)
+    Pass 3: Email pattern guessing (agents with no email)
     """
-    Main pipeline that orchestrates the scraping process.
+    total = len(agents)
+    results: list[ContactResult] = [ContactResult(agent=a) for a in agents]
 
-    Merge-based waterfall: tries each source in priority order,
-    merging results across sources for better coverage and verification.
-    """
+    found_count = 0
+    completed_count = 0
 
-    # Hard timeouts (generous when using ScraperAPI proxy)
-    ADDRESS_TIMEOUT = 90       # seconds — max wall-time per address
-    SCRAPER_TIMEOUT = 35       # seconds — max wall-time per individual scraper (proxy adds latency)
-    ENRICHMENT_TIMEOUT = 15    # seconds — max wall-time for contact enrichment
-    RETRY_PASS_TIMEOUT = 180   # seconds — max wall-time for the entire retry pass
-
-    def __init__(
-        self,
-        sources: Optional[list[str]] = None,
-        google_api_key: str = "",
-        google_cse_id: str = "",
-        max_concurrent: int = MAX_GLOBAL_CONCURRENCY,
-        cache_path: str = CACHE_DB_PATH,
-        cache_ttl_days: int = CACHE_TTL_DAYS,
-        enrich: bool = True,
-        progress_callback: Optional[Callable] = None,
-    ):
-        self.enabled_sources = sources or ["redfin", "homeharvest", "realtor", "zillow"]
-        self.google_api_key = google_api_key
-        self.google_cse_id = google_cse_id
-        self.max_concurrent = max_concurrent
-        self.cache = ScrapeCache(db_path=cache_path, ttl_days=cache_ttl_days)
-        self.enrich = enrich
-        self.global_semaphore = asyncio.Semaphore(max_concurrent)
-        self.progress_callback = progress_callback
-        self._lite_mode = False
-
-        # Stats
-        self._total = 0
-        self._cached = 0
-        self._found = 0
-        self._partial = 0
-        self._not_found = 0
-        self._errors = 0
-        self._processed_addresses: set[str] = set()
-
-        # Circuit breaker state per scraper
-        self._consecutive_failures: dict[str, int] = {}
-        self._circuit_open: dict[str, bool] = {}
-        self._circuit_breaker_threshold = 10
-
-    async def run(self, properties: list[Property]) -> list[ScrapeResult]:
-        """
-        Run the full pipeline for a list of properties.
-
-        Returns a ScrapeResult for each property (in the same order).
-        """
-        self._total = len(properties)
-
-        # Auto-detect lite mode for large jobs
-        self._lite_mode = self._total > LITE_MODE_THRESHOLD
-        if self._lite_mode:
-            logger.info(
-                "Lite mode: %d addresses (threshold %d) — Redfin+Realtor+Zillow, "
-                "no HomeHarvest/pandas, batch=3",
-                self._total, LITE_MODE_THRESHOLD,
-            )
-            console.print(
-                f"[yellow]Lite mode enabled for {self._total} addresses "
-                f"(memory-safe for 512MB)[/yellow]"
-            )
-
-        await self.cache.initialize()
-
-        # Check cache for already-resolved addresses
-        all_addresses = [p.search_query for p in properties]
-        pending_addresses = set(await self.cache.get_pending_addresses(all_addresses))
-
-        results: list[ScrapeResult] = []
-        pending_props: list[Property] = []
-
-        for prop in properties:
-            if prop.search_query not in pending_addresses:
-                # Already cached
-                cached_info = await self.cache.get(prop.search_query)
-                if cached_info:
-                    self._cached += 1
-                    results.append(ScrapeResult(
-                        property=prop,
-                        agent_info=cached_info,
-                        status=LookupStatus.CACHED,
-                    ))
-                else:
-                    pending_props.append(prop)
-                    results.append(None)  # placeholder
-            else:
-                pending_props.append(prop)
-                results.append(None)  # placeholder
-
-        # Fire "cache loaded" event — total is ALL addresses, completed starts at cached count
-        if self.progress_callback:
-            self.progress_callback({
-                "completed": self._cached,
-                "total": self._total,
-                "cached": self._cached,
-                "found": 0,
-                "partial": 0,
-                "not_found": 0,
-                "errors": 0,
-                "current_address": "",
-                "current_status": "cached",
+    def emit_progress(current_agent: str, phase: str):
+        if progress_callback:
+            progress_callback({
+                "completed": completed_count,
+                "total": total,
+                "found": found_count,
+                "not_found": completed_count - found_count,
+                "current_agent": current_agent,
+                "phase": phase,
             })
 
-        if not pending_props:
-            console.print(f"[green]All {self._cached} addresses found in cache.[/green]")
-            return [r for r in results if r is not None]
+    logger.info("Pass 1: Google search for %d agents", total)
 
-        console.print(
-            f"[blue]Processing {len(pending_props)} addresses "
-            f"({self._cached} cached, {len(pending_props)} remaining)[/blue]"
-        )
+    async with httpx.AsyncClient(
+        http2=True,
+        follow_redirects=True,
+        limits=httpx.Limits(max_connections=5, max_keepalive_connections=2),
+    ) as client:
 
-        rss = _get_rss_mb()
-        if rss:
-            logger.info("RSS before scraping: %.0f MB", rss)
+        for i, agent in enumerate(agents):
+            emit_progress(agent.name, "google")
 
-        # HTTP/2 is required — sites block HTTP/1.1 from datacenter IPs
-        max_conn = 10 if self._lite_mode else 20
-        keepalive = 3 if self._lite_mode else 5
-        batch_size = 3
-
-        async with httpx.AsyncClient(
-            http2=True,
-            follow_redirects=True,
-            limits=httpx.Limits(
-                max_connections=max_conn,
-                max_keepalive_connections=keepalive,
-            ),
-        ) as client:
-            scrapers = self._build_scrapers(client)
-
-            if self.progress_callback:
-                # Web mode: process in batches to stay within memory limits
-                scrape_results = await self._process_in_batches(
-                    pending_props, scrapers, client, None, None, batch_size
-                )
-            else:
-                # CLI mode: use Rich progress bar + batches
-                with Progress(
-                    SpinnerColumn(),
-                    TextColumn("[bold blue]{task.description}"),
-                    BarColumn(),
-                    MofNCompleteColumn(),
-                    TimeRemainingColumn(),
-                    console=console,
-                ) as progress:
-                    task_id = progress.add_task(
-                        "Scraping", total=len(pending_props)
-                    )
-
-                    scrape_results = await self._process_in_batches(
-                        pending_props, scrapers, client, progress, task_id,
-                        batch_size,
-                    )
-
-            # Merge pending results back into the full results list
-            pending_idx = 0
-            for i in range(len(results)):
-                if results[i] is None:
-                    if pending_idx < len(scrape_results):
-                        result = scrape_results[pending_idx]
-                        if isinstance(result, Exception):
-                            results[i] = ScrapeResult(
-                                property=pending_props[pending_idx],
-                                status=LookupStatus.ERROR,
-                                error_message=str(result),
-                            )
-                            self._errors += 1
-                        else:
-                            results[i] = result
-                        pending_idx += 1
-
-            # Filter out any remaining None placeholders
-            results = [r for r in results if r is not None]
-
-            # ── Second-pass retry ──
-            not_found_indices = [
-                i for i, r in enumerate(results)
-                if r is not None and r.status == LookupStatus.NOT_FOUND
-            ]
-
-            if not_found_indices:
-                logger.info(
-                    "Retrying %d not-found addresses with simplified queries (max %ds)",
-                    len(not_found_indices), self.RETRY_PASS_TIMEOUT,
-                )
-                if self.progress_callback:
-                    self.progress_callback({
-                        "completed": self._cached + self._found + self._partial + self._not_found + self._errors,
-                        "total": self._total,
-                        "cached": self._cached,
-                        "found": self._found,
-                        "partial": self._partial,
-                        "not_found": self._not_found,
-                        "errors": self._errors,
-                        "current_address": "Retrying not-found addresses...",
-                        "current_status": "retrying",
-                    })
-
-                # Process retries in small batches to control memory
-                retry_batch_size = 3
-                all_retry_results = []
-                try:
-                    for rb_start in range(0, len(not_found_indices), retry_batch_size):
-                        rb_end = min(rb_start + retry_batch_size, len(not_found_indices))
-                        batch_indices = not_found_indices[rb_start:rb_end]
-                        retry_tasks = [
-                            self._retry_with_variants(results[idx].property, scrapers, client)
-                            for idx in batch_indices
-                        ]
-                        batch_results = await asyncio.wait_for(
-                            asyncio.gather(*retry_tasks, return_exceptions=True),
-                            timeout=self.RETRY_PASS_TIMEOUT,
-                        )
-                        all_retry_results.extend(zip(batch_indices, batch_results))
-                        gc.collect()
-                except asyncio.TimeoutError:
-                    logger.warning(
-                        "Retry pass timed out after %ds — skipping remaining retries",
-                        self.RETRY_PASS_TIMEOUT,
-                    )
-
-                recovered = 0
-                for list_idx, retry_result in all_retry_results:
-                    if isinstance(retry_result, Exception):
-                        continue
-                    if (retry_result and retry_result.agent_info
-                            and retry_result.agent_info.agent_name):
-                        results[list_idx] = retry_result
-                        self._not_found -= 1
-                        if retry_result.agent_info.has_contact_info:
-                            self._found += 1
-                        else:
-                            self._partial += 1
-                        recovered += 1
-
-                if recovered:
-                    logger.info("Recovered %d addresses on retry pass", recovered)
-                    console.print(
-                        f"[green]Retry pass recovered {recovered} additional addresses[/green]"
-                    )
-
-        self._print_summary()
-        return results
-
-    async def _process_in_batches(
-        self,
-        props: list[Property],
-        scrapers: list[BaseScraper],
-        client: httpx.AsyncClient,
-        progress: Optional[Progress],
-        task_id,
-        batch_size: int = 3,
-    ) -> list:
-        """Process addresses in small batches to stay within memory limits."""
-        all_results = []
-        for i in range(0, len(props), batch_size):
-            batch = props[i : i + batch_size]
-            tasks = [
-                self._process_one_with_timeout(prop, scrapers, client, progress, task_id)
-                for prop in batch
-            ]
-            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
-            all_results.extend(batch_results)
-            # Force garbage collection between batches to free response bodies
-            # and parsed DOM trees — critical for 512MB Render free tier
-            gc.collect()
-            # Log memory every 50 addresses in lite mode
-            if self._lite_mode and (i + batch_size) % 50 == 0:
-                rss = _get_rss_mb()
-                if rss:
-                    logger.info("RSS after %d addresses: %.0f MB", i + batch_size, rss)
-        return all_results
-
-    async def _process_one_with_timeout(
-        self,
-        prop: Property,
-        scrapers: list[BaseScraper],
-        client: httpx.AsyncClient,
-        progress: Optional[Progress],
-        task_id,
-    ) -> ScrapeResult:
-        """Wrap _process_one with a hard per-address timeout to prevent hangs."""
-        try:
-            return await asyncio.wait_for(
-                self._process_one(prop, scrapers, client, progress, task_id),
-                timeout=self.ADDRESS_TIMEOUT,
-            )
-        except asyncio.TimeoutError:
-            logger.warning(
-                "Address timed out after %ds: %s", self.ADDRESS_TIMEOUT, prop.raw_address
-            )
-            self._not_found += 1
-            await self.cache.record_failure(
-                prop.search_query, ["timeout"], f"Timed out after {self.ADDRESS_TIMEOUT}s"
-            )
-            if progress is not None:
-                progress.advance(task_id)
-            if self.progress_callback:
-                completed = self._cached + self._found + self._partial + self._not_found + self._errors
-                self.progress_callback({
-                    "completed": completed,
-                    "total": self._total,
-                    "cached": self._cached,
-                    "found": self._found,
-                    "partial": self._partial,
-                    "not_found": self._not_found,
-                    "errors": self._errors,
-                    "current_address": prop.raw_address,
-                    "current_status": "timeout",
-                })
-            return ScrapeResult(
-                property=prop,
-                status=LookupStatus.NOT_FOUND,
-                error_message=f"Timed out after {self.ADDRESS_TIMEOUT}s",
-                sources_tried=["timeout"],
-            )
-
-    async def _process_one(
-        self,
-        prop: Property,
-        scrapers: list[BaseScraper],
-        client: httpx.AsyncClient,
-        progress: Optional[Progress],
-        task_id,
-    ) -> ScrapeResult:
-        """Process a single property through the merge-based scraper waterfall."""
-        async with self.global_semaphore:
-            sources_tried = []
-            agent_info = None
-            source_agents = []  # (scraper_name, agent_name) for confidence
-
-            for scraper in scrapers:
-                # Circuit breaker: skip scrapers that are consistently failing
-                if self._is_circuit_open(scraper.name):
-                    continue
-
-                try:
-                    sources_tried.append(scraper.name)
-                    logger.debug(
-                        "Starting %s for '%s'", scraper.name, prop.raw_address
-                    )
-                    # Per-scraper timeout: no single scraper can hog the budget
-                    try:
-                        result = await asyncio.wait_for(
-                            scraper.search(prop),
-                            timeout=self.SCRAPER_TIMEOUT,
-                        )
-                    except asyncio.TimeoutError:
-                        logger.warning(
-                            "Scraper %s timed out after %ds for '%s'",
-                            scraper.name, self.SCRAPER_TIMEOUT, prop.raw_address,
-                        )
-                        self._record_scraper_failure(
-                            scraper.name, TimeoutError(f"{scraper.name} scraper timeout")
-                        )
-                        continue
-
-                    if result and result.agent_name:
-                        source_agents.append((scraper.name, result.agent_name))
-
-                        if agent_info is None:
-                            agent_info = result
-                        else:
-                            # MERGE: fill in missing fields from this source
-                            agent_info = agent_info.merge(result)
-
-                        # Early exit: complete info AND 2+ sources agree
-                        if agent_info.is_complete and len(source_agents) >= 2:
-                            break
-
-                    self._record_scraper_success(scraper.name)
-
-                except Exception as e:
-                    self._record_scraper_failure(scraper.name, e)
-                    logger.info(
-                        "Scraper %s failed for '%s': %s: %s",
-                        scraper.name, prop.raw_address, type(e).__name__, e
-                    )
-                    continue
-
-            # Compute confidence based on source agreement
-            confidence, verified = self._compute_confidence(source_agents)
-
-            # Enrich contact info if agent found but missing phone/email
-            if (agent_info and not agent_info.is_complete
-                    and self.enrich):
-                try:
-                    agent_info = await asyncio.wait_for(
-                        enrich_contact_info(agent_info, client),
-                        timeout=self.ENRICHMENT_TIMEOUT,
-                    )
-                except asyncio.TimeoutError:
-                    logger.warning(
-                        "Enrichment timed out after %ds for '%s'",
-                        self.ENRICHMENT_TIMEOUT, prop.raw_address,
-                    )
-                except Exception as e:
-                    logger.info(
-                        "Enrichment failed for '%s': %s", prop.raw_address, e
-                    )
-
-            # Determine status and cache
-            already_counted = prop.raw_address in self._processed_addresses
-            self._processed_addresses.add(prop.raw_address)
-
-            if agent_info and agent_info.agent_name:
-                if agent_info.has_contact_info:
-                    status = LookupStatus.FOUND
-                    if not already_counted:
-                        self._found += 1
-                else:
-                    status = LookupStatus.PARTIAL
-                    if not already_counted:
-                        self._partial += 1
-                await self.cache.put(prop.search_query, agent_info, status)
-            else:
-                status = LookupStatus.NOT_FOUND
-                if not already_counted:
-                    self._not_found += 1
-                await self.cache.record_failure(
-                    prop.search_query, sources_tried, "No agent info found"
-                )
-
-            # Update progress
-            if progress is not None:
-                progress.advance(task_id)
-
-            if self.progress_callback:
-                completed = self._cached + self._found + self._partial + self._not_found + self._errors
-                self.progress_callback({
-                    "completed": completed,
-                    "total": self._total,
-                    "cached": self._cached,
-                    "found": self._found,
-                    "partial": self._partial,
-                    "not_found": self._not_found,
-                    "errors": self._errors,
-                    "current_address": prop.raw_address,
-                    "current_status": status.value,
-                })
-
-            return ScrapeResult(
-                property=prop,
-                agent_info=agent_info,
-                status=status,
-                sources_tried=sources_tried,
-                confidence=confidence,
-                verified=verified,
-                sources_matched=[name for name, _ in source_agents],
-            )
-
-    async def _retry_with_variants(
-        self,
-        prop: Property,
-        scrapers: list[BaseScraper],
-        client: httpx.AsyncClient,
-    ) -> Optional[ScrapeResult]:
-        """Retry a failed property lookup with simplified address variants."""
-        from .utils import address_variants
-
-        variants = address_variants(prop)
-        if not variants:
-            return None
-
-        for variant_query in variants:
-            # Create a temporary Property with the variant query
-            variant_prop = Property(
-                raw_address=prop.raw_address,
-                address_line=variant_query,
-                city=prop.city,
-                state=prop.state,
-                zip_code=prop.zip_code,
-                row_index=prop.row_index,
-            )
-
-            result = await self._process_one_with_timeout(
-                variant_prop, scrapers, client, None, None
-            )
-            if result and result.agent_info and result.agent_info.agent_name:
-                # Mark the source as retry
-                if result.agent_info:
-                    result.agent_info.source += "+retry"
-                # Preserve the original property reference
-                result.property = prop
-                return result
-
-        return None
-
-    # ── Circuit breaker ──
-
-    def _record_scraper_success(self, scraper_name: str):
-        """Reset consecutive failure count on success."""
-        self._consecutive_failures[scraper_name] = 0
-
-    def _record_scraper_failure(self, scraper_name: str, error: Exception):
-        """Track consecutive failures; open circuit after threshold."""
-        count = self._consecutive_failures.get(scraper_name, 0) + 1
-        self._consecutive_failures[scraper_name] = count
-        if count >= self._circuit_breaker_threshold:
-            self._circuit_open[scraper_name] = True
-            logger.warning(
-                "Circuit breaker OPEN for %s after %d consecutive failures",
-                scraper_name, count
-            )
-
-    def _is_circuit_open(self, scraper_name: str) -> bool:
-        """Check if a scraper's circuit breaker is tripped."""
-        return self._circuit_open.get(scraper_name, False)
-
-    # ── Confidence scoring ──
-
-    def _compute_confidence(
-        self, source_agents: list[tuple[str, str]]
-    ) -> tuple[float, bool]:
-        """
-        Compute confidence score based on source agreement.
-
-        Returns (confidence: float 0.0-1.0, verified: bool).
-        """
-        if not source_agents:
-            return 0.0, False
-
-        if len(source_agents) == 1:
-            return 0.5, False  # Single source, unverified
-
-        # Check if names match across sources (fuzzy)
-        from .utils import names_match
-        base_name = source_agents[0][1]
-        matching_count = 1
-        for _, name in source_agents[1:]:
-            if names_match(base_name, name):
-                matching_count += 1
-
-        if matching_count >= 2:
-            # 2+ sources agree
-            confidence = min(0.7 + (matching_count * 0.1), 1.0)
-            return confidence, True
-        else:
-            # Sources disagree — keep first source's data but flag low confidence
-            return 0.4, False
-
-    def _build_scrapers(self, client: httpx.AsyncClient) -> list[BaseScraper]:
-        """Build the ordered list of enabled scrapers."""
-        scrapers: list[BaseScraper] = []
-
-        if "redfin" in self.enabled_sources:
-            scrapers.append(RedfinScraper(client))
-
-        # HomeHarvest: SKIP in lite mode — imports pandas/numpy (~120MB RAM)
-        if not self._lite_mode and "homeharvest" in self.enabled_sources:
-            from .scrapers.homeharvest_scraper import HomeHarvestScraper
-            scrapers.append(HomeHarvestScraper(client))
-
-        if "realtor" in self.enabled_sources:
-            scrapers.append(RealtorScraper(client))
-
-        # Zillow: included in lite mode — doesn't import pandas, and we
-        # explicitly del soup after extracting data so transient memory is low.
-        if "zillow" in self.enabled_sources:
             try:
-                from .scrapers.zillow import ZillowScraper
-                scrapers.append(ZillowScraper(client))
-            except ImportError:
-                logger.info("Zillow scraper not available")
+                result = await search_google(agent, client)
+                results[i] = result
 
-        if "google" in self.enabled_sources or "google_search" in self.enabled_sources:
-            gs = GoogleSearchScraper(
-                client, api_key=self.google_api_key, cse_id=self.google_cse_id
-            )
-            if gs.is_configured:
-                scrapers.append(gs)
+                if result.has_contact:
+                    found_count += 1
+            except Exception as e:
+                logger.error("Pass 1 error for %s: %s", agent.name, e)
+                results[i] = ContactResult(
+                    agent=agent,
+                    status=ContactStatus.ERROR,
+                    error_message=str(e),
+                )
 
-        scraper_names = [s.name for s in scrapers]
-        logger.info("Active scrapers: %s", scraper_names)
-        return scrapers
+            completed_count += 1
+            emit_progress(agent.name, "google")
 
-    def _print_summary(self):
-        """Print a summary of pipeline results."""
-        grand_total = self._cached + self._found + self._partial + self._not_found + self._errors
-        console.print()
-        console.print("[bold]Pipeline Summary[/bold]")
-        console.print(f"  Total addresses:    {grand_total}")
-        console.print(f"  [green]Found (complete):   {self._found}[/green]")
-        console.print(f"  [yellow]Found (partial):    {self._partial}[/yellow]")
-        console.print(f"  [blue]From cache:         {self._cached}[/blue]")
-        console.print(f"  [red]Not found:          {self._not_found}[/red]")
-        console.print(f"  [red]Errors:             {self._errors}[/red]")
+            if i < total - 1:
+                await random_delay(3.0, 7.0)
 
-        total_found = self._found + self._partial + self._cached
-        if grand_total > 0:
-            rate = (total_found / grand_total) * 100
-            console.print(f"  [bold]Success rate:       {rate:.1f}%[/bold]")
+        # Pass 2: Realtor.com profiles (for agents not found)
+        not_found_indices = [
+            i for i, r in enumerate(results)
+            if not r.has_contact
+        ]
 
-        # Log circuit breaker state
-        for name, is_open in self._circuit_open.items():
-            if is_open:
-                console.print(f"  [red]Circuit breaker tripped: {name}[/red]")
+        if not_found_indices:
+            logger.info("Pass 2: Realtor.com profiles for %d agents", len(not_found_indices))
 
-        rss = _get_rss_mb()
-        if rss:
-            console.print(f"  [dim]Final RSS: {rss:.0f} MB[/dim]")
+            for i in not_found_indices:
+                agent = agents[i]
+                emit_progress(agent.name, "realtor")
+
+                profile_url = ""
+                if results[i].error_message.startswith("realtor_url:"):
+                    profile_url = results[i].error_message.replace("realtor_url:", "")
+
+                try:
+                    realtor_result = await search_realtor_profile(agent, client, profile_url)
+
+                    if realtor_result.has_contact:
+                        if realtor_result.phone and not results[i].phone:
+                            results[i].phone = realtor_result.phone
+                        if realtor_result.email and not results[i].email:
+                            results[i].email = realtor_result.email
+                        results[i].source = "realtor"
+                        results[i].status = ContactStatus.FOUND
+                        results[i].error_message = ""
+                        found_count += 1
+                except Exception as e:
+                    logger.error("Pass 2 error for %s: %s", agent.name, e)
+
+                emit_progress(agent.name, "realtor")
+                await random_delay(1.5, 3.5)
+
+        # Pass 3: Email pattern guessing (for agents with phone but no email)
+        need_email_indices = [
+            i for i, r in enumerate(results)
+            if r.phone and not r.email
+        ]
+
+        if need_email_indices:
+            logger.info("Pass 3: Email guessing for %d agents", len(need_email_indices))
+
+            for i in need_email_indices:
+                agent = agents[i]
+                emit_progress(agent.name, "email_guess")
+
+                try:
+                    guessed = await guess_email(agent.name, agent.brokerage, client)
+                    if guessed:
+                        results[i].email = guessed
+                        if results[i].source:
+                            results[i].source += "+email_guess"
+                        else:
+                            results[i].source = "email_guess"
+                except Exception as e:
+                    logger.debug("Email guess error for %s: %s", agent.name, e)
+
+                emit_progress(agent.name, "email_guess")
+                await random_delay(3.0, 6.0)
+
+    # Clean up temp error messages
+    for r in results:
+        if r.status == ContactStatus.ERROR and r.error_message.startswith("realtor_url:"):
+            r.error_message = ""
+            r.status = ContactStatus.NOT_FOUND
+
+    logger.info(
+        "Pipeline complete: %d/%d found (%d%%)",
+        found_count, total,
+        round(found_count / total * 100) if total > 0 else 0,
+    )
+
+    return results

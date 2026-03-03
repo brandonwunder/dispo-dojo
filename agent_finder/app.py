@@ -1,9 +1,8 @@
-"""FastAPI web app for Agent Finder - drag-and-drop CSV processing."""
+"""FastAPI web app for Agent Contact Finder v2."""
 
 import asyncio
 import json
 import logging
-import re as _re
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -18,14 +17,12 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import StreamingResponse
 
-from .cache import ScrapeCache
-from .input_handler import read_input, validate_input
-from .output_handler import export_results, export_results_zip, generate_summary
-from .pipeline import AgentFinderPipeline
+from .input_handler import read_input
+from .output_handler import export_results_csv, generate_summary
+from .pipeline import run_pipeline
 
-app = FastAPI(title="Agent Finder")
+app = FastAPI(title="Agent Contact Finder v2")
 
-# CORS — allow the Vercel frontend to call this backend cross-origin
 _default_origins = "http://localhost:3000,http://localhost:5173,https://dispo-dojo.vercel.app,https://dispo-dojo-ionw3ihqj-airsyncs-projects.vercel.app"
 _origins = os.environ.get("ALLOWED_ORIGINS", _default_origins).split(",")
 app.add_middleware(
@@ -38,44 +35,31 @@ app.add_middleware(
 
 api = APIRouter(prefix="/api")
 
-# Serve static files (logo, etc.)
-STATIC_DIR = Path(__file__).parent / "static"
-if STATIC_DIR.exists():
-    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-
-# In-memory job store
 jobs: dict[str, dict] = {}
-# Track asyncio tasks so we can cancel them
 _tasks: dict[str, asyncio.Task] = {}
 
-TEMPLATES_DIR = Path(__file__).parent / "templates"
-UPLOAD_DIR = Path(__file__).parent / "data"
-UPLOAD_DIR.mkdir(exist_ok=True)
-JOBS_FILE = UPLOAD_DIR / "jobs.json"
+DATA_DIR = Path(__file__).parent / "data"
+DATA_DIR.mkdir(exist_ok=True)
+JOBS_FILE = DATA_DIR / "jobs.json"
 
-
-# ── Job persistence ──
 
 def _save_jobs():
-    """Persist job metadata to disk (excludes transient fields like progress)."""
     saveable = {}
     for jid, job in jobs.items():
         saveable[jid] = {
             "status": job["status"],
             "upload_path": job["upload_path"],
-            "result_path": job["result_path"],
+            "result_path": job.get("result_path"),
             "total": job["total"],
-            "error": job["error"],
-            "summary": job["summary"],
+            "error": job.get("error"),
+            "summary": job.get("summary"),
             "filename": job.get("filename", ""),
             "created_at": job.get("created_at", ""),
-            "resume_count": job.get("resume_count", 0),
         }
     JOBS_FILE.write_text(json.dumps(saveable, indent=2), encoding="utf-8")
 
 
 def _load_jobs():
-    """Load saved jobs from disk on startup."""
     global jobs
     if not JOBS_FILE.exists():
         return
@@ -83,14 +67,9 @@ def _load_jobs():
         saved = json.loads(JOBS_FILE.read_text(encoding="utf-8"))
         for jid, data in saved.items():
             restored = {**data, "progress": [], "preview_rows": None}
-            restored["resume_count"] = data.get("resume_count", 0)
-            if data.get("status") in ("running", "queued"):
-                # Job was interrupted by a server restart (likely OOM kill)
-                restored["status"] = "interrupted"
-                restored["error"] = (
-                    "This job was interrupted because the server restarted. "
-                    "It will auto-resume from the cache."
-                )
+            if data.get("status") == "running":
+                restored["status"] = "error"
+                restored["error"] = "Server restarted while this job was running."
             jobs[jid] = restored
     except (json.JSONDecodeError, KeyError):
         pass
@@ -99,273 +78,36 @@ def _load_jobs():
 @app.on_event("startup")
 async def startup():
     _load_jobs()
-    # Schedule auto-resume for interrupted jobs (e.g., after OOM crash)
-    asyncio.create_task(_auto_resume_interrupted())
-
-
-async def _auto_resume_interrupted():
-    """Auto-resume interrupted jobs after server restart (e.g., OOM crash).
-
-    The cache DB persists across container restarts, so already-processed
-    addresses will be skipped automatically.  Max 5 auto-resume attempts
-    per job to prevent infinite crash loops.
-    """
-    await asyncio.sleep(3)  # Let the server fully initialize
-    for jid, job in list(jobs.items()):
-        if job["status"] != "interrupted":
-            continue
-        if job.get("resume_count", 0) >= 5:
-            logger.warning("Skipping auto-resume for job %s — too many retries", jid)
-            continue
-        upload_path = Path(job.get("upload_path", ""))
-        if not upload_path.exists():
-            continue
-        try:
-            properties = read_input(str(upload_path))
-            if not properties:
-                continue
-            job["status"] = "running"
-            job["progress"] = []
-            job["error"] = None
-            job["resume_count"] = job.get("resume_count", 0) + 1
-            _save_jobs()
-            task = asyncio.create_task(_run_pipeline(jid, properties))
-            _tasks[jid] = task
-            logger.info(
-                "Auto-resumed interrupted job %s (%d addresses, attempt %d)",
-                jid, len(properties), job["resume_count"],
-            )
-        except Exception as e:
-            logger.error("Auto-resume failed for job %s: %s", jid, e)
-
-
-@api.get("/version")
-async def version():
-    """Return deploy version so we can confirm which code is running."""
-    return {
-        "version": "3.3.0-http2-restored",
-        "address_timeout": 45,
-        "scraper_timeout": 15,
-        "retry_pass_timeout": 120,
-        "max_concurrency": 5,
-        "lite_mode_threshold": 20,
-        "lite_batch_size": 3,
-        "full_batch_size": 3,
-    }
-
-
-@api.get("/test-scrape")
-async def test_scrape(address: str = "123 Main St, Austin, TX 78701"):
-    """Diagnostic: test each scraper individually on a single address."""
-    import httpx
-    import traceback
-    import time
-    from .models import Property
-    from .scrapers.redfin import RedfinScraper
-    from .scrapers.realtor import RealtorScraper
-    from .scrapers.zillow import ZillowScraper
-
-    # Parse address into components (same as input_handler)
-    parts = [p.strip() for p in address.split(",")]
-    address_line = parts[0] if parts else address
-    city = parts[1].strip() if len(parts) >= 3 else ""
-    state = ""
-    zip_code = ""
-    if len(parts) >= 3:
-        state_zip = parts[2].strip().split()
-        state = state_zip[0] if state_zip else ""
-        zip_code = state_zip[1] if len(state_zip) > 1 else ""
-
-    prop = Property(
-        raw_address=address,
-        address_line=address_line.upper(),
-        city=city.upper(),
-        state=state.upper(),
-        zip_code=zip_code,
-    )
-
-    from .utils import get_rotating_headers, get_api_headers
-    from urllib.parse import quote_plus, quote
-
-    results = {}
-    connectivity = {}
-    async with httpx.AsyncClient(
-        http2=True,
-        follow_redirects=True,
-        limits=httpx.Limits(max_connections=10, max_keepalive_connections=3),
-    ) as client:
-        # Test each scraper
-        for name, ScraperCls in [
-            ("redfin", RedfinScraper),
-            ("realtor", RealtorScraper),
-            ("zillow", ZillowScraper),
-        ]:
-            start = time.time()
-            try:
-                scraper = ScraperCls(client)
-                info = await asyncio.wait_for(scraper.search(prop), timeout=30)
-                elapsed = round(time.time() - start, 2)
-                if info:
-                    results[name] = {
-                        "status": "found",
-                        "agent_name": info.agent_name,
-                        "brokerage": info.brokerage,
-                        "phone": info.phone,
-                        "email": info.email,
-                        "source": info.source,
-                        "elapsed_seconds": elapsed,
-                    }
-                else:
-                    results[name] = {"status": "not_found", "elapsed_seconds": elapsed}
-            except asyncio.TimeoutError:
-                results[name] = {"status": "timeout", "elapsed_seconds": round(time.time() - start, 2)}
-            except Exception as e:
-                results[name] = {
-                    "status": "error",
-                    "error": f"{type(e).__name__}: {e}",
-                    "traceback": traceback.format_exc()[-500:],
-                    "elapsed_seconds": round(time.time() - start, 2),
-                }
-
-        # Raw HTTP connectivity test — see actual status codes
-        query = prop.search_query
-        test_urls = {
-            "redfin_autocomplete": f"https://www.redfin.com/stingray/do/location-autocomplete?location={quote(query)}&start=0&count=5&v=2",
-            "realtor_search": f"https://www.realtor.com/realestateandhomes-search/{query.replace(' ', '-').replace(',', '')}",
-            "zillow_search": f"https://www.zillow.com/homes/{quote_plus(query)}_rb/",
-        }
-        for label, url in test_urls.items():
-            try:
-                headers = get_api_headers() if "redfin" in label else get_rotating_headers()
-                if "redfin" in label:
-                    headers["Referer"] = "https://www.redfin.com"
-                elif "realtor" in label:
-                    headers["Referer"] = "https://www.realtor.com"
-                elif "zillow" in label:
-                    headers["Referer"] = "https://www.zillow.com/"
-                resp = await client.get(url, headers=headers, timeout=15)
-                body_preview = resp.text[:500] if resp.text else ""
-                connectivity[label] = {
-                    "status_code": resp.status_code,
-                    "final_url": str(resp.url),
-                    "content_length": len(resp.text),
-                    "body_preview": body_preview,
-                }
-            except Exception as e:
-                connectivity[label] = {"error": f"{type(e).__name__}: {e}"}
-
-    # Cache stats
-    cache = ScrapeCache(db_path=str(UPLOAD_DIR / "web_cache.db"))
-    await cache.initialize()
-    cache_stats = await cache.stats()
-
-    return {
-        "test_address": address,
-        "parsed": {
-            "address_line": prop.address_line,
-            "city": prop.city,
-            "state": prop.state,
-            "zip_code": prop.zip_code,
-            "search_query": prop.search_query,
-        },
-        "scraper_results": results,
-        "raw_connectivity": connectivity,
-        "cache_stats": cache_stats,
-    }
-
-
-@api.get("/test-http")
-async def test_http(address: str = "4521 Pomona Rd, Dallas, TX 75209"):
-    """Raw HTTP test — just fetch each site and show status codes."""
-    import httpx
-    from .utils import get_rotating_headers, get_api_headers
-    from urllib.parse import quote_plus, quote
-
-    query = address.upper()
-    sites = {
-        "redfin": {
-            "url": f"https://www.redfin.com/stingray/do/location-autocomplete?location={quote(query)}&start=0&count=5&v=2",
-            "headers": {**get_api_headers(), "Referer": "https://www.redfin.com"},
-        },
-        "realtor": {
-            "url": f"https://www.realtor.com/realestateandhomes-search/{query.replace(' ', '-').replace(',', '')}",
-            "headers": {**get_rotating_headers(), "Referer": "https://www.realtor.com"},
-        },
-        "zillow": {
-            "url": f"https://www.zillow.com/homes/{quote_plus(query)}_rb/",
-            "headers": {**get_rotating_headers(), "Referer": "https://www.zillow.com/"},
-        },
-    }
-
-    results = {}
-    async with httpx.AsyncClient(http2=True, follow_redirects=True, timeout=20) as client:
-        for name, cfg in sites.items():
-            try:
-                resp = await client.get(cfg["url"], headers=cfg["headers"])
-                results[name] = {
-                    "status_code": resp.status_code,
-                    "final_url": str(resp.url)[:200],
-                    "content_length": len(resp.text),
-                    "body_start": resp.text[:300],
-                }
-            except Exception as e:
-                results[name] = {"error": f"{type(e).__name__}: {e}"}
-    return results
-
-
-@api.post("/clear-cache")
-async def clear_cache():
-    """Clear the scrape cache (results + failures)."""
-    cache = ScrapeCache(db_path=str(UPLOAD_DIR / "web_cache.db"))
-    await cache.initialize()
-    import aiosqlite
-    async with aiosqlite.connect(str(UPLOAD_DIR / "web_cache.db")) as db:
-        await db.execute("DELETE FROM results")
-        await db.execute("DELETE FROM failures")
-        await db.commit()
-    return {"status": "cleared", "message": "All cached results and failures deleted"}
-
-
-@api.get("/legacy-agent-finder", response_class=HTMLResponse)
-async def legacy_agent_finder():
-    """Serve the legacy Agent Finder page (used inside iframe)."""
-    html_path = TEMPLATES_DIR / "index.html"
-    return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 
 @api.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-    """Upload a CSV/Excel file and start processing."""
-    # Validate file extension
     ext = Path(file.filename).suffix.lower()
     if ext not in (".csv", ".xlsx", ".xls"):
         raise HTTPException(400, "Only .csv, .xlsx, or .xls files are supported.")
 
-    # Save uploaded file
     job_id = str(uuid.uuid4())[:8]
-    upload_path = UPLOAD_DIR / f"{job_id}{ext}"
+    upload_path = DATA_DIR / f"{job_id}{ext}"
 
     content = await file.read()
     with open(upload_path, "wb") as f:
         f.write(content)
 
-    # Validate input
     try:
-        properties = read_input(str(upload_path))
+        agents = read_input(str(upload_path))
     except (ValueError, FileNotFoundError) as e:
         upload_path.unlink(missing_ok=True)
         raise HTTPException(400, str(e))
 
-    if not properties:
+    if not agents:
         upload_path.unlink(missing_ok=True)
-        raise HTTPException(400, "No valid addresses found in file.")
+        raise HTTPException(400, "No valid agent rows found in file.")
 
-    # Initialize job
     jobs[job_id] = {
-        "status": "queued",
+        "status": "running",
         "upload_path": str(upload_path),
         "result_path": None,
-        "total": len(properties),
+        "total": len(agents),
         "progress": [],
         "error": None,
         "summary": None,
@@ -373,104 +115,66 @@ async def upload_file(file: UploadFile = File(...)):
         "filename": file.filename,
         "created_at": datetime.now().isoformat(),
     }
+    _save_jobs()
 
-    _save_jobs()  # persist queued state so restart sees it
-
-    # Start processing in background and store the task reference
-    task = asyncio.create_task(_run_pipeline(job_id, properties))
+    task = asyncio.create_task(_run_job(job_id, agents))
     _tasks[job_id] = task
 
-    return {"job_id": job_id, "total": len(properties)}
+    return {"job_id": job_id, "total": len(agents)}
 
 
 @api.get("/progress/{job_id}")
 async def progress_stream(job_id: str):
-    """Server-Sent Events stream for job progress."""
     if job_id not in jobs:
         raise HTTPException(404, "Job not found.")
 
     async def event_generator():
         last_idx = 0
-        heartbeat_interval = 5  # seconds between heartbeats
-        ticks_since_event = 0   # track time since last real progress event
+        heartbeat_count = 0
         poll_interval = 0.3
-        ticks_per_heartbeat = int(heartbeat_interval / poll_interval)
+        heartbeat_every = int(5 / poll_interval)
 
         while True:
             job = jobs.get(job_id)
             if not job:
                 break
 
-            # Send any new progress events
             progress_list = job["progress"]
-            sent_new = False
             while last_idx < len(progress_list):
-                data = json.dumps(progress_list[last_idx])
-                yield f"data: {data}\n\n"
+                yield f"data: {json.dumps(progress_list[last_idx])}\n\n"
                 last_idx += 1
-                sent_new = True
-                ticks_since_event = 0
+                heartbeat_count = 0
 
-            # Check if job is done
             if job["status"] == "complete":
-                done_data = json.dumps({
-                    "type": "complete",
-                    "summary": job["summary"],
-                    "preview_rows": job["preview_rows"],
-                })
-                yield f"data: {done_data}\n\n"
+                yield f"data: {json.dumps({'type': 'complete', 'summary': job['summary'], 'preview_rows': job['preview_rows']})}\n\n"
                 break
             elif job["status"] == "error":
-                err_data = json.dumps({
-                    "type": "error",
-                    "message": job["error"],
-                })
-                yield f"data: {err_data}\n\n"
+                yield f"data: {json.dumps({'type': 'error', 'message': job['error']})}\n\n"
                 break
             elif job["status"] == "cancelled":
-                cancel_data = json.dumps({
-                    "type": "cancelled",
-                    "message": "Job was cancelled.",
-                })
-                yield f"data: {cancel_data}\n\n"
+                yield f"data: {json.dumps({'type': 'cancelled'})}\n\n"
                 break
 
-            # Heartbeat: if no real event for a while, send a keep-alive
-            # so the UI knows the pipeline is still working
-            if not sent_new:
-                ticks_since_event += 1
-                if ticks_since_event >= ticks_per_heartbeat:
-                    last_progress = progress_list[-1] if progress_list else {}
-                    heartbeat = {
-                        "type": "heartbeat",
-                        "status": job["status"],
-                        **{k: last_progress.get(k, 0)
-                           for k in ("completed", "total", "cached", "found",
-                                     "partial", "not_found", "errors")},
-                    }
-                    yield f"data: {json.dumps(heartbeat)}\n\n"
-                    ticks_since_event = 0
+            heartbeat_count += 1
+            if heartbeat_count >= heartbeat_every:
+                yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
+                heartbeat_count = 0
 
             await asyncio.sleep(poll_interval)
 
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
     )
 
 
 @api.get("/download/{job_id}")
 async def download_result(job_id: str):
-    """Download the result ZIP file."""
     job = jobs.get(job_id)
     if not job:
         raise HTTPException(404, "Job not found.")
-    if job["status"] != "complete" or not job["result_path"]:
+    if job["status"] != "complete" or not job.get("result_path"):
         raise HTTPException(400, "Results not ready yet.")
 
     result_path = Path(job["result_path"])
@@ -479,23 +183,16 @@ async def download_result(job_id: str):
 
     return FileResponse(
         str(result_path),
-        filename="agent_finder_results.zip",
-        media_type="application/zip",
+        filename=f"agent_contacts_{job_id}.csv",
+        media_type="text/csv",
     )
 
 
-# ── History & management endpoints ──
-
 @api.get("/jobs")
 async def list_jobs():
-    """Return all jobs (active + past) for the UI."""
     history = []
     for jid, job in jobs.items():
-        # For running jobs, grab the latest progress stats
-        last_progress = None
-        if job["progress"]:
-            last_progress = job["progress"][-1]
-
+        last_progress = job["progress"][-1] if job["progress"] else None
         history.append({
             "job_id": jid,
             "filename": job.get("filename", "unknown"),
@@ -505,251 +202,61 @@ async def list_jobs():
             "summary": job.get("summary"),
             "last_progress": last_progress,
         })
-    # Sort by created_at descending (newest first)
     history.sort(key=lambda x: x["created_at"], reverse=True)
     return history
 
 
-@api.get("/cache/stats")
-async def cache_stats():
-    """Return universal cache statistics."""
-    cache = ScrapeCache(db_path=str(UPLOAD_DIR / "web_cache.db"))
-    return await cache.stats()
-
-
-@api.delete("/cache/clear")
-async def cache_clear():
-    """Delete all cached results and failures — start fresh."""
-    db_path = UPLOAD_DIR / "web_cache.db"
-    if db_path.exists():
-        import aiosqlite
-        async with aiosqlite.connect(str(db_path)) as db:
-            await db.execute("DELETE FROM results")
-            await db.execute("DELETE FROM failures")
-            await db.commit()
-        return {"status": "cleared"}
-    return {"status": "no_cache"}
-
-
-@api.get("/jobs/{job_id}/results")
-async def get_job_results(job_id: str):
-    """Return full results for a completed job as JSON (used for inline preview and export)."""
-    import zipfile
-    import csv
-    import io as _io
+@api.delete("/jobs/{job_id}")
+async def delete_job(job_id: str):
     job = jobs.get(job_id)
-    if not job or job["status"] != "complete":
-        raise HTTPException(404, "Job not found or not complete")
-    result_path = job.get("result_path")
-    if not result_path or not Path(result_path).exists():
-        raise HTTPException(404, "Result file not found")
-    rows = []
-    with zipfile.ZipFile(result_path) as zf:
-        csv_name = next((n for n in zf.namelist() if n.endswith(".csv")), None)
-        if csv_name:
-            with zf.open(csv_name) as f:
-                reader = csv.DictReader(_io.TextIOWrapper(f, encoding="utf-8"))
-                rows = list(reader)
-    return {"results": rows}
+    if not job:
+        raise HTTPException(404, "Job not found.")
+
+    task = _tasks.get(job_id)
+    if task and not task.done():
+        task.cancel()
+
+    for path_key in ("upload_path", "result_path"):
+        raw = job.get(path_key) or ""
+        if raw:
+            p = Path(raw)
+            if p.is_file():
+                p.unlink(missing_ok=True)
+
+    del jobs[job_id]
+    _tasks.pop(job_id, None)
+    _save_jobs()
+    return {"ok": True}
 
 
 @api.post("/jobs/{job_id}/cancel")
 async def cancel_job(job_id: str):
-    """Cancel a running job."""
     job = jobs.get(job_id)
     if not job:
         raise HTTPException(404, "Job not found.")
-    if job["status"] not in ("queued", "running"):
+    if job["status"] != "running":
         raise HTTPException(400, "Job is not running.")
 
-    # Cancel the asyncio task
     task = _tasks.get(job_id)
     if task and not task.done():
         task.cancel()
 
     job["status"] = "cancelled"
-    job["error"] = "Cancelled by user."
     _save_jobs()
-
     return {"ok": True}
 
 
-@api.post("/jobs/{job_id}/resume")
-async def resume_job(job_id: str):
-    """Resume a cancelled or errored job by re-processing with cache."""
-    old_job = jobs.get(job_id)
-    if not old_job:
-        raise HTTPException(404, "Job not found.")
-    if old_job["status"] not in ("cancelled", "error", "interrupted"):
-        raise HTTPException(400, "Only cancelled, errored, or interrupted jobs can be resumed.")
-
-    # Verify upload file still exists
-    upload_path = Path(old_job.get("upload_path", ""))
-    if not upload_path.exists():
-        raise HTTPException(400, "Original upload file no longer exists.")
-
-    # Re-parse the original file
-    try:
-        properties = read_input(str(upload_path))
-    except (ValueError, FileNotFoundError) as e:
-        raise HTTPException(400, f"Could not read original file: {e}")
-
-    if not properties:
-        raise HTTPException(400, "No valid addresses found in original file.")
-
-    # Create a new job that reuses the same upload file
-    new_job_id = str(uuid.uuid4())[:8]
-    jobs[new_job_id] = {
-        "status": "queued",
-        "upload_path": str(upload_path),
-        "result_path": None,
-        "total": len(properties),
-        "progress": [],
-        "error": None,
-        "summary": None,
-        "preview_rows": None,
-        "filename": old_job.get("filename", "resumed"),
-        "created_at": datetime.now().isoformat(),
-    }
-
-    # Start pipeline — cache will automatically skip already-found addresses
-    task = asyncio.create_task(_run_pipeline(new_job_id, properties))
-    _tasks[new_job_id] = task
-
-    return {"job_id": new_job_id, "total": len(properties)}
-
-
-@api.delete("/jobs/{job_id}")
-async def delete_job(job_id: str):
-    """Delete a past job and its associated files."""
-    job = jobs.get(job_id)
-    if not job:
-        raise HTTPException(404, "Job not found.")
-
-    # If it's still running, cancel it first
-    task = _tasks.get(job_id)
-    if task and not task.done():
-        task.cancel()
-
-    # Delete uploaded file
-    upload_raw = job.get("upload_path", "")
-    if upload_raw:
-        upload_path = Path(upload_raw)
-        if upload_path.is_file():
-            upload_path.unlink(missing_ok=True)
-
-    # Delete result file
-    result_raw = job.get("result_path") or ""
-    if result_raw:
-        result_path = Path(result_raw)
-        if result_path.is_file():
-            result_path.unlink(missing_ok=True)
-
-    # Remove from memory and save
-    del jobs[job_id]
-    _tasks.pop(job_id, None)
-    _save_jobs()
-
-    return {"ok": True}
-
-
-async def _run_pipeline(job_id: str, properties):
-    """Background task to run the scraping pipeline."""
-    job = jobs[job_id]
-    job["status"] = "running"
-    _save_jobs()  # persist running state so restart marks it interrupted
-
-    def on_progress(data: dict):
-        data["type"] = "progress"
-        job["progress"].append(data)
-
-    try:
-        pipeline = AgentFinderPipeline(
-            progress_callback=on_progress,
-            cache_path=str(UPLOAD_DIR / "web_cache.db"),
-        )
-
-        results = await pipeline.run(properties)
-
-        # Export results as ZIP (3 CSVs: found, partial, not_found)
-        result_path = str(UPLOAD_DIR / f"{job_id}_results.zip")
-        export_results_zip(results, job["upload_path"], result_path)
-
-        # Build preview rows (first 20)
-        def _clean(val):
-            """Ensure value is JSON-safe string."""
-            if val is None:
-                return ""
-            s = str(val)
-            if s.lower() in ("nan", "none", "<na>", "na"):
-                return ""
-            return s
-
-        preview = []
-        for r in results[:20]:
-            preview.append({
-                "address": _clean(r.property.raw_address),
-                "agent_name": _clean(r.agent_info.agent_name) if r.agent_info else "",
-                "brokerage": _clean(r.agent_info.brokerage) if r.agent_info else "",
-                "phone": _clean(r.agent_info.phone) if r.agent_info else "",
-                "email": _clean(r.agent_info.email) if r.agent_info else "",
-                "status": r.status.value,
-                "source": _clean(r.agent_info.source) if r.agent_info else "",
-                "list_date": _clean(r.agent_info.list_date) if r.agent_info else "",
-                "days_on_market": _clean(r.agent_info.days_on_market) if r.agent_info else "",
-                "confidence": f"{r.confidence:.0%}",
-                "verified": r.verified,
-            })
-
-        summary = generate_summary(results)
-
-        job["status"] = "complete"
-        job["result_path"] = result_path
-        job["summary"] = summary
-        job["preview_rows"] = preview
-
-        _save_jobs()
-
-    except asyncio.CancelledError:
-        # Job was cancelled by user — status already set by cancel endpoint
-        if job["status"] != "cancelled":
-            job["status"] = "cancelled"
-            job["error"] = "Cancelled by user."
-            _save_jobs()
-
-    except MemoryError:
-        # Render free tier (512MB) — return whatever we have so far
-        import gc
-        gc.collect()
-        logger.error("MemoryError during pipeline for job %s — returning partial results", job_id)
-        job["status"] = "error"
-        job["error"] = "Server ran low on memory. Some addresses may not have been processed. Try a smaller batch."
-        _save_jobs()
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        job["status"] = "error"
-        job["error"] = str(e)
-        _save_jobs()
-
-    finally:
-        _tasks.pop(job_id, None)
-
+# ── Comps endpoint (used by Underwriting page — keep from old code) ──
 
 @api.get("/comps")
 async def get_comps(address: str):
-    """
-    Pull sold comps near a given address using HomeHarvest.
-    Tries progressively wider date ranges: 3 -> 6 -> 9 -> 12 months.
-    Returns at least 3 comps or an empty list.
-    """
+    """Pull sold comps near a given address using HomeHarvest."""
     try:
         from homeharvest import scrape_property
     except ImportError:
         raise HTTPException(status_code=500, detail="HomeHarvest not installed")
 
-    # Extract zip code or use full address for location
+    import re as _re
     zip_match = _re.search(r'\b(\d{5})\b', address)
     location = zip_match.group(1) if zip_match else address
 
@@ -783,12 +290,9 @@ async def get_comps(address: str):
                 dom = int(row.get('days_on_market') or row.get('dom') or 0)
                 addr = str(row.get('full_street_line') or row.get('street') or '')
                 city = str(row.get('city') or '')
-
                 if list_price <= 0:
                     continue
-
                 pct_under = round((list_price - sold_price) / list_price * 100, 1) if list_price > 0 else 0
-
                 results.append({
                     'address': f"{addr}, {city}".strip(', '),
                     'listPrice': list_price,
@@ -800,13 +304,10 @@ async def get_comps(address: str):
             if len(results) >= 3:
                 comps = results[:5]
                 break
-
             if len(results) > 0:
                 comps = results
-
         except Exception as e:
-            import logging as _logging
-            _logging.getLogger("agent_finder.comps").warning("Comp scrape failed (%d mo): %s", months, e)
+            logging.getLogger("agent_finder.comps").warning("Comp scrape failed (%d mo): %s", months, e)
             continue
 
     if not comps:
@@ -814,46 +315,82 @@ async def get_comps(address: str):
 
     avg_pct = round(sum(c['pctUnderList'] for c in comps) / len(comps), 1)
     avg_dom = round(sum(c['dom'] for c in comps) / len(comps))
-
-    return {
-        "comps": comps,
-        "avgPctUnderList": avg_pct,
-        "avgDom": avg_dom,
-    }
+    return {"comps": comps, "avgPctUnderList": avg_pct, "avgDom": avg_dom}
 
 
-# ── Register API router ──
+# ── Background job runner ──
+
+async def _run_job(job_id: str, agents):
+    job = jobs[job_id]
+
+    def on_progress(data: dict):
+        data["type"] = "progress"
+        job["progress"].append(data)
+
+    try:
+        results = await run_pipeline(agents, progress_callback=on_progress)
+
+        result_path = str(DATA_DIR / f"{job_id}_results.csv")
+        export_results_csv(results, result_path)
+
+        preview = []
+        for r in results[:30]:
+            preview.append({
+                "name": r.agent.name,
+                "brokerage": r.agent.brokerage,
+                "address": r.agent.address,
+                "phone": r.phone,
+                "email": r.email,
+                "status": r.status.value,
+                "source": r.source,
+            })
+
+        summary = generate_summary(results)
+
+        job["status"] = "complete"
+        job["result_path"] = result_path
+        job["summary"] = summary
+        job["preview_rows"] = preview
+        _save_jobs()
+
+    except asyncio.CancelledError:
+        if job["status"] != "cancelled":
+            job["status"] = "cancelled"
+            _save_jobs()
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        job["status"] = "error"
+        job["error"] = str(e)
+        _save_jobs()
+
+    finally:
+        _tasks.pop(job_id, None)
+
+
+# ── Register router + serve frontend ──
+
 app.include_router(api)
 
-# ── Serve React frontend ──
-
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend" / "dist"
-
 if FRONTEND_DIR.exists():
-    # Serve built React static assets (JS, CSS, images)
     app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIR / "assets")), name="frontend-assets")
 
-    # SPA catch-all: serve real files from dist if they exist, otherwise serve index.html
     @app.get("/{full_path:path}")
     async def serve_react(full_path: str):
-        """Serve static files from dist, or index.html for SPA routes."""
         candidate = FRONTEND_DIR / full_path
         if candidate.is_file():
             return FileResponse(str(candidate))
         index_path = FRONTEND_DIR / "index.html"
         if index_path.exists():
             return HTMLResponse(content=index_path.read_text(encoding="utf-8"))
-        raise HTTPException(404, "Frontend not built. Run: cd frontend && npm run build")
+        raise HTTPException(404, "Frontend not built.")
 
 
 def main():
-    """Run the web server."""
     import uvicorn
-    port = 9000
-    print(f"\n  Dispo Dojo Platform")
-    print(f"  Open http://localhost:{port} in your browser\n")
+    port = int(os.environ.get("PORT", 9000))
+    print(f"\n  Agent Contact Finder v2")
+    print(f"  Open http://localhost:{port}\n")
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
-
-
-if __name__ == "__main__":
-    main()

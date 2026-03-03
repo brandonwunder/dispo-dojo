@@ -1,4 +1,3 @@
-"""Allow running as: python -m agent_finder"""
-from .main import main
-
+"""Run the web server: python -m agent_finder"""
+from .app import main
 main()
