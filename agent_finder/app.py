@@ -96,6 +96,17 @@ async def startup():
     _load_jobs()
 
 
+@api.get("/version")
+async def version():
+    """Return deploy version so we can confirm which code is running."""
+    return {
+        "version": "2.1.0-timeout-fix",
+        "address_timeout": 45,
+        "scraper_timeout": 15,
+        "retry_pass_timeout": 120,
+    }
+
+
 @api.get("/legacy-agent-finder", response_class=HTMLResponse)
 async def legacy_agent_finder():
     """Serve the legacy Agent Finder page (used inside iframe)."""
