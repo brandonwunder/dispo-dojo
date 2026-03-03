@@ -1,4 +1,9 @@
-"""Pipeline orchestrator — runs the 3-pass search for each agent."""
+"""Pipeline orchestrator — runs the 3-pass search for each agent.
+
+Uses concurrent batches to speed up processing while respecting
+rate limits. Each batch runs N searches in parallel, then pauses
+briefly before the next batch.
+"""
 
 import asyncio
 import logging
@@ -10,9 +15,16 @@ from .models import AgentRow, ContactResult, ContactStatus
 from .searchers.google_search import search_google
 from .searchers.realtor_profile import search_realtor_profile
 from .searchers.email_guesser import guess_email
-from .searchers.helpers import random_delay
 
 logger = logging.getLogger("agent_finder.pipeline")
+
+# Concurrency settings — tuned for DuckDuckGo rate limits
+DDG_BATCH_SIZE = 5       # concurrent searches per batch
+DDG_BATCH_DELAY = 2.0    # seconds between batches
+REALTOR_BATCH_SIZE = 3   # realtor.com is stricter
+REALTOR_BATCH_DELAY = 2.0
+EMAIL_BATCH_SIZE = 8     # email guessing is mostly DNS, can be aggressive
+EMAIL_BATCH_DELAY = 0.5
 
 
 async def run_pipeline(
@@ -21,9 +33,9 @@ async def run_pipeline(
 ) -> list[ContactResult]:
     """Run the 3-pass search pipeline on a list of agents.
 
-    Pass 1: Google search (all agents)
-    Pass 2: Realtor.com profile (agents not found in Pass 1)
-    Pass 3: Email pattern guessing (agents with no email)
+    Pass 1: DuckDuckGo search (all agents) — batches of 5
+    Pass 2: Realtor.com profile (agents not found in Pass 1) — batches of 3
+    Pass 3: Email pattern guessing (agents with no email) — batches of 8
     """
     total = len(agents)
     results: list[ContactResult] = [ContactResult(agent=a) for a in agents]
@@ -42,37 +54,49 @@ async def run_pipeline(
                 "phase": phase,
             })
 
-    logger.info("Pass 1: Google search for %d agents", total)
+    logger.info("Pass 1: DuckDuckGo search for %d agents", total)
 
     async with httpx.AsyncClient(
         follow_redirects=True,
-        limits=httpx.Limits(max_connections=5, max_keepalive_connections=2),
+        limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
     ) as client:
 
-        for i, agent in enumerate(agents):
-            emit_progress(agent.name, "google")
+        # --- Pass 1: DuckDuckGo search in concurrent batches ---
+        for batch_start in range(0, total, DDG_BATCH_SIZE):
+            batch_end = min(batch_start + DDG_BATCH_SIZE, total)
+            batch_indices = list(range(batch_start, batch_end))
 
-            try:
-                result = await search_google(agent, client)
-                results[i] = result
+            # Show progress for first agent in batch
+            emit_progress(agents[batch_start].name, "google")
 
-                if result.has_contact:
-                    found_count += 1
-            except Exception as e:
-                logger.error("Pass 1 error for %s: %s", agent.name, e)
-                results[i] = ContactResult(
-                    agent=agent,
-                    status=ContactStatus.ERROR,
-                    error_message=str(e),
-                )
+            async def search_one(idx: int) -> None:
+                nonlocal found_count, completed_count
+                agent = agents[idx]
+                try:
+                    result = await search_google(agent, client)
+                    results[idx] = result
+                    if result.has_contact:
+                        found_count += 1
+                except Exception as e:
+                    logger.error("Pass 1 error for %s: %s", agent.name, e)
+                    results[idx] = ContactResult(
+                        agent=agent,
+                        status=ContactStatus.ERROR,
+                        error_message=str(e),
+                    )
+                completed_count += 1
 
-            completed_count += 1
-            emit_progress(agent.name, "google")
+            # Run batch concurrently
+            await asyncio.gather(*(search_one(i) for i in batch_indices))
 
-            if i < total - 1:
-                await random_delay(3.0, 7.0)
+            # Emit progress after batch completes
+            emit_progress(agents[batch_end - 1].name, "google")
 
-        # Pass 2: Realtor.com profiles (for agents not found)
+            # Delay between batches (skip after last batch)
+            if batch_end < total:
+                await asyncio.sleep(DDG_BATCH_DELAY)
+
+        # --- Pass 2: Realtor.com profiles for agents not found ---
         not_found_indices = [
             i for i, r in enumerate(results)
             if not r.has_contact
@@ -81,33 +105,40 @@ async def run_pipeline(
         if not_found_indices:
             logger.info("Pass 2: Realtor.com profiles for %d agents", len(not_found_indices))
 
-            for i in not_found_indices:
-                agent = agents[i]
-                emit_progress(agent.name, "realtor")
+            for batch_start in range(0, len(not_found_indices), REALTOR_BATCH_SIZE):
+                batch = not_found_indices[batch_start:batch_start + REALTOR_BATCH_SIZE]
 
-                profile_url = ""
-                if results[i].error_message.startswith("realtor_url:"):
-                    profile_url = results[i].error_message.replace("realtor_url:", "")
+                emit_progress(agents[batch[0]].name, "realtor")
 
-                try:
-                    realtor_result = await search_realtor_profile(agent, client, profile_url)
+                async def search_realtor_one(idx: int) -> None:
+                    nonlocal found_count
+                    agent = agents[idx]
+                    profile_url = ""
+                    if results[idx].error_message and results[idx].error_message.startswith("realtor_url:"):
+                        profile_url = results[idx].error_message.replace("realtor_url:", "")
 
-                    if realtor_result.has_contact:
-                        if realtor_result.phone and not results[i].phone:
-                            results[i].phone = realtor_result.phone
-                        if realtor_result.email and not results[i].email:
-                            results[i].email = realtor_result.email
-                        results[i].source = "realtor"
-                        results[i].status = ContactStatus.FOUND
-                        results[i].error_message = ""
-                        found_count += 1
-                except Exception as e:
-                    logger.error("Pass 2 error for %s: %s", agent.name, e)
+                    try:
+                        realtor_result = await search_realtor_profile(agent, client, profile_url)
+                        if realtor_result.has_contact:
+                            if realtor_result.phone and not results[idx].phone:
+                                results[idx].phone = realtor_result.phone
+                            if realtor_result.email and not results[idx].email:
+                                results[idx].email = realtor_result.email
+                            results[idx].source = "realtor"
+                            results[idx].status = ContactStatus.FOUND
+                            results[idx].error_message = ""
+                            found_count += 1
+                    except Exception as e:
+                        logger.error("Pass 2 error for %s: %s", agent.name, e)
 
-                emit_progress(agent.name, "realtor")
-                await random_delay(1.5, 3.5)
+                await asyncio.gather(*(search_realtor_one(i) for i in batch))
 
-        # Pass 3: Email pattern guessing (for agents with phone but no email)
+                emit_progress(agents[batch[-1]].name, "realtor")
+
+                if batch_start + REALTOR_BATCH_SIZE < len(not_found_indices):
+                    await asyncio.sleep(REALTOR_BATCH_DELAY)
+
+        # --- Pass 3: Email pattern guessing for agents with phone but no email ---
         need_email_indices = [
             i for i, r in enumerate(results)
             if r.phone and not r.email
@@ -116,27 +147,34 @@ async def run_pipeline(
         if need_email_indices:
             logger.info("Pass 3: Email guessing for %d agents", len(need_email_indices))
 
-            for i in need_email_indices:
-                agent = agents[i]
-                emit_progress(agent.name, "email_guess")
+            for batch_start in range(0, len(need_email_indices), EMAIL_BATCH_SIZE):
+                batch = need_email_indices[batch_start:batch_start + EMAIL_BATCH_SIZE]
 
-                try:
-                    guessed = await guess_email(agent.name, agent.brokerage, client)
-                    if guessed:
-                        results[i].email = guessed
-                        if results[i].source:
-                            results[i].source += "+email_guess"
-                        else:
-                            results[i].source = "email_guess"
-                except Exception as e:
-                    logger.debug("Email guess error for %s: %s", agent.name, e)
+                emit_progress(agents[batch[0]].name, "email_guess")
 
-                emit_progress(agent.name, "email_guess")
-                await random_delay(3.0, 6.0)
+                async def guess_one(idx: int) -> None:
+                    agent = agents[idx]
+                    try:
+                        guessed = await guess_email(agent.name, agent.brokerage, client)
+                        if guessed:
+                            results[idx].email = guessed
+                            if results[idx].source:
+                                results[idx].source += "+email_guess"
+                            else:
+                                results[idx].source = "email_guess"
+                    except Exception as e:
+                        logger.debug("Email guess error for %s: %s", agent.name, e)
+
+                await asyncio.gather(*(guess_one(i) for i in batch))
+
+                emit_progress(agents[batch[-1]].name, "email_guess")
+
+                if batch_start + EMAIL_BATCH_SIZE < len(need_email_indices):
+                    await asyncio.sleep(EMAIL_BATCH_DELAY)
 
     # Clean up temp error messages
     for r in results:
-        if r.status == ContactStatus.ERROR and r.error_message.startswith("realtor_url:"):
+        if r.status == ContactStatus.ERROR and r.error_message and r.error_message.startswith("realtor_url:"):
             r.error_message = ""
             r.status = ContactStatus.NOT_FOUND
 
