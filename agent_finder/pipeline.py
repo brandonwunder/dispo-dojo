@@ -25,6 +25,7 @@ REALTOR_BATCH_SIZE = 3   # realtor.com is stricter
 REALTOR_BATCH_DELAY = 2.0
 EMAIL_BATCH_SIZE = 8     # email guessing is mostly DNS, can be aggressive
 EMAIL_BATCH_DELAY = 0.5
+AGENT_TIMEOUT = 30.0     # max seconds per agent before we skip it
 
 
 async def run_pipeline(
@@ -73,10 +74,20 @@ async def run_pipeline(
                 nonlocal found_count, completed_count
                 agent = agents[idx]
                 try:
-                    result = await search_google(agent, client)
+                    result = await asyncio.wait_for(
+                        search_google(agent, client),
+                        timeout=AGENT_TIMEOUT,
+                    )
                     results[idx] = result
                     if result.has_contact:
                         found_count += 1
+                except asyncio.TimeoutError:
+                    logger.warning("Pass 1 timed out for %s (>%ds)", agent.name, AGENT_TIMEOUT)
+                    results[idx] = ContactResult(
+                        agent=agent,
+                        status=ContactStatus.ERROR,
+                        error_message="Timeout",
+                    )
                 except Exception as e:
                     logger.error("Pass 1 error for %s: %s", agent.name, e)
                     results[idx] = ContactResult(
@@ -118,7 +129,10 @@ async def run_pipeline(
                         profile_url = results[idx].error_message.replace("realtor_url:", "")
 
                     try:
-                        realtor_result = await search_realtor_profile(agent, client, profile_url)
+                        realtor_result = await asyncio.wait_for(
+                            search_realtor_profile(agent, client, profile_url),
+                            timeout=AGENT_TIMEOUT,
+                        )
                         if realtor_result.has_contact:
                             if realtor_result.phone and not results[idx].phone:
                                 results[idx].phone = realtor_result.phone
@@ -128,6 +142,8 @@ async def run_pipeline(
                             results[idx].status = ContactStatus.FOUND
                             results[idx].error_message = ""
                             found_count += 1
+                    except asyncio.TimeoutError:
+                        logger.warning("Pass 2 timed out for %s (>%ds)", agent.name, AGENT_TIMEOUT)
                     except Exception as e:
                         logger.error("Pass 2 error for %s: %s", agent.name, e)
 
@@ -155,13 +171,18 @@ async def run_pipeline(
                 async def guess_one(idx: int) -> None:
                     agent = agents[idx]
                     try:
-                        guessed = await guess_email(agent.name, agent.brokerage, client)
+                        guessed = await asyncio.wait_for(
+                            guess_email(agent.name, agent.brokerage, client),
+                            timeout=AGENT_TIMEOUT,
+                        )
                         if guessed:
                             results[idx].email = guessed
                             if results[idx].source:
                                 results[idx].source += "+email_guess"
                             else:
                                 results[idx].source = "email_guess"
+                    except asyncio.TimeoutError:
+                        logger.warning("Pass 3 timed out for %s (>%ds)", agent.name, AGENT_TIMEOUT)
                     except Exception as e:
                         logger.debug("Email guess error for %s: %s", agent.name, e)
 
