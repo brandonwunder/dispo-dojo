@@ -79,8 +79,8 @@ class BaseScraper(ABC):
 
     @retry(
         retry=retry_if_exception_type((httpx.TimeoutException, httpx.ConnectError)),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=15),
+        stop=stop_after_attempt(2),       # reduced from 3 → 2 to stay within per-scraper timeout
+        wait=wait_exponential(multiplier=1, min=1, max=8),  # shorter backoff
         reraise=True,
     )
     async def _fetch_with_retry(self, url: str, headers: dict,
@@ -90,5 +90,5 @@ class BaseScraper(ABC):
             url,
             headers=headers,
             params=params,
-            timeout=self.config.timeout_seconds,
+            timeout=min(self.config.timeout_seconds, 12),  # cap at 12s per request
         )

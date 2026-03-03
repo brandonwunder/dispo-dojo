@@ -161,6 +161,11 @@ async def progress_stream(job_id: str):
 
     async def event_generator():
         last_idx = 0
+        heartbeat_interval = 5  # seconds between heartbeats
+        ticks_since_event = 0   # track time since last real progress event
+        poll_interval = 0.3
+        ticks_per_heartbeat = int(heartbeat_interval / poll_interval)
+
         while True:
             job = jobs.get(job_id)
             if not job:
@@ -168,10 +173,13 @@ async def progress_stream(job_id: str):
 
             # Send any new progress events
             progress_list = job["progress"]
+            sent_new = False
             while last_idx < len(progress_list):
                 data = json.dumps(progress_list[last_idx])
                 yield f"data: {data}\n\n"
                 last_idx += 1
+                sent_new = True
+                ticks_since_event = 0
 
             # Check if job is done
             if job["status"] == "complete":
@@ -197,7 +205,23 @@ async def progress_stream(job_id: str):
                 yield f"data: {cancel_data}\n\n"
                 break
 
-            await asyncio.sleep(0.3)
+            # Heartbeat: if no real event for a while, send a keep-alive
+            # so the UI knows the pipeline is still working
+            if not sent_new:
+                ticks_since_event += 1
+                if ticks_since_event >= ticks_per_heartbeat:
+                    last_progress = progress_list[-1] if progress_list else {}
+                    heartbeat = {
+                        "type": "heartbeat",
+                        "status": job["status"],
+                        **{k: last_progress.get(k, 0)
+                           for k in ("completed", "total", "cached", "found",
+                                     "partial", "not_found", "errors")},
+                    }
+                    yield f"data: {json.dumps(heartbeat)}\n\n"
+                    ticks_since_event = 0
+
+            await asyncio.sleep(poll_interval)
 
     return StreamingResponse(
         event_generator(),

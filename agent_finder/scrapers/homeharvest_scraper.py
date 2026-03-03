@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import httpx
@@ -14,28 +15,43 @@ from .base import BaseScraper
 
 logger = logging.getLogger("agent_finder.scrapers.homeharvest")
 
+# Dedicated bounded thread pool for HomeHarvest.
+# Prevents stuck sync calls from exhausting the global default pool.
+_HH_EXECUTOR = ThreadPoolExecutor(max_workers=3, thread_name_prefix="homeharvest")
+
+# How long to wait for the sync thread before giving up.
+_HH_THREAD_TIMEOUT = 20  # seconds
+
 
 class HomeHarvestScraper(BaseScraper):
     """
     Wraps the homeharvest library to search Realtor.com for agent info.
 
-    HomeHarvest is synchronous, so we run it in a thread executor
-    to avoid blocking the async event loop.
+    HomeHarvest is synchronous, so we run it in a dedicated thread pool
+    to avoid blocking the async event loop or exhausting the default pool.
     """
 
     def __init__(self, client: httpx.AsyncClient):
         super().__init__(HOMEHARVEST, client)
 
     async def search(self, prop: Property) -> Optional[AgentInfo]:
-        """Search using HomeHarvest library (runs sync code in executor)."""
+        """Search using HomeHarvest library (runs sync code in a bounded executor)."""
         try:
             loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None, self._sync_search, prop
+            # Use dedicated pool + timeout so a stuck thread doesn't block everything
+            result = await asyncio.wait_for(
+                loop.run_in_executor(_HH_EXECUTOR, self._sync_search, prop),
+                timeout=_HH_THREAD_TIMEOUT,
             )
             if result:
                 self._success_count += 1
             return result
+        except asyncio.TimeoutError:
+            logger.warning(
+                "HomeHarvest thread timed out after %ds for '%s'",
+                _HH_THREAD_TIMEOUT, prop.raw_address,
+            )
+            return None
         except Exception as e:
             logger.info("HomeHarvest executor failed for '%s': %s: %s",
                         prop.raw_address, type(e).__name__, e)

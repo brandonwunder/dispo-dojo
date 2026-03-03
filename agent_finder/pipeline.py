@@ -35,6 +35,12 @@ class AgentFinderPipeline:
     merging results across sources for better coverage and verification.
     """
 
+    # Hard timeouts
+    ADDRESS_TIMEOUT = 45       # seconds — max wall-time per address (down from 60)
+    SCRAPER_TIMEOUT = 15       # seconds — max wall-time per individual scraper
+    ENRICHMENT_TIMEOUT = 10    # seconds — max wall-time for contact enrichment
+    RETRY_PASS_TIMEOUT = 120   # seconds — max wall-time for the entire retry pass
+
     def __init__(
         self,
         sources: Optional[list[str]] = None,
@@ -188,7 +194,7 @@ class AgentFinderPipeline:
             # Filter out any remaining None placeholders
             results = [r for r in results if r is not None]
 
-            # ── Second-pass retry for NOT_FOUND addresses ──
+            # ── Second-pass retry for NOT_FOUND addresses (with overall timeout) ──
             not_found_indices = [
                 i for i, r in enumerate(results)
                 if r is not None and r.status == LookupStatus.NOT_FOUND
@@ -196,8 +202,8 @@ class AgentFinderPipeline:
 
             if not_found_indices:
                 logger.info(
-                    "Retrying %d not-found addresses with simplified queries",
-                    len(not_found_indices),
+                    "Retrying %d not-found addresses with simplified queries (max %ds)",
+                    len(not_found_indices), self.RETRY_PASS_TIMEOUT,
                 )
                 if self.progress_callback:
                     self.progress_callback({
@@ -218,7 +224,18 @@ class AgentFinderPipeline:
                         self._retry_with_variants(results[idx].property, scrapers, client)
                     )
 
-                retry_results = await asyncio.gather(*retry_tasks, return_exceptions=True)
+                # Hard cap the entire retry pass so it can't run forever
+                try:
+                    retry_results = await asyncio.wait_for(
+                        asyncio.gather(*retry_tasks, return_exceptions=True),
+                        timeout=self.RETRY_PASS_TIMEOUT,
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(
+                        "Retry pass timed out after %ds — skipping remaining retries",
+                        self.RETRY_PASS_TIMEOUT,
+                    )
+                    retry_results = []
 
                 recovered = 0
                 for list_idx, retry_result in zip(not_found_indices, retry_results):
@@ -243,9 +260,6 @@ class AgentFinderPipeline:
         self._print_summary()
         return results
 
-    # ── Per-address timeout (60s) ──
-    ADDRESS_TIMEOUT = 60  # seconds
-
     async def _process_one_with_timeout(
         self,
         prop: Property,
@@ -254,7 +268,7 @@ class AgentFinderPipeline:
         progress: Optional[Progress],
         task_id,
     ) -> ScrapeResult:
-        """Wrap _process_one with a hard 60-second timeout per address."""
+        """Wrap _process_one with a hard per-address timeout to prevent hangs."""
         try:
             return await asyncio.wait_for(
                 self._process_one(prop, scrapers, client, progress, task_id),
@@ -311,7 +325,24 @@ class AgentFinderPipeline:
 
                 try:
                     sources_tried.append(scraper.name)
-                    result = await scraper.search(prop)
+                    logger.debug(
+                        "Starting %s for '%s'", scraper.name, prop.raw_address
+                    )
+                    # Per-scraper timeout: no single scraper can hog the budget
+                    try:
+                        result = await asyncio.wait_for(
+                            scraper.search(prop),
+                            timeout=self.SCRAPER_TIMEOUT,
+                        )
+                    except asyncio.TimeoutError:
+                        logger.warning(
+                            "Scraper %s timed out after %ds for '%s'",
+                            scraper.name, self.SCRAPER_TIMEOUT, prop.raw_address,
+                        )
+                        self._record_scraper_failure(
+                            scraper.name, TimeoutError(f"{scraper.name} scraper timeout")
+                        )
+                        continue
 
                     if result and result.agent_name:
                         source_agents.append((scraper.name, result.agent_name))
@@ -342,7 +373,15 @@ class AgentFinderPipeline:
             # Enrich contact info if we found an agent but missing details
             if agent_info and not agent_info.is_complete and self.enrich:
                 try:
-                    agent_info = await enrich_contact_info(agent_info, client)
+                    agent_info = await asyncio.wait_for(
+                        enrich_contact_info(agent_info, client),
+                        timeout=self.ENRICHMENT_TIMEOUT,
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(
+                        "Enrichment timed out after %ds for '%s'",
+                        self.ENRICHMENT_TIMEOUT, prop.raw_address,
+                    )
                 except Exception as e:
                     logger.info(
                         "Enrichment failed for '%s': %s", prop.raw_address, e
