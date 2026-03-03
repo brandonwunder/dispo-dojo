@@ -1,6 +1,7 @@
 """Async pipeline orchestrator - coordinates scrapers, caching, and enrichment."""
 
 import asyncio
+import gc
 import logging
 from typing import Callable, Optional
 
@@ -249,7 +250,7 @@ class AgentFinderPipeline:
         self._print_summary()
         return results
 
-    BATCH_SIZE = 5  # addresses per batch — keeps memory under 512MB
+    BATCH_SIZE = 3  # addresses per batch — keeps memory under 512MB on Render free tier
 
     async def _process_in_batches(
         self,
@@ -269,6 +270,9 @@ class AgentFinderPipeline:
             ]
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
             all_results.extend(batch_results)
+            # Force garbage collection between batches to free pandas DataFrames
+            # and HTTP response bodies — critical for 512MB Render free tier
+            gc.collect()
         return all_results
 
     async def _process_one_with_timeout(

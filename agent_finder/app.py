@@ -100,12 +100,12 @@ async def startup():
 async def version():
     """Return deploy version so we can confirm which code is running."""
     return {
-        "version": "2.2.0-memory-fix",
+        "version": "2.3.0-gc-fix",
         "address_timeout": 45,
         "scraper_timeout": 15,
         "retry_pass_timeout": 120,
         "max_concurrency": 5,
-        "batch_size": 5,
+        "batch_size": 3,
     }
 
 
@@ -499,6 +499,15 @@ async def _run_pipeline(job_id: str, properties):
             job["status"] = "cancelled"
             job["error"] = "Cancelled by user."
             _save_jobs()
+
+    except MemoryError:
+        # Render free tier (512MB) — return whatever we have so far
+        import gc
+        gc.collect()
+        logger.error("MemoryError during pipeline for job %s — returning partial results", job_id)
+        job["status"] = "error"
+        job["error"] = "Server ran low on memory. Some addresses may not have been processed. Try a smaller batch."
+        _save_jobs()
 
     except Exception as e:
         import traceback

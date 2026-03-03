@@ -70,6 +70,7 @@ class HomeHarvestScraper(BaseScraper):
 
         # Try multiple listing types — active listings may be categorized differently
         for listing_type in ["for_sale", "sold", "pending"]:
+            df = None
             try:
                 df = scrape_property(
                     location=location,
@@ -93,6 +94,10 @@ class HomeHarvestScraper(BaseScraper):
                     listing_type, location, type(e).__name__, e
                 )
                 continue
+            finally:
+                # Explicitly free the DataFrame to prevent memory accumulation
+                # (critical on 512MB Render free tier)
+                del df
 
         return None
 
