@@ -1,10 +1,8 @@
 """Abstract base scraper class."""
 
 import asyncio
-import os
 from abc import ABC, abstractmethod
 from typing import Optional
-from urllib.parse import urlencode, quote
 
 import httpx
 from aiolimiter import AsyncLimiter
@@ -16,11 +14,6 @@ from tenacity import (
 from ..config import SourceConfig
 from ..models import AgentInfo, Property
 from ..utils import get_rotating_headers, detect_captcha
-
-# ScraperAPI proxy — set SCRAPERAPI_KEY env var to enable.
-# When set, all scraper HTTP requests are routed through ScraperAPI's
-# residential proxy network, bypassing Redfin/Zillow/Realtor IP blocks.
-_SCRAPERAPI_KEY = os.environ.get("SCRAPERAPI_KEY", "")
 
 
 class BaseScraper(ABC):
@@ -97,34 +90,10 @@ class BaseScraper(ABC):
     )
     async def _fetch_with_retry(self, url: str, headers: dict,
                                  params: Optional[dict] = None) -> httpx.Response:
-        """Fetch with automatic retry on transient errors.
-
-        When SCRAPERAPI_KEY is set, routes requests through ScraperAPI's
-        residential proxy network to bypass datacenter IP blocks.
-        """
-        # Build the full URL with params
-        target_url = url
-        if params:
-            target_url = f"{url}?{urlencode(params)}"
-            params = None  # Already encoded into URL
-
-        if _SCRAPERAPI_KEY:
-            # Route through ScraperAPI proxy
-            proxy_url = (
-                f"http://api.scraperapi.com/"
-                f"?api_key={_SCRAPERAPI_KEY}"
-                f"&url={quote(target_url, safe='')}"
-            )
-            return await self.client.get(
-                proxy_url,
-                headers={"User-Agent": headers.get("User-Agent", "")},
-                timeout=min(self.config.timeout_seconds + 15, 30),  # ScraperAPI needs more time
-            )
-
-        # Direct request (no proxy)
+        """Fetch with automatic retry on transient errors."""
         return await self.client.get(
             url,
             headers=headers,
             params=params,
-            timeout=min(self.config.timeout_seconds, 12),
+            timeout=min(self.config.timeout_seconds, 12),  # cap at 12s per request
         )

@@ -143,7 +143,7 @@ async def _auto_resume_interrupted():
 async def version():
     """Return deploy version so we can confirm which code is running."""
     return {
-        "version": "3.3.0-scraperapi-proxy",
+        "version": "3.3.0-http2-restored",
         "address_timeout": 45,
         "scraper_timeout": 15,
         "retry_pass_timeout": 120,
@@ -190,6 +190,7 @@ async def test_scrape(address: str = "123 Main St, Austin, TX 78701"):
     results = {}
     connectivity = {}
     async with httpx.AsyncClient(
+        http2=True,
         follow_redirects=True,
         limits=httpx.Limits(max_connections=10, max_keepalive_connections=3),
     ) as client:
@@ -297,7 +298,7 @@ async def test_http(address: str = "4521 Pomona Rd, Dallas, TX 75209"):
     }
 
     results = {}
-    async with httpx.AsyncClient(follow_redirects=True, timeout=20) as client:
+    async with httpx.AsyncClient(http2=True, follow_redirects=True, timeout=20) as client:
         for name, cfg in sites.items():
             try:
                 resp = await client.get(cfg["url"], headers=cfg["headers"])

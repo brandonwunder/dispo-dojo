@@ -171,12 +171,13 @@ class AgentFinderPipeline:
         if rss:
             logger.info("RSS before scraping: %.0f MB", rss)
 
-        # HTTP client — http2 disabled to save h2 library memory overhead
-        max_conn = 10 if self._lite_mode else 15
+        # HTTP/2 is required — sites block HTTP/1.1 from datacenter IPs
+        max_conn = 10 if self._lite_mode else 20
         keepalive = 3 if self._lite_mode else 5
         batch_size = 3
 
         async with httpx.AsyncClient(
+            http2=True,
             follow_redirects=True,
             limits=httpx.Limits(
                 max_connections=max_conn,
