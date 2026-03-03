@@ -480,7 +480,6 @@ async def _run_pipeline(job_id: str, properties):
                 "source": _clean(r.agent_info.source) if r.agent_info else "",
                 "list_date": _clean(r.agent_info.list_date) if r.agent_info else "",
                 "days_on_market": _clean(r.agent_info.days_on_market) if r.agent_info else "",
-                "listing_price": _clean(r.agent_info.listing_price) if r.agent_info else "",
                 "confidence": f"{r.confidence:.0%}",
                 "verified": r.verified,
             })

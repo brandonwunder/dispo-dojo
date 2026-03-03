@@ -193,20 +193,6 @@ class RealtorScraper(BaseScraper):
             elif list_date:
                 days_on_market = compute_days_on_market(list_date)
 
-            # Extract listing price
-            listing_price = ""
-            price_val = (
-                listing.get("list_price")
-                or description.get("list_price")
-                or property_data.get("list_price")
-                or property_data.get("price")
-            )
-            if price_val:
-                try:
-                    listing_price = f"${int(price_val):,}"
-                except (ValueError, TypeError):
-                    listing_price = str(price_val)
-
             return AgentInfo(
                 agent_name=clean_name(agent_name),
                 brokerage=brokerage.strip(),
@@ -216,7 +202,6 @@ class RealtorScraper(BaseScraper):
                 listing_url="",
                 list_date=list_date,
                 days_on_market=days_on_market,
-                listing_price=listing_price,
             )
 
         except (KeyError, IndexError, TypeError) as e:
