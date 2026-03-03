@@ -273,6 +273,45 @@ async def test_scrape(address: str = "123 Main St, Austin, TX 78701"):
     }
 
 
+@api.get("/test-http")
+async def test_http(address: str = "4521 Pomona Rd, Dallas, TX 75209"):
+    """Raw HTTP test — just fetch each site and show status codes."""
+    import httpx
+    from .utils import get_rotating_headers, get_api_headers
+    from urllib.parse import quote_plus, quote
+
+    query = address.upper()
+    sites = {
+        "redfin": {
+            "url": f"https://www.redfin.com/stingray/do/location-autocomplete?location={quote(query)}&start=0&count=5&v=2",
+            "headers": {**get_api_headers(), "Referer": "https://www.redfin.com"},
+        },
+        "realtor": {
+            "url": f"https://www.realtor.com/realestateandhomes-search/{query.replace(' ', '-').replace(',', '')}",
+            "headers": {**get_rotating_headers(), "Referer": "https://www.realtor.com"},
+        },
+        "zillow": {
+            "url": f"https://www.zillow.com/homes/{quote_plus(query)}_rb/",
+            "headers": {**get_rotating_headers(), "Referer": "https://www.zillow.com/"},
+        },
+    }
+
+    results = {}
+    async with httpx.AsyncClient(follow_redirects=True, timeout=20) as client:
+        for name, cfg in sites.items():
+            try:
+                resp = await client.get(cfg["url"], headers=cfg["headers"])
+                results[name] = {
+                    "status_code": resp.status_code,
+                    "final_url": str(resp.url)[:200],
+                    "content_length": len(resp.text),
+                    "body_start": resp.text[:300],
+                }
+            except Exception as e:
+                results[name] = {"error": f"{type(e).__name__}: {e}"}
+    return results
+
+
 @api.post("/clear-cache")
 async def clear_cache():
     """Clear the scrape cache (results + failures)."""
